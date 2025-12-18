@@ -1,0 +1,74 @@
+{
+  "slug": "posts",
+  "name": "Posts",
+  "description": "Instagram-style posts with photo/video carousels",
+  "fields": [
+    {
+      "key": "title",
+      "type": "text",
+      "required": false,
+      "label": "Title",
+      "placeholder": "Optional title for this post"
+    },
+    {
+      "key": "description",
+      "type": "textarea",
+      "required": false,
+      "label": "Description",
+      "placeholder": "Write a caption..."
+    },
+    {
+      "key": "media",
+      "type": "media:list",
+      "required": true,
+      "label": "Media",
+      "description": "Drag to reorder. Supports images and videos.",
+      "max": 10,
+      "accept": ["image/*", "video/*"]
+    },
+    {
+      "key": "coverMediaId",
+      "type": "media",
+      "required": false,
+      "label": "Cover Image",
+      "description": "The image shown in grids and previews (can be any image from carousel)"
+    },
+    {
+      "key": "categories",
+      "type": "categories",
+      "required": true,
+      "label": "Categories",
+      "description": "Select one or more categories"
+    },
+    {
+      "key": "date",
+      "type": "datetime",
+      "required": false,
+      "label": "Date",
+      "description": "Post date for sorting"
+    },
+    {
+      "key": "location",
+      "type": "text",
+      "required": false,
+      "label": "Location",
+      "placeholder": "Add location"
+    },
+    {
+      "key": "tags",
+      "type": "text",
+      "required": false,
+      "label": "Tags",
+      "placeholder": "photography, travel, portraits"
+    }
+  ],
+  "admin": {
+    "titleField": "title",
+    "subtitleField": "description",
+    "thumbnailField": "media",
+    "defaultSort": {
+      "field": "date",
+      "direction": "desc"
+    }
+  }
+}

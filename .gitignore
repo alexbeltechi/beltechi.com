@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Local uploads (production uses Vercel Blob)
+/public/uploads/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

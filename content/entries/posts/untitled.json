@@ -1,0 +1,24 @@
+{
+  "id": "284d2c83-03db-4315-8027-479e5d808270",
+  "collection": "posts",
+  "slug": "untitled",
+  "status": "draft",
+  "visibility": "public",
+  "createdAt": "2025-12-17T22:41:04.790Z",
+  "updatedAt": "2025-12-17T22:41:04.790Z",
+  "publishedAt": null,
+  "authorId": null,
+  "data": {
+    "media": [
+      "147546c6-15b7-46bd-9c16-c8dd5188fe10",
+      "66eaa7b2-9a41-4f7f-9d6f-eac99c06114e",
+      "ed1415fc-12d5-4d15-b742-25d7fd40b226",
+      "07718ca3-3d5a-49a0-9fea-099fd2e93715"
+    ],
+    "coverMediaId": "147546c6-15b7-46bd-9c16-c8dd5188fe10",
+    "categories": [
+      "clothing"
+    ],
+    "date": "2025-12-17T22:41:04.715Z"
+  }
+}

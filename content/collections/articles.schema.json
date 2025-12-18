@@ -1,0 +1,91 @@
+{
+  "slug": "articles",
+  "name": "Articles",
+  "description": "Long-form editorial content with rich blocks",
+  "fields": [
+    {
+      "key": "title",
+      "type": "text",
+      "required": true,
+      "label": "Title",
+      "placeholder": "Article title"
+    },
+    {
+      "key": "excerpt",
+      "type": "textarea",
+      "required": false,
+      "label": "Excerpt",
+      "placeholder": "Brief summary for previews..."
+    },
+    {
+      "key": "featuredImage",
+      "type": "media",
+      "required": false,
+      "label": "Featured Image",
+      "accept": ["image/*"]
+    },
+    {
+      "key": "content",
+      "type": "blocks",
+      "required": true,
+      "label": "Content",
+      "blockTypes": ["text", "image", "gallery", "video", "youtube", "quote", "divider"]
+    },
+    {
+      "key": "categories",
+      "type": "categories",
+      "required": true,
+      "label": "Categories",
+      "description": "Select one or more categories"
+    },
+    {
+      "key": "date",
+      "type": "datetime",
+      "required": false,
+      "label": "Date",
+      "description": "Article date for sorting"
+    },
+    {
+      "key": "tags",
+      "type": "text",
+      "required": false,
+      "label": "Tags",
+      "placeholder": "photography, editing, workflow"
+    },
+    {
+      "key": "seo",
+      "type": "object",
+      "required": false,
+      "label": "SEO",
+      "fields": [
+        {
+          "key": "title",
+          "type": "text",
+          "required": false,
+          "label": "SEO Title"
+        },
+        {
+          "key": "description",
+          "type": "textarea",
+          "required": false,
+          "label": "SEO Description"
+        },
+        {
+          "key": "ogImage",
+          "type": "media",
+          "required": false,
+          "label": "Social Image"
+        }
+      ]
+    }
+  ],
+  "admin": {
+    "titleField": "title",
+    "subtitleField": "excerpt",
+    "thumbnailField": "featuredImage",
+    "defaultSort": {
+      "field": "date",
+      "direction": "desc"
+    }
+  }
+}

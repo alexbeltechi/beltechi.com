@@ -1,0 +1,82 @@
+{
+  "categories": [
+    {
+      "id": "photography",
+      "label": "Photography",
+      "color": "#3B82F6",
+      "description": "Photos and visual work"
+    },
+    {
+      "id": "design",
+      "label": "Design",
+      "color": "#8B5CF6",
+      "description": "Design projects and case studies"
+    },
+    {
+      "id": "film-making",
+      "label": "Film-making",
+      "color": "#EC4899",
+      "description": "Video production and cinematography"
+    },
+    {
+      "id": "note",
+      "label": "Note",
+      "color": "#F59E0B",
+      "description": "Quick thoughts and notes"
+    },
+    {
+      "id": "life",
+      "label": "Life",
+      "color": "#10B981",
+      "description": "Personal updates and moments"
+    },
+    {
+      "id": "clothing",
+      "label": "Clothing",
+      "color": "#6366F1",
+      "description": "Fashion and apparel"
+    },
+    {
+      "id": "travel",
+      "label": "Travel",
+      "color": "#14B8A6",
+      "description": "Travel stories and locations"
+    },
+    {
+      "id": "tech",
+      "label": "Tech",
+      "color": "#64748B",
+      "description": "Technology and gear"
+    },
+    {
+      "id": "journal",
+      "label": "Journal",
+      "color": "#0EA5E9",
+      "description": "Long-form journal entries"
+    },
+    {
+      "id": "tutorials",
+      "label": "Tutorials",
+      "color": "#22C55E",
+      "description": "How-to guides and tutorials"
+    },
+    {
+      "id": "behind-the-scenes",
+      "label": "Behind the Scenes",
+      "color": "#A855F7",
+      "description": "Process and making-of content"
+    },
+    {
+      "id": "gear",
+      "label": "Gear",
+      "color": "#EF4444",
+      "description": "Equipment reviews and setups"
+    }
+  ]
+}
+
+
+
+
+
+

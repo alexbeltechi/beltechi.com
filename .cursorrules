@@ -1,0 +1,97 @@
+# Project Rules for Cursor AI
+
+## MCP Usage Rules
+
+This project has two MCP servers for UI development. Use the right one based on context.
+
+### Default Behaviors
+
+| Context | Default MCP | Reason |
+|---------|-------------|--------|
+| Admin section (`src/app/admin/`) | **shadcn MCP** | Standard UI components with consistent styling |
+| Public site (`src/app/(site)/`) | **Figma MCP** | Custom designs matching Figma files |
+
+### Explicit Overrides (ALWAYS Follow User Instructions)
+
+User instructions always take priority over defaults:
+
+- **"use shadcn X"** or **"shadcn component"** → Use shadcn MCP, even on public site
+- **"from Figma"** or **"match the design"** → Use Figma MCP
+- **"build this design but use shadcn buttons"** → Figma for layout, shadcn for specified components
+
+---
+
+## Figma MCP (user-Figma)
+
+Use for implementing custom designs from Figma files.
+
+### When to Use
+- Implementing designs from Figma
+- Working on public-facing site (`src/app/(site)/`)
+- Creating custom components that match specific designs
+- Need design context, screenshots, or variables
+
+### Available Tools
+
+| Tool | Purpose |
+|------|---------|
+| `get_design_context` | Get design information from Figma |
+| `get_screenshot` | Get screenshot of a Figma frame |
+| `get_variable_defs` | Get Figma design variables |
+| `get_metadata` | Get file metadata |
+
+---
+
+## shadcn MCP (user-shadcn-ui)
+
+Use for standard UI components from the shadcn/ui library.
+
+### When to Use
+- Working on admin section (`src/app/admin/`)
+- Need standard UI components (buttons, cards, dialogs, tables, forms)
+- User explicitly requests shadcn components
+- Building dashboards, data tables, forms
+
+### Available Tools
+
+| Tool | Purpose |
+|------|---------|
+| `list_components` | List all available shadcn components |
+| `get_component` | Get component source code (use `componentName` param) |
+| `get_component_demo` | Get official usage examples |
+| `get_component_metadata` | Get props and variant info |
+| `list_blocks` | List pre-built UI blocks |
+| `get_block` | Get block source code |
+
+### shadcn Component Workflow
+
+1. **First** - Call MCP `get_component` to see the official code
+2. **Then** - Install via CLI: `npx shadcn@latest add <name> --overwrite`
+3. **Never** - Manually edit files in `src/components/ui/`
+4. **For customizations** - Create a wrapper in `src/components/admin/` or `src/components/site/`
+
+### CLI Fallback (if MCP unavailable)
+
+```bash
+npx shadcn@latest add <component-name> --overwrite
+```
+
+---
+
+## General Rules
+
+### File Organization
+- `src/components/ui/` - shadcn managed (never edit manually)
+- `src/components/admin/` - Admin-specific wrappers and custom components
+- `src/components/site/` - Public site custom components
+
+### Styling Guidelines
+- Use Tailwind utility classes
+- For admin UI, keep default shadcn styling (shadows, backgrounds, borders)
+- For public site, match Figma designs exactly
+- Use existing utilities in `src/lib/utils.ts`
+
+### Before Making Changes
+- Check existing patterns in the codebase
+- Follow established file structure and naming conventions
+- Don't over-engineer - keep solutions simple and focused
