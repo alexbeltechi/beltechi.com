@@ -664,6 +664,41 @@
       "alt": "",
       "createdAt": "2025-12-18T20:39:36.248Z",
       "hash": "59647b06c9285720667e59debfd5d11b"
+    },
+    {
+      "id": "0bd08826-1746-4125-9ecd-65068f953134",
+      "filename": "frame-2png-4fba.jpg",
+      "originalName": "Frame 2png.jpg",
+      "slug": "frame-2png-4fba",
+      "path": "uploads/frame-2png-4fba.jpg",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/frame-2png-4fba.jpg",
+      "mime": "image/jpeg",
+      "size": 360814,
+      "width": 3500,
+      "height": 3500,
+      "original": {
+        "filename": "frame-2png-4fba-original.jpg",
+        "path": "uploads/originals/frame-2png-4fba-original.jpg",
+        "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/originals/frame-2png-4fba-original.jpg",
+        "width": 3500,
+        "height": 3500,
+        "size": 360814
+      },
+      "variants": {
+        "thumb": {
+          "filename": "frame-2png-4fba-thumb.jpg",
+          "path": "uploads/variants/frame-2png-4fba-thumb.jpg",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/frame-2png-4fba-thumb.jpg",
+          "width": 400,
+          "height": 400,
+          "size": 9697
+        }
+      },
+      "activeVariant": "original",
+      "title": "frame 2png",
+      "alt": "",
+      "createdAt": "2025-12-18T20:39:39.792Z",
+      "hash": "a22637dda34196ee758abb64268d081a"
     }
   ]
 }
