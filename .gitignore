@@ -42,8 +42,9 @@ yarn-error.log*
 # Entries (posts, articles) - managed via production CMS
 /content/entries/
 
-# Media index - managed via production CMS
-/content/media/
+# Media folder - but keep the index.json
+/content/media/*
+!/content/media/index.json
 
 # Uploaded files - managed via production CMS
 /public/uploads/
