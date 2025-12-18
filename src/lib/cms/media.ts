@@ -261,20 +261,9 @@ export async function uploadMedia(
         }
       }
 
-      // Determine default active variant (largest available that's smaller than original)
-      let activeVariant: MediaItem["activeVariant"] = "original";
-      const preferredOrder: Array<"large" | "display" | "medium" | "thumb"> = [
-        "large",
-        "display",
-        "medium",
-        "thumb",
-      ];
-      for (const v of preferredOrder) {
-        if (variants[v]) {
-          activeVariant = v;
-          break;
-        }
-      }
+      // Default to original (client-compressed image)
+      // Next.js Image component handles dynamic optimization at serve-time
+      const activeVariant: MediaItem["activeVariant"] = "original";
 
       // Get primary URL based on active variant
       const primaryVariant = activeVariant === "original" ? null : variants[activeVariant];

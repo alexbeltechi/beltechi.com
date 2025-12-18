@@ -3,16 +3,14 @@ import crypto from "crypto";
 import path from "path";
 import type { ImageVariant, ImageProcessingSettings } from "./types";
 
-// Default settings optimized for high-quality portfolio display
+// Default settings - minimal processing for fast uploads
+// Client-side compression + Next.js Image handles optimization at serve-time
 export const DEFAULT_SETTINGS: ImageProcessingSettings = {
   variants: {
-    display: { maxEdge: 2400, quality: 85 },  // Hero images, lightbox
-    large: { maxEdge: 1600, quality: 82 },    // Default grid display
-    medium: { maxEdge: 1200, quality: 80 },   // Thumbnails
     thumb: { maxEdge: 400, quality: 75 },     // Admin grid, tiny previews
   },
-  defaultActiveVariant: "large",
-  generateWebP: false, // Can enable later for modern browser support
+  defaultActiveVariant: "original",  // Use the uploaded (client-compressed) image
+  generateWebP: false,
 };
 
 /**
@@ -180,7 +178,8 @@ export async function processImage(
   const format: "jpeg" | "png" | "webp" =
     metadata.format === "png" ? "png" : "jpeg";
 
-  // Generate all variants
+  // Generate only thumbnail variant for fast uploads
+  // Client-side compression + Next.js Image handles the rest
   const variants: {
     display?: { buffer: Buffer; width: number; height: number };
     large?: { buffer: Buffer; width: number; height: number };
@@ -188,20 +187,15 @@ export async function processImage(
     thumb?: { buffer: Buffer; width: number; height: number };
   } = {};
 
-  // Only generate variants smaller than original
-  const variantNames = ["display", "large", "medium", "thumb"] as const;
-
-  for (const variantName of variantNames) {
-    const config = settings.variants[variantName];
-    // Only create variant if original is larger
-    if (originalWidth > config.maxEdge || originalHeight > config.maxEdge) {
-      variants[variantName] = await generateVariant(
-        buffer,
-        config.maxEdge,
-        config.quality,
-        format
-      );
-    }
+  // Only generate thumb variant if original is larger
+  const thumbConfig = settings.variants.thumb;
+  if (thumbConfig && (originalWidth > thumbConfig.maxEdge || originalHeight > thumbConfig.maxEdge)) {
+    variants.thumb = await generateVariant(
+      buffer,
+      thumbConfig.maxEdge,
+      thumbConfig.quality,
+      format
+    );
   }
 
   return {

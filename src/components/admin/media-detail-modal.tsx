@@ -304,42 +304,9 @@ export function MediaDetailModal({
                           size={item.original.size}
                           onSelect={() => handleVariantChange("original")}
                         />
-                        {item.variants?.display && (
-                          <VariantButton
-                            name="Display (2400px)"
-                            variant="display"
-                            activeVariant={item.activeVariant || "original"}
-                            width={item.variants.display.width}
-                            height={item.variants.display.height}
-                            size={item.variants.display.size}
-                            onSelect={() => handleVariantChange("display")}
-                          />
-                        )}
-                        {item.variants?.large && (
-                          <VariantButton
-                            name="Large (1600px)"
-                            variant="large"
-                            activeVariant={item.activeVariant || "original"}
-                            width={item.variants.large.width}
-                            height={item.variants.large.height}
-                            size={item.variants.large.size}
-                            onSelect={() => handleVariantChange("large")}
-                          />
-                        )}
-                        {item.variants?.medium && (
-                          <VariantButton
-                            name="Medium (1200px)"
-                            variant="medium"
-                            activeVariant={item.activeVariant || "original"}
-                            width={item.variants.medium.width}
-                            height={item.variants.medium.height}
-                            size={item.variants.medium.size}
-                            onSelect={() => handleVariantChange("medium")}
-                          />
-                        )}
                         {item.variants?.thumb && (
                           <VariantButton
-                            name="Thumbnail (400px)"
+                            name="Thumbnail"
                             variant="thumb"
                             activeVariant={item.activeVariant || "original"}
                             width={item.variants.thumb.width}
@@ -348,9 +315,9 @@ export function MediaDetailModal({
                             onSelect={() => handleVariantChange("thumb")}
                           />
                         )}
-                        {!item.variants && (
+                        {!item.variants?.thumb && (
                           <p className="text-xs text-muted-foreground italic py-1">
-                            Image is smaller than optimization thresholds.
+                            Image is smaller than 400px, no thumbnail generated.
                           </p>
                         )}
                       </div>
