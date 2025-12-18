@@ -29,9 +29,9 @@
       "label": "Portrait",
       "color": "#0EA5E9",
       "order": 2,
-      "showOnHomepage": true,
+      "showOnHomepage": false,
       "createdAt": "2025-12-18T19:49:25.131Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z"
+      "updatedAt": "2025-12-18T20:03:21.908Z"
     },
     {
       "id": "clothing",
