@@ -1,6 +1,17 @@
 {
   "categories": [
     {
+      "id": "portrait",
+      "slug": "portrait",
+      "name": "Portrait",
+      "label": "Portrait",
+      "color": "#0EA5E9",
+      "order": 0,
+      "showOnHomepage": true,
+      "createdAt": "2025-12-18T19:49:25.131Z",
+      "updatedAt": "2025-12-18T20:03:14.530Z"
+    },
+    {
       "id": "design",
       "label": "Design",
       "color": "#8B5CF6",
@@ -8,8 +19,8 @@
       "slug": "design",
       "name": "Design",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:45:14.101Z",
-      "order": 0
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 1
     },
     {
       "id": "photography",
@@ -19,8 +30,8 @@
       "slug": "photography",
       "name": "Photography",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:45:14.101Z",
-      "order": 1
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 2
     },
     {
       "id": "clothing",
@@ -30,8 +41,8 @@
       "slug": "clothing",
       "name": "Clothing",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:45:14.101Z",
-      "order": 2
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 3
     },
     {
       "id": "life",
@@ -41,8 +52,8 @@
       "slug": "life",
       "name": "Life",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:45:14.101Z",
-      "order": 3
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 4
     },
     {
       "id": "bikes",
@@ -51,9 +62,9 @@
       "label": "Bikes",
       "color": "#64748B",
       "description": "",
-      "order": 4,
+      "order": 5,
       "createdAt": "2025-12-18T16:44:50.697Z",
-      "updatedAt": "2025-12-18T16:45:14.101Z"
+      "updatedAt": "2025-12-18T20:03:14.530Z"
     },
     {
       "id": "film-making",
@@ -63,8 +74,8 @@
       "slug": "film-making",
       "name": "Film-making",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:45:14.101Z",
-      "order": 5
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 6
     },
     {
       "id": "behind-the-scenes",
@@ -72,9 +83,9 @@
       "slug": "behind-the-scenes",
       "name": "BTS",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:19.081Z",
+      "updatedAt": "2025-12-18T20:03:14.530Z",
       "color": "#14B8A6",
-      "order": 6,
+      "order": 7,
       "description": "Behind the scenes content",
       "showOnHomepage": false
     },
@@ -86,8 +97,8 @@
       "slug": "gear",
       "name": "Gear",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:25.095Z",
-      "order": 7,
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 8,
       "showOnHomepage": false
     },
     {
@@ -98,8 +109,8 @@
       "slug": "journal",
       "name": "Journal",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:27.431Z",
-      "order": 8,
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 9,
       "showOnHomepage": false
     },
     {
@@ -108,9 +119,9 @@
       "name": "Fashion",
       "label": "Fashion",
       "color": "#64748B",
-      "order": 9,
+      "order": 10,
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:29.351Z",
+      "updatedAt": "2025-12-18T20:03:14.530Z",
       "showOnHomepage": false
     },
     {
@@ -121,8 +132,8 @@
       "slug": "note",
       "name": "Note",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:31.352Z",
-      "order": 10,
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 11,
       "showOnHomepage": false
     },
     {
@@ -133,8 +144,8 @@
       "slug": "tech",
       "name": "Tech",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:33.474Z",
-      "order": 11,
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 12,
       "showOnHomepage": false
     },
     {
@@ -145,8 +156,8 @@
       "slug": "travel",
       "name": "Travel",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:36.055Z",
-      "order": 12,
+      "updatedAt": "2025-12-18T20:03:14.530Z",
+      "order": 13,
       "showOnHomepage": false
     },
     {
@@ -157,20 +168,9 @@
       "slug": "tutorials",
       "name": "Tutorials",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T16:51:39.568Z",
-      "order": 13,
-      "showOnHomepage": false
-    },
-    {
-      "id": "portrait",
-      "slug": "portrait",
-      "name": "Portrait",
-      "label": "Portrait",
-      "color": "#0EA5E9",
+      "updatedAt": "2025-12-18T20:03:14.530Z",
       "order": 14,
-      "showOnHomepage": true,
-      "createdAt": "2025-12-18T19:49:25.131Z",
-      "updatedAt": "2025-12-18T19:49:25.131Z"
+      "showOnHomepage": false
     }
   ]
 }
