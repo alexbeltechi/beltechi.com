@@ -454,6 +454,41 @@
       "alt": "",
       "createdAt": "2025-12-18T20:33:36.498Z",
       "hash": "a261d0fa761fef555fce5fd06e1628a9"
+    },
+    {
+      "id": "3001f6d2-eecd-4cab-a1ab-3936f714eaf2",
+      "filename": "dscf9307-22e2.jpg",
+      "originalName": "DSCF9307.jpg",
+      "slug": "dscf9307-22e2",
+      "path": "uploads/dscf9307-22e2.jpg",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/dscf9307-22e2.jpg",
+      "mime": "image/jpeg",
+      "size": 964592,
+      "width": 2333,
+      "height": 3500,
+      "original": {
+        "filename": "dscf9307-22e2-original.jpg",
+        "path": "uploads/originals/dscf9307-22e2-original.jpg",
+        "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/originals/dscf9307-22e2-original.jpg",
+        "width": 2333,
+        "height": 3500,
+        "size": 964592
+      },
+      "variants": {
+        "thumb": {
+          "filename": "dscf9307-22e2-thumb.jpg",
+          "path": "uploads/variants/dscf9307-22e2-thumb.jpg",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/dscf9307-22e2-thumb.jpg",
+          "width": 267,
+          "height": 400,
+          "size": 13001
+        }
+      },
+      "activeVariant": "original",
+      "title": "dscf9307",
+      "alt": "",
+      "createdAt": "2025-12-18T20:33:40.019Z",
+      "hash": "c98fdb08f45ef84bda94c17bb6168a9d"
     }
   ]
 }
