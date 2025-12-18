@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Loader2, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X, Check, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -248,10 +248,21 @@ export default function CategoriesPage() {
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : categories.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-sm">
-              No categories yet. Add your first category above.
+          <div className="flex flex-col items-center justify-center py-16 lg:py-20 text-center">
+            <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Tag className="w-7 h-7 lg:w-8 lg:h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No categories yet</h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              Get started by creating your first category
             </p>
+            <Button
+              onClick={() => setShowAddForm(true)}
+              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Category
+            </Button>
           </div>
         ) : (
           <div className="divide-y divide-border">

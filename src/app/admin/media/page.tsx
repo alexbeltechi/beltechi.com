@@ -10,8 +10,6 @@ import {
   Loader2,
   X,
   Search,
-  CheckCircle2,
-  Circle,
   Plus,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
@@ -21,6 +19,7 @@ import { MediaDetailModal } from "@/components/admin/media-detail-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -230,6 +229,13 @@ export default function MediaLibraryPage() {
     }
   };
 
+  const selectAllUnused = () => {
+    const unusedIds = filteredMedia
+      .filter((m) => !usedMediaIds.has(m.id))
+      .map((m) => m.id);
+    setSelectedIds(new Set(unusedIds));
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -397,6 +403,10 @@ export default function MediaLibraryPage() {
 
           <span className="ml-auto text-sm text-muted-foreground">{selectedIds.size} selected</span>
 
+          <Button variant="link" size="sm" onClick={selectAllUnused}>
+            Select all unused
+          </Button>
+
           <Button variant="link" size="sm" onClick={selectAll}>
             {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
           </Button>
@@ -467,11 +477,12 @@ export default function MediaLibraryPage() {
                 {/* Bulk Select Checkbox */}
                 {bulkSelectMode && (
                   <div className="absolute top-2 right-2 z-10">
-                    {selectedIds.has(item.id) ? (
-                      <CheckCircle2 className="w-6 h-6 text-primary fill-primary drop-shadow-md" />
-                    ) : (
-                      <Circle className="w-6 h-6 text-white/80 drop-shadow-md" />
-                    )}
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onCheckedChange={() => toggleSelect(item.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-5 w-5 border-2 border-white bg-white/20 backdrop-blur-sm shadow-md data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-primary"
+                    />
                   </div>
                 )}
 
