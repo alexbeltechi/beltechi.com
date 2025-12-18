@@ -52,6 +52,7 @@ interface UploadProgress {
   originalSize?: number;
   compressedSize?: number;
   error?: string;
+  file?: File; // Keep reference for retry
 }
 
 export default function MediaLibraryPage() {
@@ -274,7 +275,7 @@ export default function MediaLibraryPage() {
               return newMap;
             });
           } else {
-            // Handle upload error
+            // Handle upload error - store file for retry
             const errorMsg = getUploadErrorMessage(res.status, originalFile.name);
             setUploadProgress((prev) => {
               const newMap = new Map(prev);
@@ -285,6 +286,7 @@ export default function MediaLibraryPage() {
                 originalSize: result.originalSize,
                 compressedSize: result.compressedSize,
                 error: errorMsg,
+                file: result.file, // Store compressed file for retry
               });
               return newMap;
             });
@@ -299,6 +301,7 @@ export default function MediaLibraryPage() {
               progress: 0,
               originalSize: result.originalSize,
               error: "Network error. Please check your connection.",
+              file: result.file, // Store compressed file for retry
             });
             return newMap;
           });
@@ -458,6 +461,97 @@ export default function MediaLibraryPage() {
     });
   };
 
+  // Dismiss a single error card
+  const dismissError = (fileName: string) => {
+    setUploadProgress((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(fileName);
+      return newMap;
+    });
+  };
+
+  // Retry a failed upload
+  const handleRetry = async (fileName: string) => {
+    const item = uploadProgress.get(fileName);
+    if (!item?.file) return;
+
+    // Update status to uploading
+    setUploadProgress((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(fileName, {
+        ...item,
+        status: "uploading",
+        progress: 50,
+        error: undefined,
+      });
+      return newMap;
+    });
+
+    const formData = new FormData();
+    formData.append("file", item.file);
+
+    try {
+      const res = await fetch("/api/admin/media", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        // Mark as done
+        setUploadProgress((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(fileName, {
+            ...item,
+            status: "done",
+            progress: 100,
+            error: undefined,
+            file: undefined, // Clear file reference
+          });
+          return newMap;
+        });
+        
+        // Refresh media list
+        await fetchMedia();
+
+        // Clear after delay
+        setTimeout(() => {
+          setUploadProgress((prev) => {
+            const newMap = new Map(prev);
+            const current = newMap.get(fileName);
+            if (current?.status === "done") {
+              newMap.delete(fileName);
+            }
+            return newMap;
+          });
+        }, 3000);
+      } else {
+        const errorMsg = getUploadErrorMessage(res.status, fileName);
+        setUploadProgress((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(fileName, {
+            ...item,
+            status: "error",
+            progress: 0,
+            error: errorMsg,
+          });
+          return newMap;
+        });
+      }
+    } catch (error) {
+      console.error("Retry upload error:", error);
+      setUploadProgress((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(fileName, {
+          ...item,
+          status: "error",
+          progress: 0,
+          error: "Network error. Please check your connection.",
+        });
+        return newMap;
+      });
+    }
+  };
+
   const typeFilterLabels: Record<FilterType, string> = {
     all: "All media items",
     images: "Images",
@@ -578,6 +672,30 @@ export default function MediaLibraryPage() {
 
                 {(item.status === "compressing" || item.status === "uploading") && (
                   <span className="text-xs text-muted-foreground">{item.progress}%</span>
+                )}
+
+                {/* Retry and Dismiss buttons for errors */}
+                {item.status === "error" && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {item.file && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRetry(item.fileName)}
+                        className="h-7 px-2 text-xs"
+                      >
+                        Retry
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => dismissError(item.fileName)}
+                      className="h-7 w-7"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
 
