@@ -35,7 +35,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
       const hasMultiple = validMedia.length > 1;
       const maxHeight = window.innerHeight * (hasMultiple ? 0.75 : 0.8);
       const containerWidth = containerRef.current.offsetWidth;
-      const padding = window.innerWidth >= 768 ? 160 : 32;
+      const padding = window.innerWidth >= 768 ? 80 : 32;
       const availableWidth = containerWidth - padding;
       const neededHeight = availableWidth / tallestAspectRatio;
 
@@ -182,7 +182,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
           {validMedia.map((item, index) => (
             <div
               key={item.id}
-              className="flex items-center justify-center px-4 md:px-20"
+              className="flex items-center justify-center p-4"
               style={{ width: `${100 / validMedia.length}%` }}
             >
               {item.mime.startsWith("video/") ? (
@@ -239,7 +239,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
 
       {hasMultiple && (
         <div
-          className="w-full flex items-center justify-center py-4 bg-white"
+          className="w-full flex items-center justify-center bg-white"
           style={{ gap: "6px" }}
         >
           {validMedia.map((_, index) => (

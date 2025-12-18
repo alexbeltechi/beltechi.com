@@ -42,9 +42,14 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     })
   );
 
-  // Filter categories to only those used in posts and shown on homepage
-  const categories = allCategoriesData
+  // Categories for tabs (only those shown on homepage)
+  const tabCategories = allCategoriesData
     .filter((cat) => postCategoryIds.has(cat.id) && cat.showOnHomepage !== false)
+    .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
+
+  // All categories used in posts (for label lookup in grid)
+  const allPostCategories = allCategoriesData
+    .filter((cat) => postCategoryIds.has(cat.id))
     .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
   // Get media for filtered posts
@@ -63,8 +68,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   return (
     <main>
-      <CategoryTabs categories={categories} />
-      <PostGrid posts={posts} mediaMap={mediaMap} categories={categories} />
+      <CategoryTabs categories={tabCategories} />
+      <PostGrid posts={posts} mediaMap={mediaMap} categories={allPostCategories} />
     </main>
   );
 }

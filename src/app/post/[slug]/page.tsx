@@ -68,7 +68,7 @@ export default async function PostPage({ params }: PostPageProps) {
       </div>
 
       {/* Main content with top padding */}
-      <div className="pt-14 flex flex-col items-center gap-4">
+      <div className="pt-6 flex flex-col items-center gap-4">
         {/* Carousel Section */}
         <div className="w-full flex flex-col items-center gap-4">
           <PostCarousel media={orderedMedia} initialIndex={initialCarouselIndex} />

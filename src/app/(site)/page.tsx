@@ -37,9 +37,14 @@ export default async function HomePage() {
     })
   );
 
-  // Filter categories to only those used in posts and shown on homepage, preserving their order
-  const categories = allCategories
+  // Categories for tabs (only those shown on homepage)
+  const tabCategories = allCategories
     .filter((cat) => postCategoryIds.has(cat.id) && cat.showOnHomepage !== false)
+    .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
+
+  // All categories used in posts (for label lookup in grid)
+  const allPostCategories = allCategories
+    .filter((cat) => postCategoryIds.has(cat.id))
     .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
   return (
@@ -48,8 +53,8 @@ export default async function HomePage() {
       <HeroSection />
       
       {/* Category Tabs + Masonry Grid */}
-      <CategoryTabs categories={categories} />
-      <PostGrid posts={posts} mediaMap={mediaMap} categories={categories} />
+      <CategoryTabs categories={tabCategories} />
+      <PostGrid posts={posts} mediaMap={mediaMap} categories={allPostCategories} />
       
       {/* Services/About Section */}
       <ServicesSection />
