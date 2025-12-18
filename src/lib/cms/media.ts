@@ -66,11 +66,19 @@ async function loadIndex(): Promise<MediaIndex> {
  */
 async function saveIndex(index: MediaIndex, message?: string): Promise<void> {
   const storage = getStorage();
-  await storage.write(
-    MEDIA_INDEX_PATH,
-    JSON.stringify(index, null, 2),
-    message || "Update media index"
-  );
+  try {
+    console.log(`[Media] Saving index to: ${MEDIA_INDEX_PATH}`);
+    console.log(`[Media] Index has ${index.items.length} items`);
+    await storage.write(
+      MEDIA_INDEX_PATH,
+      JSON.stringify(index, null, 2),
+      message || "Update media index"
+    );
+    console.log(`[Media] Index saved successfully`);
+  } catch (error) {
+    console.error(`[Media] Failed to save index:`, error);
+    throw error;
+  }
 }
 
 /**

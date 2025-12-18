@@ -31,6 +31,7 @@ export class GitHubStorage {
    * Read a file from the repository
    */
   async readFile(filePath: string): Promise<GitHubFile> {
+    console.log(`[GitHub] Reading file: ${filePath} from ${this.owner}/${this.repo}@${this.branch}`);
     try {
       const { data } = await this.octokit.repos.getContent({
         owner: this.owner,
@@ -43,12 +44,14 @@ export class GitHubStorage {
         throw new Error(`Path is not a file: ${filePath}`);
       }
 
+      console.log(`[GitHub] File read successfully, SHA: ${data.sha}`);
       return {
         content: Buffer.from(data.content, 'base64').toString('utf-8'),
         sha: data.sha,
         path: filePath,
       };
     } catch (error: unknown) {
+      console.error(`[GitHub] Read failed for ${filePath}:`, error);
       if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
         throw new Error(`File not found: ${filePath}`);
       }
@@ -77,25 +80,35 @@ export class GitHubStorage {
     message: string,
     sha?: string
   ): Promise<void> {
+    console.log(`[GitHub] Writing file: ${filePath}`);
+    console.log(`[GitHub] Repo: ${this.owner}/${this.repo}, Branch: ${this.branch}`);
+    
     // Get current SHA if not provided (needed for updates)
     if (!sha) {
       try {
         const existing = await this.readFile(filePath);
         sha = existing.sha;
-      } catch {
-        // File doesn't exist, that's fine for creates
+        console.log(`[GitHub] Found existing file with SHA: ${sha}`);
+      } catch (error) {
+        console.log(`[GitHub] File doesn't exist yet, will create`);
       }
     }
 
-    await this.octokit.repos.createOrUpdateFileContents({
-      owner: this.owner,
-      repo: this.repo,
-      path: filePath,
-      message,
-      content: Buffer.from(content).toString('base64'),
-      branch: this.branch,
-      ...(sha && { sha }),
-    });
+    try {
+      await this.octokit.repos.createOrUpdateFileContents({
+        owner: this.owner,
+        repo: this.repo,
+        path: filePath,
+        message,
+        content: Buffer.from(content).toString('base64'),
+        branch: this.branch,
+        ...(sha && { sha }),
+      });
+      console.log(`[GitHub] File written successfully`);
+    } catch (error) {
+      console.error(`[GitHub] Write failed:`, error);
+      throw error;
+    }
   }
 
   /**
