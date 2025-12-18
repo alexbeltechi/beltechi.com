@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getEntry, updateEntry, deleteEntry } from "@/lib/cms/entries";
 import { getCollection } from "@/lib/cms/schema";
 
@@ -56,6 +57,12 @@ export async function PATCH(
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
+    // Revalidate public pages when entry is published or unpublished
+    if (body.status === "published" || result.entry?.status === "published") {
+      revalidatePath("/", "layout");
+      revalidatePath(`/post/${result.entry?.slug || slug}`, "page");
+    }
+
     return NextResponse.json({ data: result.entry });
   } catch {
     return NextResponse.json(
@@ -81,10 +88,19 @@ export async function DELETE(
     );
   }
 
+  // Get entry before deleting to check if it was published
+  const entry = await getEntry(collection, slug);
+  const wasPublished = entry?.status === "published";
+
   const result = await deleteEntry(collection, slug);
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 404 });
+  }
+
+  // Revalidate public pages if the entry was published
+  if (wasPublished) {
+    revalidatePath("/", "layout");
   }
 
   return NextResponse.json({ success: true });

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { listEntries, createEntry } from "@/lib/cms/entries";
 import { getCollection } from "@/lib/cms/schema";
 import type { EntryStatus } from "@/lib/cms/types";
@@ -67,6 +68,11 @@ export async function POST(
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    // Revalidate public pages when publishing
+    if (body.status === "published") {
+      revalidatePath("/", "layout");
     }
 
     return NextResponse.json({ data: result.entry }, { status: 201 });
