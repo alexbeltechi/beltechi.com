@@ -335,12 +335,12 @@ export interface MediaIndex {
 // Image processing settings
 export interface ImageProcessingSettings {
   variants: {
-    display: { maxEdge: number; quality: number };
-    large: { maxEdge: number; quality: number };
-    medium: { maxEdge: number; quality: number };
-    thumb: { maxEdge: number; quality: number };
+    display?: { maxEdge: number; quality: number };
+    large?: { maxEdge: number; quality: number };
+    medium?: { maxEdge: number; quality: number };
+    thumb?: { maxEdge: number; quality: number };
   };
-  defaultActiveVariant: "display" | "large" | "medium";
+  defaultActiveVariant: "original" | "display" | "large" | "medium";
   generateWebP: boolean;
 }
 
