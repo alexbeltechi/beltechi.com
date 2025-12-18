@@ -23,7 +23,7 @@
       "required": true,
       "label": "Media",
       "description": "Drag to reorder. Supports images and videos.",
-      "max": 10,
+      "max": 20,
       "accept": ["image/*", "video/*"]
     },
     {

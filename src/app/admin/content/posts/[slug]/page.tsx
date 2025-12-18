@@ -910,7 +910,7 @@ export default function EditPostPage() {
         onClose={() => setShowMediaPicker(false)}
         onSelect={handleMediaLibrarySelect}
         multiple={true}
-        maxSelect={10 - media.length}
+        maxSelect={20 - media.length}
         accept={["image/*", "video/*"]}
       />
 
