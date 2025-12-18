@@ -36,8 +36,21 @@ yarn-error.log*
 # vercel
 .vercel
 
-# Local uploads (production uses Vercel Blob)
+# ===========================================
+# CMS Content (managed via production only)
+# ===========================================
+# Entries (posts, articles) - managed via production CMS
+/content/entries/
+
+# Media index - managed via production CMS
+/content/media/
+
+# Uploaded files - managed via production CMS
 /public/uploads/
+
+# Keep tracked:
+# - /content/collections/ (schemas are code)
+# - /content/categories.json (default categories)
 
 # typescript
 *.tsbuildinfo

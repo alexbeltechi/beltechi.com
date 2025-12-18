@@ -287,12 +287,6 @@ export default function MediaLibraryPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {!bulkSelectMode && (
-            <Button variant="outline" onClick={() => setBulkSelectMode(true)}>
-              Bulk select
-            </Button>
-          )}
-
           <Button asChild>
             <label className="cursor-pointer">
               <Upload className="mr-2 h-4 w-4" />
@@ -314,46 +308,10 @@ export default function MediaLibraryPage() {
         </div>
       </div>
 
-      {/* Bulk Select Bar */}
-      {bulkSelectMode && (
-        <Card className="flex flex-row items-center gap-3 p-3">
-          <Button
-            onClick={createPostWithMedia}
-            disabled={selectedIds.size === 0}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Post
-          </Button>
-
-          <Button
-            variant="destructive"
-            onClick={handleBulkDelete}
-            disabled={selectedIds.size === 0 || deleting}
-          >
-            {deleting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="mr-2 h-4 w-4" />
-            )}
-            Delete
-          </Button>
-
-          <Button variant="outline" onClick={cancelBulkSelect}>
-            Cancel
-          </Button>
-
-          <span className="ml-auto text-sm text-muted-foreground">{selectedIds.size} selected</span>
-
-          <Button variant="link" size="sm" onClick={selectAll}>
-            {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
-          </Button>
-        </Card>
-      )}
-
       {/* Filters Row */}
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
@@ -400,7 +358,50 @@ export default function MediaLibraryPage() {
             ))}
           </SelectContent>
         </Select>
+
+        {/* Bulk Select */}
+        {!bulkSelectMode && (
+          <Button variant="outline" onClick={() => setBulkSelectMode(true)}>
+            Bulk select
+          </Button>
+        )}
       </div>
+
+      {/* Bulk Select Bar */}
+      {bulkSelectMode && (
+        <Card className="flex flex-row items-center gap-3 p-3">
+          <Button
+            onClick={createPostWithMedia}
+            disabled={selectedIds.size === 0}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Post
+          </Button>
+
+          <Button
+            variant="destructive"
+            onClick={handleBulkDelete}
+            disabled={selectedIds.size === 0 || deleting}
+          >
+            {deleting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="mr-2 h-4 w-4" />
+            )}
+            Delete
+          </Button>
+
+          <Button variant="outline" onClick={cancelBulkSelect}>
+            Cancel
+          </Button>
+
+          <span className="ml-auto text-sm text-muted-foreground">{selectedIds.size} selected</span>
+
+          <Button variant="link" size="sm" onClick={selectAll}>
+            {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
+          </Button>
+        </Card>
+      )}
 
       {/* Main Grid */}
       <div
