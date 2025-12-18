@@ -330,8 +330,24 @@ export default function MediaLibraryPage() {
   };
 
   const handleDelete = async (id: string) => {
-    setMedia(media.filter((m) => m.id !== id));
-    if (selectedMediaId === id) setSelectedMediaId(null);
+    const item = media.find((m) => m.id === id);
+    const itemName = item?.title || item?.originalName || "this file";
+    
+    if (!confirm(`Are you sure you want to permanently delete "${itemName}"? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        throw new Error("Failed to delete");
+      }
+      setMedia(media.filter((m) => m.id !== id));
+      if (selectedMediaId === id) setSelectedMediaId(null);
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Failed to delete the file. Please try again.");
+    }
   };
 
   const handleBulkDelete = async () => {
