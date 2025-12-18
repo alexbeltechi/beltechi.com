@@ -95,3 +95,4 @@ npx shadcn@latest add <component-name> --overwrite
 - Check existing patterns in the codebase
 - Follow established file structure and naming conventions
 - Don't over-engineer - keep solutions simple and focused
+

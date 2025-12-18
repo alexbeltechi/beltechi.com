@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       label: body.label || body.name,
       color: body.color || "#64748B",
       description: body.description,
+      showOnHomepage: body.showOnHomepage ?? true,
     });
 
     return NextResponse.json({ data: category }, { status: 201 });

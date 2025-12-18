@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Loader2, X, Check, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X, Check, Tag, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 interface Category {
@@ -13,6 +14,8 @@ interface Category {
   label: string;
   color: string;
   description?: string;
+  order?: number;
+  showOnHomepage?: boolean;
 }
 
 export default function CategoriesPage() {
@@ -25,8 +28,11 @@ export default function CategoriesPage() {
     label: "",
     color: "#64748B",
     description: "",
+    showOnHomepage: true,
   });
   const [saving, setSaving] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -114,6 +120,50 @@ export default function CategoriesPage() {
       alert(
         error instanceof Error ? error.message : "Failed to delete category"
       );
+    }
+  }
+
+  // Drag and drop handlers
+  function handleDragStart(index: number) {
+    setDraggedIndex(index);
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newCategories = [...categories];
+    const draggedItem = newCategories[draggedIndex];
+    newCategories.splice(draggedIndex, 1);
+    newCategories.splice(index, 0, draggedItem);
+    setCategories(newCategories);
+    setDraggedIndex(index);
+  }
+
+  async function handleDragEnd() {
+    if (draggedIndex === null) return;
+    setDraggedIndex(null);
+    
+    // Save new order to API
+    setReordering(true);
+    try {
+      const orderedIds = categories.map((c) => c.id);
+      const res = await fetch("/api/admin/categories/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: orderedIds }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error);
+      }
+    } catch (error) {
+      console.error("Failed to save order:", error);
+      // Refetch to restore original order on error
+      await fetchCategories();
+    } finally {
+      setReordering(false);
     }
   }
 
@@ -211,6 +261,19 @@ export default function CategoriesPage() {
               />
             </div>
 
+            <div className="flex items-center justify-between">
+              <Label htmlFor="new-showOnHomepage" className="cursor-pointer">
+                Show on homepage
+              </Label>
+              <Switch
+                id="new-showOnHomepage"
+                checked={newCategory.showOnHomepage ?? true}
+                onCheckedChange={(checked) =>
+                  setNewCategory({ ...newCategory, showOnHomepage: checked })
+                }
+              />
+            </div>
+
             <div className="flex justify-end gap-3 pt-2">
               <Button
                 variant="ghost"
@@ -220,6 +283,7 @@ export default function CategoriesPage() {
                     label: "",
                     color: "#64748B",
                     description: "",
+                    showOnHomepage: true,
                   });
                 }}
               >
@@ -242,7 +306,7 @@ export default function CategoriesPage() {
       )}
 
       {/* Categories List */}
-      <Card className="overflow-hidden !py-0 !gap-0">
+      <Card className={cn("overflow-hidden !py-0 !gap-0 transition-opacity", reordering && "opacity-70")}>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -266,10 +330,19 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {categories.map((category) => (
+            {categories.map((category, index) => (
               <div
                 key={category.id}
-                className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
+                draggable={editingId !== category.id}
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  "flex items-center gap-3 p-4 transition-all",
+                  editingId !== category.id && "cursor-grab active:cursor-grabbing",
+                  draggedIndex === index && "opacity-50 bg-accent",
+                  draggedIndex !== index && "hover:bg-accent/50"
+                )}
               >
                 {editingId === category.id ? (
                   // Edit mode
@@ -309,6 +382,18 @@ export default function CategoriesPage() {
                       }
                       placeholder="Description"
                     />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={`edit-showOnHomepage-${category.id}`} className="text-sm cursor-pointer">
+                        Show on homepage
+                      </Label>
+                      <Switch
+                        id={`edit-showOnHomepage-${category.id}`}
+                        checked={editForm.showOnHomepage ?? category.showOnHomepage ?? true}
+                        onCheckedChange={(checked) =>
+                          setEditForm({ ...editForm, showOnHomepage: checked })
+                        }
+                      />
+                    </div>
                     <div className="flex justify-end gap-2 pt-1">
                       <Button
                         variant="ghost"
@@ -338,29 +423,43 @@ export default function CategoriesPage() {
                 ) : (
                   // View mode
                   <>
-                    <div className="flex items-center gap-4">
+                    {/* Drag Handle */}
+                    <div className="shrink-0 text-muted-foreground">
+                      <GripVertical className="w-5 h-5" />
+                    </div>
+
+                    {/* Category Info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div
                         className="w-5 h-5 rounded-full shrink-0"
                         style={{ backgroundColor: category.color }}
                       />
-                      <div>
-                        <p className="font-medium text-sm">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">
                           {category.label}
                         </p>
                         {category.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">
                             {category.description}
                           </p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingId(category.id);
-                          setEditForm({});
+                          setEditForm({
+                            label: category.label,
+                            color: category.color,
+                            description: category.description,
+                            showOnHomepage: category.showOnHomepage ?? true,
+                          });
                         }}
                       >
                         <Pencil className="w-4 h-4" />
@@ -368,7 +467,10 @@ export default function CategoriesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteCategory(category.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCategory(category.id);
+                        }}
                         className="hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="w-4 h-4" />

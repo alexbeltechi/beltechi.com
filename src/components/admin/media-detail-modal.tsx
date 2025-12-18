@@ -11,6 +11,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,9 @@ interface MediaDetailModalProps {
   mediaId: string | null;
   onClose: () => void;
   onDelete?: (id: string) => void;
+  onReplace?: (id: string) => void;
   showDelete?: boolean;
+  showReplace?: boolean;
   onNavigate?: (direction: "prev" | "next") => void;
   canNavigatePrev?: boolean;
   canNavigateNext?: boolean;
@@ -38,7 +41,9 @@ export function MediaDetailModal({
   mediaId,
   onClose,
   onDelete,
+  onReplace,
   showDelete = false,
+  showReplace = false,
   onNavigate,
   canNavigatePrev = false,
   canNavigateNext = false,
@@ -448,28 +453,40 @@ export function MediaDetailModal({
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-4 border-t border-border">
-                  <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex-1"
-                  >
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Check className="w-4 h-4 mr-2" />
-                    )}
-                    Save changes
-                  </Button>
-                  {showDelete && (
+                <div className="space-y-3 pt-4 border-t border-border">
+                  {showReplace && onReplace && (
                     <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={handleDelete}
+                      variant="outline"
+                      onClick={() => onReplace(item.id)}
+                      className="w-full"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Replace image
                     </Button>
                   )}
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex-1"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4 mr-2" />
+                      )}
+                      Save changes
+                    </Button>
+                    {showDelete && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={handleDelete}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

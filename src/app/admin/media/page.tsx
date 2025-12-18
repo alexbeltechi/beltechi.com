@@ -16,6 +16,7 @@ import type { MediaItem } from "@/lib/cms/types";
 import { formatRelativeTime } from "@/lib/utils";
 import { ImageOptionsMenu } from "@/components/admin/image-options-menu";
 import { MediaDetailModal } from "@/components/admin/media-detail-modal";
+import { MediaPicker } from "@/components/admin/media-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -52,6 +53,10 @@ export default function MediaLibraryPage() {
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  
+  // Replace functionality
+  const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
+  const [showReplacePicker, setShowReplacePicker] = useState(false);
 
   const fetchMedia = useCallback(async () => {
     try {
@@ -272,6 +277,28 @@ export default function MediaLibraryPage() {
     navigator.clipboard.writeText(text);
   };
 
+  const handleReplaceFromMenu = (id: string) => {
+    setReplaceTargetId(id);
+    setShowReplacePicker(true);
+  };
+
+  const handleReplaceFromModal = (id: string) => {
+    setSelectedMediaId(null); // Close the detail modal
+    setReplaceTargetId(id);
+    setShowReplacePicker(true);
+  };
+
+  const handleReplaceSelect = (items: MediaItem[]) => {
+    if (items.length > 0 && replaceTargetId) {
+      // In media library context, "replace" means we're swapping the position
+      // of the old item with the new selected item in the UI view
+      // For now, we just select the new item to view it
+      setSelectedMediaId(items[0].id);
+    }
+    setReplaceTargetId(null);
+    setShowReplacePicker(false);
+  };
+
   const typeFilterLabels: Record<FilterType, string> = {
     all: "All media items",
     images: "Images",
@@ -280,9 +307,9 @@ export default function MediaLibraryPage() {
   };
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="flex flex-col min-h-[calc(100vh-120px)] pb-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 lg:mb-6">
         <div>
           <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">
             Media Library
@@ -315,7 +342,7 @@ export default function MediaLibraryPage() {
       </div>
 
       {/* Filters Row */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4 lg:mb-6">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -336,90 +363,144 @@ export default function MediaLibraryPage() {
           )}
         </div>
 
-        {/* Type Filter */}
-        <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as FilterType)}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="All media items" />
-          </SelectTrigger>
-          <SelectContent>
-            {(["all", "images", "video", "unattached"] as FilterType[]).map((type) => (
-              <SelectItem key={type} value={type}>
-                {typeFilterLabels[type]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Type, Date, Select - stacked on mobile, inline on desktop */}
+        <div className="flex flex-row gap-2">
+          {/* Type Filter */}
+          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as FilterType)}>
+            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px]">
+              <SelectValue placeholder="All media items" />
+            </SelectTrigger>
+            <SelectContent>
+              {(["all", "images", "video", "unattached"] as FilterType[]).map((type) => (
+                <SelectItem key={type} value={type}>
+                  {typeFilterLabels[type]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Date Filter */}
-        <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="All dates" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All dates</SelectItem>
-            {availableMonths.map(([key, label]) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {/* Date Filter */}
+          <Select value={dateFilter} onValueChange={setDateFilter}>
+            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px]">
+              <SelectValue placeholder="All dates" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All dates</SelectItem>
+              {availableMonths.map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Bulk Select */}
-        {!bulkSelectMode && (
-          <Button variant="outline" onClick={() => setBulkSelectMode(true)}>
-            Bulk select
-          </Button>
-        )}
+          {/* Select Button */}
+          {!bulkSelectMode && (
+            <Button variant="outline" className="shrink-0" onClick={() => setBulkSelectMode(true)}>
+              Select
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Bulk Select Bar */}
       {bulkSelectMode && (
-        <Card className="flex flex-row items-center gap-3 p-3">
-          <Button
-            onClick={createPostWithMedia}
-            disabled={selectedIds.size === 0}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Post
-          </Button>
+        <Card className="flex flex-col gap-3 p-3 mb-4 lg:mb-6">
+          {/* Mobile: stacked layout */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            {/* Row 1: Create Post + Delete */}
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                onClick={createPostWithMedia}
+                disabled={selectedIds.size === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Post
+              </Button>
 
-          <Button
-            variant="destructive"
-            onClick={handleBulkDelete}
-            disabled={selectedIds.size === 0 || deleting}
-          >
-            {deleting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="mr-2 h-4 w-4" />
-            )}
-            Delete
-          </Button>
+              <Button
+                className="flex-1"
+                variant="destructive"
+                onClick={handleBulkDelete}
+                disabled={selectedIds.size === 0 || deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Delete
+              </Button>
+            </div>
 
-          <Button variant="outline" onClick={cancelBulkSelect}>
-            Cancel
-          </Button>
+            {/* Row 2: Unused + Select all */}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={selectAllUnused}>
+                Unused
+              </Button>
 
-          <span className="ml-auto text-sm text-muted-foreground">{selectedIds.size} selected</span>
+              <Button variant="outline" className="flex-1" onClick={selectAll}>
+                {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
+              </Button>
+            </div>
 
-          <Button variant="link" size="sm" onClick={selectAllUnused}>
-            Select all unused
-          </Button>
+            {/* Row 3: Cancel + count */}
+            <div className="flex items-center justify-between">
+              <Button variant="outline" onClick={cancelBulkSelect}>
+                Cancel
+              </Button>
+              <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
+            </div>
+          </div>
 
-          <Button variant="link" size="sm" onClick={selectAll}>
-            {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
-          </Button>
+          {/* Desktop: horizontal layout */}
+          <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-3">
+            <Button
+              onClick={createPostWithMedia}
+              disabled={selectedIds.size === 0}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Post
+            </Button>
+
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={selectedIds.size === 0 || deleting}
+            >
+              {deleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Delete
+            </Button>
+
+            <Button variant="outline" onClick={cancelBulkSelect}>
+              Cancel
+            </Button>
+
+            <span className="ml-auto text-sm text-muted-foreground">{selectedIds.size} selected</span>
+
+            <Button variant="outline" size="sm" onClick={selectAllUnused}>
+              Unused
+            </Button>
+
+            <Button variant="outline" size="sm" onClick={selectAll}>
+              {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
+            </Button>
+          </div>
         </Card>
       )}
 
-      {/* Main Grid */}
+      {/* Main Grid - Drag Drop Zone */}
       <div
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`rounded-xl transition-colors ${
+        className={`flex-1 rounded-xl transition-colors ${
           dragActive ? "bg-accent" : ""
         }`}
       >
@@ -432,16 +513,42 @@ export default function MediaLibraryPage() {
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mb-3" />
             <p className="text-muted-foreground">Uploading & processing...</p>
           </div>
-        ) : filteredMedia.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 lg:py-20">
-            <Upload className="w-12 h-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground mb-2">
-              {media.length === 0
-                ? "Drag & drop files here or click upload"
-                : "No media matches your filters"}
+        ) : filteredMedia.length === 0 && media.length === 0 ? (
+          <Card className="flex flex-col items-center justify-center py-16 lg:py-20 text-center !gap-0">
+            <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Upload className="w-7 h-7 lg:w-8 lg:h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No media yet</h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              Drag & drop files here or click upload
             </p>
-            <p className="text-xs text-muted-foreground">
-              {media.length === 0 ? "Supports images and videos" : "Try adjusting your search or filters"}
+            <Button
+              asChild
+              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              <label className="cursor-pointer">
+                <Upload className="mr-2 h-4 w-4" />
+                Upload
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleUpload(e.target.files);
+                      e.target.value = "";
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </Button>
+          </Card>
+        ) : filteredMedia.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 lg:py-20 text-center">
+            <p className="text-foreground font-medium mb-1">No results found</p>
+            <p className="text-muted-foreground text-sm">
+              Try adjusting your search or filters
             </p>
           </div>
         ) : (
@@ -456,62 +563,81 @@ export default function MediaLibraryPage() {
                     setSelectedMediaId(item.id);
                   }
                 }}
-                className={`relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer group transition-all ${
-                  bulkSelectMode && selectedIds.has(item.id)
-                    ? "ring-2 ring-primary"
-                    : "ring-1 ring-border hover:ring-foreground/30"
-                }`}
+                className="cursor-pointer group"
               >
-                {item.mime.startsWith("image/") ? (
-                  <img
-                    src={item.variants?.thumb?.url || item.url}
-                    alt={item.alt || item.originalName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <Film className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                )}
-
-                {/* Bulk Select Checkbox */}
-                {bulkSelectMode && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <Checkbox
-                      checked={selectedIds.has(item.id)}
-                      onCheckedChange={() => toggleSelect(item.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-5 w-5 border-2 border-white bg-white/20 backdrop-blur-sm shadow-md data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-primary"
-                    />
-                  </div>
-                )}
-
-                {/* Three-dot menu - visible on hover when not in bulk mode */}
-                {!bulkSelectMode && (
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ImageOptionsMenu
-                      onEdit={() => setSelectedMediaId(item.id)}
-                      onCopyUrl={() => copyToClipboard(item.url)}
-                      onDelete={() => handleDelete(item.id)}
-                    />
-                  </div>
-                )}
-
-                {/* Type badge */}
-                <div className="absolute top-2 left-2">
+                {/* Image Square */}
+                <div
+                  className={`relative aspect-square bg-muted rounded-lg overflow-hidden transition-all ${
+                    bulkSelectMode && selectedIds.has(item.id)
+                      ? "ring-2 ring-primary"
+                      : "ring-1 ring-border group-hover:ring-foreground/30"
+                  }`}
+                >
                   {item.mime.startsWith("image/") ? (
-                    <Image className="w-4 h-4 text-white drop-shadow-md" />
+                    <img
+                      src={item.variants?.thumb?.url || item.url}
+                      alt={item.alt || item.originalName}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <Film className="w-4 h-4 text-white drop-shadow-md" />
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <Film className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
+
+                  {/* Bulk Select Checkbox */}
+                  {bulkSelectMode && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onCheckedChange={() => toggleSelect(item.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-5 w-5 border-2 border-white bg-white/20 backdrop-blur-sm shadow-md data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-primary"
+                      />
+                    </div>
+                  )}
+
+                  {/* Three-dot menu - visible on hover when not in bulk mode */}
+                  {!bulkSelectMode && (
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ImageOptionsMenu
+                        onEdit={() => setSelectedMediaId(item.id)}
+                        onCreatePost={() => router.push(`/admin/content/posts/new?media=${item.id}`)}
+                        onCopyUrl={() => copyToClipboard(item.url)}
+                        onReplace={() => handleReplaceFromMenu(item.id)}
+                        onDelete={() => handleDelete(item.id)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Type badge */}
+                  <div className="absolute top-2 left-2">
+                    {item.mime.startsWith("image/") ? (
+                      <Image className="w-4 h-4 text-white drop-shadow-md" />
+                    ) : (
+                      <Film className="w-4 h-4 text-white drop-shadow-md" />
+                    )}
+                  </div>
+
+                  {/* Unattached indicator */}
+                  {!usedMediaIds.has(item.id) && (
+                    <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-amber-500 rounded text-[10px] text-white font-medium">
+                      Unused
+                    </div>
                   )}
                 </div>
 
-                {/* Unattached indicator */}
-                {!usedMediaIds.has(item.id) && (
-                  <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-amber-500 rounded text-[10px] text-white font-medium">
-                    Unused
-                  </div>
-                )}
+                {/* File Info */}
+                <div className="mt-2 px-0.5">
+                  {item.title && (
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {item.title}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {item.filename}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -524,12 +650,26 @@ export default function MediaLibraryPage() {
           mediaId={selectedMediaId}
           onClose={() => setSelectedMediaId(null)}
           onDelete={handleDelete}
+          onReplace={handleReplaceFromModal}
           showDelete={true}
+          showReplace={true}
           onNavigate={handleNavigate}
           canNavigatePrev={canGoPrev}
           canNavigateNext={canGoNext}
         />
       )}
+
+      {/* Replace Media Picker */}
+      <MediaPicker
+        isOpen={showReplacePicker}
+        onClose={() => {
+          setShowReplacePicker(false);
+          setReplaceTargetId(null);
+        }}
+        onSelect={handleReplaceSelect}
+        multiple={false}
+        accept={["image/*", "video/*"]}
+      />
     </div>
   );
 }

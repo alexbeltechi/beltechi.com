@@ -74,10 +74,14 @@ export default function EditPostPage() {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [mediaDetailId, setMediaDetailId] = useState<string | null>(null);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  const [showReplacePicker, setShowReplacePicker] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [publishDialog, setPublishDialog] = useState(false);
   const [unpublishDialog, setUnpublishDialog] = useState(false);
+  const [updateDialog, setUpdateDialog] = useState(false);
+  const [updatePublishDialog, setUpdatePublishDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setAsCover = (index: number) => {
@@ -156,9 +160,12 @@ export default function EditPostPage() {
   const handleSaveAndNavigate = async () => {
     const saveStatus = entry?.status === "published" ? "published" : "draft";
     await handleSave(saveStatus);
+    setAllowNavigation(true);
     setShowUnsavedModal(false);
     if (pendingNavUrl) {
-      window.location.href = pendingNavUrl;
+      setTimeout(() => {
+        window.location.href = pendingNavUrl;
+      }, 0);
     }
   };
 
@@ -176,6 +183,31 @@ export default function EditPostPage() {
       mediaId: item.id,
     }));
     setMedia((prev) => [...prev, ...newMedia].slice(0, 10));
+  };
+
+  const handleReplaceMedia = (index: number) => {
+    setReplaceIndex(index);
+    setShowReplacePicker(true);
+  };
+
+  const handleReplaceSelect = (items: MediaItem[]) => {
+    if (items.length > 0 && replaceIndex !== null) {
+      const newItem: MediaPreview = {
+        id: Math.random().toString(36).slice(2),
+        url: items[0].url,
+        type: items[0].mime.startsWith("video/") ? "video" : "image",
+        isExisting: true,
+        mediaId: items[0].id,
+      };
+      
+      setMedia((prev) => {
+        const updated = [...prev];
+        updated[replaceIndex] = newItem;
+        return updated;
+      });
+    }
+    setReplaceIndex(null);
+    setShowReplacePicker(false);
   };
 
   // Fetch entry data
@@ -438,6 +470,7 @@ export default function EditPostPage() {
       setSaving(false);
       setPublishDialog(false);
       setUnpublishDialog(false);
+      setUpdatePublishDialog(false);
     }
   };
 
@@ -649,6 +682,7 @@ export default function EditPostPage() {
                             navigator.clipboard.writeText(item.url)
                           }
                           onSetCover={() => setAsCover(index)}
+                          onReplace={() => handleReplaceMedia(index)}
                           onDelete={() => removeMedia(item.id)}
                           isCover={index === coverIndex}
                           showCoverOption={true}
@@ -813,7 +847,7 @@ export default function EditPostPage() {
           <Button
             onClick={() => {
               if (entry.status === "published") {
-                handleSave("published");
+                setUpdatePublishDialog(true);
               } else {
                 setPublishDialog(true);
               }
@@ -877,6 +911,18 @@ export default function EditPostPage() {
         onSelect={handleMediaLibrarySelect}
         multiple={true}
         maxSelect={10 - media.length}
+        accept={["image/*", "video/*"]}
+      />
+
+      {/* Replace Media Picker */}
+      <MediaPicker
+        isOpen={showReplacePicker}
+        onClose={() => {
+          setShowReplacePicker(false);
+          setReplaceIndex(null);
+        }}
+        onSelect={handleReplaceSelect}
+        multiple={false}
         accept={["image/*", "video/*"]}
       />
 
@@ -953,6 +999,25 @@ export default function EditPostPage() {
             <AlertDialogAction onClick={() => handleSave("draft")}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Unpublish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Update & Publish Confirmation Dialog */}
+      <AlertDialog open={updatePublishDialog} onOpenChange={setUpdatePublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update & publish?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will update your post and keep it published on your site.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleSave("published")}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update & Publish
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

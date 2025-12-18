@@ -1,82 +1,165 @@
 {
   "categories": [
     {
-      "id": "photography",
-      "label": "Photography",
-      "color": "#3B82F6",
-      "description": "Photos and visual work"
-    },
-    {
       "id": "design",
       "label": "Design",
       "color": "#8B5CF6",
-      "description": "Design projects and case studies"
+      "description": "Design projects and case studies",
+      "slug": "design",
+      "name": "Design",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:45:14.101Z",
+      "order": 0
     },
     {
-      "id": "film-making",
-      "label": "Film-making",
-      "color": "#EC4899",
-      "description": "Video production and cinematography"
-    },
-    {
-      "id": "note",
-      "label": "Note",
-      "color": "#F59E0B",
-      "description": "Quick thoughts and notes"
-    },
-    {
-      "id": "life",
-      "label": "Life",
-      "color": "#10B981",
-      "description": "Personal updates and moments"
+      "id": "photography",
+      "label": "Photography",
+      "color": "#3B82F6",
+      "description": "Photos and visual work",
+      "slug": "photography",
+      "name": "Photography",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:45:14.101Z",
+      "order": 1
     },
     {
       "id": "clothing",
       "label": "Clothing",
       "color": "#6366F1",
-      "description": "Fashion and apparel"
+      "description": "Fashion and apparel",
+      "slug": "clothing",
+      "name": "Clothing",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:45:14.101Z",
+      "order": 2
     },
     {
-      "id": "travel",
-      "label": "Travel",
-      "color": "#14B8A6",
-      "description": "Travel stories and locations"
+      "id": "life",
+      "label": "Life",
+      "color": "#10B981",
+      "description": "Personal updates and moments",
+      "slug": "life",
+      "name": "Life",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:45:14.101Z",
+      "order": 3
     },
     {
-      "id": "tech",
-      "label": "Tech",
+      "id": "bikes",
+      "slug": "bikes",
+      "name": "Bikes",
+      "label": "Bikes",
       "color": "#64748B",
-      "description": "Technology and gear"
+      "description": "",
+      "order": 4,
+      "createdAt": "2025-12-18T16:44:50.697Z",
+      "updatedAt": "2025-12-18T16:45:14.101Z"
     },
     {
-      "id": "journal",
-      "label": "Journal",
-      "color": "#0EA5E9",
-      "description": "Long-form journal entries"
-    },
-    {
-      "id": "tutorials",
-      "label": "Tutorials",
-      "color": "#22C55E",
-      "description": "How-to guides and tutorials"
+      "id": "film-making",
+      "label": "Film-making",
+      "color": "#EC4899",
+      "description": "Video production and cinematography",
+      "slug": "film-making",
+      "name": "Film-making",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:45:14.101Z",
+      "order": 5
     },
     {
       "id": "behind-the-scenes",
-      "label": "Behind the Scenes",
-      "color": "#A855F7",
-      "description": "Process and making-of content"
+      "label": "BTS",
+      "slug": "behind-the-scenes",
+      "name": "BTS",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:19.081Z",
+      "color": "#14B8A6",
+      "order": 6,
+      "description": "Behind the scenes content",
+      "showOnHomepage": false
     },
     {
       "id": "gear",
       "label": "Gear",
       "color": "#EF4444",
-      "description": "Equipment reviews and setups"
+      "description": "Equipment reviews and setups",
+      "slug": "gear",
+      "name": "Gear",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:25.095Z",
+      "order": 7,
+      "showOnHomepage": false
+    },
+    {
+      "id": "journal",
+      "label": "Journal",
+      "color": "#0EA5E9",
+      "description": "Long-form journal entries",
+      "slug": "journal",
+      "name": "Journal",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:27.431Z",
+      "order": 8,
+      "showOnHomepage": false
+    },
+    {
+      "id": "fashion",
+      "slug": "fashion",
+      "name": "Fashion",
+      "label": "Fashion",
+      "color": "#64748B",
+      "order": 9,
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:29.351Z",
+      "showOnHomepage": false
+    },
+    {
+      "id": "note",
+      "label": "Note",
+      "color": "#F59E0B",
+      "description": "Quick thoughts and notes",
+      "slug": "note",
+      "name": "Note",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:31.352Z",
+      "order": 10,
+      "showOnHomepage": false
+    },
+    {
+      "id": "tech",
+      "label": "Tech",
+      "color": "#64748B",
+      "description": "Technology and gear",
+      "slug": "tech",
+      "name": "Tech",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:33.474Z",
+      "order": 11,
+      "showOnHomepage": false
+    },
+    {
+      "id": "travel",
+      "label": "Travel",
+      "color": "#14B8A6",
+      "description": "Travel stories and locations",
+      "slug": "travel",
+      "name": "Travel",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:36.055Z",
+      "order": 12,
+      "showOnHomepage": false
+    },
+    {
+      "id": "tutorials",
+      "label": "Tutorials",
+      "color": "#22C55E",
+      "description": "How-to guides and tutorials",
+      "slug": "tutorials",
+      "name": "Tutorials",
+      "createdAt": "2025-12-18T14:48:07.732Z",
+      "updatedAt": "2025-12-18T16:51:39.568Z",
+      "order": 13,
+      "showOnHomepage": false
     }
   ]
 }
-
-
-
-
-
-

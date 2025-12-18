@@ -42,6 +42,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       label: body.label,
       color: body.color,
       description: body.description,
+      showOnHomepage: body.showOnHomepage,
     });
 
     return NextResponse.json({ data: category });

@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { MoreVertical, Pencil, Copy, Star, Trash2, Check } from "lucide-react";
+import { MoreVertical, Pencil, Plus, Copy, Star, Trash2, Check, RefreshCw } from "lucide-react";
 
 interface ImageOptionsMenuProps {
   onEdit?: () => void;
+  onCreatePost?: () => void;
   onCopyUrl?: () => void;
   onSetCover?: () => void;
+  onReplace?: () => void;
   onDelete: () => void;
   isCover?: boolean;
   showCoverOption?: boolean;
@@ -16,9 +18,11 @@ interface ImageOptionsMenuProps {
 
 export function ImageOptionsMenu({
   onEdit,
+  onCreatePost,
   onCopyUrl,
   onDelete,
   onSetCover,
+  onReplace,
   isCover = false,
   showCoverOption = false,
   className = "",
@@ -110,6 +114,20 @@ export function ImageOptionsMenu({
         </button>
       )}
 
+      {onCreatePost && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onCreatePost();
+            setOpen(false);
+          }}
+          className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2.5"
+        >
+          <Plus className="w-4 h-4 text-zinc-500" />
+          Create post
+        </button>
+      )}
+
       {onCopyUrl && (
         <button
           onClick={(e) => {
@@ -150,6 +168,20 @@ export function ImageOptionsMenu({
             className={`w-4 h-4 ${isCover ? "fill-amber-400 text-amber-400" : "text-zinc-500"}`}
           />
           {isCover ? "Cover image" : "Set as cover"}
+        </button>
+      )}
+
+      {onReplace && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onReplace();
+            setOpen(false);
+          }}
+          className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2.5"
+        >
+          <RefreshCw className="w-4 h-4 text-zinc-500" />
+          Replace
         </button>
       )}
 

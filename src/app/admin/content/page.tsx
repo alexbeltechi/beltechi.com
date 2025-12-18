@@ -9,6 +9,7 @@ import {
   Image,
   MoreHorizontal,
   Pencil,
+  Copy,
   Eye,
   EyeOff,
   Trash2,
@@ -19,6 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -49,6 +51,10 @@ function ContentListPageContent() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Update URL when tab changes
   const handleFilterChange = (newFilter: string) => {
@@ -232,13 +238,246 @@ function ContentListPageContent() {
     }
   };
 
+  // Handle duplicate
+  const handleDuplicate = async (entry: Entry) => {
+    setActionLoading(entry.id);
+    try {
+      const res = await fetch(
+        `/api/admin/collections/${entry.collection}/entries/${entry.slug}/duplicate`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to duplicate");
+
+      // Refresh the entries list
+      const [postsRes, articlesRes] = await Promise.all([
+        fetch("/api/admin/collections/posts/entries"),
+        fetch("/api/admin/collections/articles/entries"),
+      ]);
+
+      const postsData = await postsRes.json();
+      const articlesData = await articlesRes.json();
+
+      const allEntries = [
+        ...(postsData.data || []),
+        ...(articlesData.data || []),
+      ].sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
+      setEntries(allEntries);
+    } catch (error) {
+      console.error("Failed to duplicate:", error);
+      alert("Failed to duplicate entry");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Select mode handlers
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const cancelSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === filteredEntries.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredEntries.map((e) => e.id)));
+    }
+  };
+
+  const selectAllUnpublished = () => {
+    const unpublishedIds = filteredEntries
+      .filter((e) => e.status !== "published")
+      .map((e) => e.id);
+    setSelectedIds(new Set(unpublishedIds));
+  };
+
+  // Bulk actions
+  const handleBulkPublish = async () => {
+    if (selectedIds.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to publish ${selectedIds.size} entries?`)) {
+      return;
+    }
+    
+    setActionLoading("bulk");
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(async (id) => {
+          const entry = entries.find((e) => e.id === id);
+          if (entry && entry.status !== "published") {
+            await fetch(
+              `/api/admin/collections/${entry.collection}/entries/${entry.slug}`,
+              {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "published" }),
+              }
+            );
+          }
+        })
+      );
+      
+      // Refresh entries
+      setEntries(
+        entries.map((e) =>
+          selectedIds.has(e.id) ? { ...e, status: "published" as const } : e
+        )
+      );
+      cancelSelectMode();
+    } catch (error) {
+      console.error("Failed to publish:", error);
+      alert("Failed to publish some entries");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleBulkUnpublish = async () => {
+    if (selectedIds.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to unpublish ${selectedIds.size} entries?`)) {
+      return;
+    }
+    
+    setActionLoading("bulk");
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(async (id) => {
+          const entry = entries.find((e) => e.id === id);
+          if (entry && entry.status === "published") {
+            await fetch(
+              `/api/admin/collections/${entry.collection}/entries/${entry.slug}`,
+              {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "draft" }),
+              }
+            );
+          }
+        })
+      );
+      
+      // Refresh entries
+      setEntries(
+        entries.map((e) =>
+          selectedIds.has(e.id) ? { ...e, status: "draft" as const } : e
+        )
+      );
+      cancelSelectMode();
+    } catch (error) {
+      console.error("Failed to unpublish:", error);
+      alert("Failed to unpublish some entries");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedIds.size} entries? This cannot be undone.`)) {
+      return;
+    }
+    
+    setActionLoading("bulk");
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(async (id) => {
+          const entry = entries.find((e) => e.id === id);
+          if (entry) {
+            await fetch(
+              `/api/admin/collections/${entry.collection}/entries/${entry.slug}`,
+              { method: "DELETE" }
+            );
+          }
+        })
+      );
+      
+      // Remove deleted from state
+      setEntries(entries.filter((e) => !selectedIds.has(e.id)));
+      cancelSelectMode();
+    } catch (error) {
+      console.error("Failed to delete:", error);
+      alert("Failed to delete some entries");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleBulkDuplicate = async () => {
+    if (selectedIds.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to duplicate ${selectedIds.size} entries?`)) {
+      return;
+    }
+    
+    setActionLoading("bulk");
+    try {
+      const newEntries: Entry[] = [];
+      
+      for (const id of Array.from(selectedIds)) {
+        const entry = entries.find((e) => e.id === id);
+        if (entry) {
+          const res = await fetch(
+            `/api/admin/collections/${entry.collection}/entries/${entry.slug}/duplicate`,
+            { method: "POST" }
+          );
+          
+          if (res.ok) {
+            const data = await res.json();
+            // Fetch the new entry to add to state
+            const newEntryRes = await fetch(
+              `/api/admin/collections/${entry.collection}/entries/${data.slug}`
+            );
+            if (newEntryRes.ok) {
+              const newEntryData = await newEntryRes.json();
+              newEntries.push(newEntryData.data);
+            }
+          }
+        }
+      }
+      
+      // Add new entries to state and sort by date
+      const updatedEntries = [...entries, ...newEntries].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+      setEntries(updatedEntries);
+      
+      // Select the newly duplicated entries instead of exiting select mode
+      const newEntryIds = new Set(newEntries.map((e) => e.id));
+      setSelectedIds(newEntryIds);
+    } catch (error) {
+      console.error("Failed to duplicate:", error);
+      alert("Failed to duplicate some entries");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div className="space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">
-            Content
+            Posts
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Manage your posts and articles
@@ -262,18 +501,160 @@ function ContentListPageContent() {
           </TabsList>
         </Tabs>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="published">Published</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {!selectMode && (
+            <Button variant="outline" onClick={() => setSelectMode(true)}>
+              Select
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Bulk Select Bar */}
+      {selectMode && (
+        <Card className="flex flex-col gap-3 p-3">
+          {/* Mobile: stacked layout */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            {/* Row 1: Publish + Unpublish */}
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                onClick={handleBulkPublish}
+                disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+              >
+                {actionLoading === "bulk" ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="mr-2 h-4 w-4" />
+                )}
+                Publish
+              </Button>
+
+              <Button
+                className="flex-1"
+                variant="outline"
+                onClick={handleBulkUnpublish}
+                disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+              >
+                <EyeOff className="mr-2 h-4 w-4" />
+                Unpublish
+              </Button>
+            </div>
+
+            {/* Row 2: Delete + Duplicate */}
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                variant="destructive"
+                onClick={handleBulkDelete}
+                disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+
+              <Button
+                className="flex-1"
+                variant="outline"
+                onClick={handleBulkDuplicate}
+                disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicate
+              </Button>
+            </div>
+
+            {/* Row 3: Unpublished + Select all */}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={selectAllUnpublished}>
+                Unpublished
+              </Button>
+
+              <Button variant="outline" className="flex-1" onClick={selectAll}>
+                {selectedIds.size === filteredEntries.length ? "Deselect all" : "Select all"}
+              </Button>
+            </div>
+
+            {/* Row 4: Cancel + count */}
+            <div className="flex items-center justify-between">
+              <Button variant="outline" onClick={cancelSelectMode}>
+                Cancel
+              </Button>
+              <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
+            </div>
+          </div>
+
+          {/* Desktop: horizontal layout */}
+          <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-3">
+            <Button
+              onClick={handleBulkPublish}
+              disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+            >
+              {actionLoading === "bulk" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Eye className="mr-2 h-4 w-4" />
+              )}
+              Publish
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleBulkUnpublish}
+              disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+            >
+              <EyeOff className="mr-2 h-4 w-4" />
+              Unpublish
+            </Button>
+
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleBulkDuplicate}
+              disabled={selectedIds.size === 0 || actionLoading === "bulk"}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Duplicate
+            </Button>
+
+            <Button variant="outline" onClick={cancelSelectMode}>
+              Cancel
+            </Button>
+
+            <span className="ml-auto text-sm text-muted-foreground">
+              {selectedIds.size} selected
+            </span>
+
+            <Button variant="outline" size="sm" onClick={selectAllUnpublished}>
+              Unpublished
+            </Button>
+
+            <Button variant="outline" size="sm" onClick={selectAll}>
+              {selectedIds.size === filteredEntries.length ? "Deselect all" : "Select all"}
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Content List */}
       {loading ? (
@@ -312,11 +693,27 @@ function ContentListPageContent() {
             return (
               <Card
                 key={entry.id}
-                className="flex flex-row items-center !gap-3 lg:!gap-4 p-3 lg:p-4 !py-3 lg:!py-4 hover:bg-accent/50 transition-all group"
+                onClick={selectMode ? () => toggleSelect(entry.id) : undefined}
+                className={`flex flex-row items-center !gap-3 lg:!gap-4 p-3 lg:p-4 !py-3 lg:!py-4 transition-all group ${
+                  selectMode 
+                    ? "cursor-pointer hover:bg-accent/50" 
+                    : "hover:bg-accent/50"
+                } ${selectMode && selectedIds.has(entry.id) ? "ring-2 ring-primary" : ""}`}
               >
+                {/* Select Checkbox */}
+                {selectMode && (
+                  <Checkbox
+                    checked={selectedIds.has(entry.id)}
+                    onCheckedChange={() => toggleSelect(entry.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="shrink-0"
+                  />
+                )}
+
                 {/* Thumbnail or Icon */}
                 <Link
-                  href={`/admin/content/${entry.collection}/${entry.slug}`}
+                  href={selectMode ? "#" : `/admin/content/${entry.collection}/${entry.slug}`}
+                  onClick={selectMode ? (e) => e.preventDefault() : undefined}
                   className="shrink-0"
                 >
                   {thumbnail ? (
@@ -338,7 +735,8 @@ function ContentListPageContent() {
 
                 {/* Content */}
                 <Link
-                  href={`/admin/content/${entry.collection}/${entry.slug}`}
+                  href={selectMode ? "#" : `/admin/content/${entry.collection}/${entry.slug}`}
+                  onClick={selectMode ? (e) => e.preventDefault() : undefined}
                   className="flex-1 min-w-0"
                 >
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -389,49 +787,55 @@ function ContentListPageContent() {
                 </div>
 
                 {/* Actions Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={actionLoading === entry.id}
-                    >
-                      {actionLoading === entry.id ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <MoreHorizontal className="w-5 h-5" />
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/admin/content/${entry.collection}/${entry.slug}`}>
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Edit
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleToggleStatus(entry)}>
-                      {entry.status === "published" ? (
-                        <>
-                          <EyeOff className="w-4 h-4 mr-2" />
-                          Unpublish
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Publish
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(entry)}
-                      variant="destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {!selectMode && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={actionLoading === entry.id}
+                      >
+                        {actionLoading === entry.id ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <MoreHorizontal className="w-5 h-5" />
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/admin/content/${entry.collection}/${entry.slug}`}>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicate(entry)}>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleToggleStatus(entry)}>
+                        {entry.status === "published" ? (
+                          <>
+                            <EyeOff className="w-4 h-4 mr-2" />
+                            Unpublish
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Publish
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(entry)}
+                        variant="destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </Card>
             );
           })}

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -22,35 +23,48 @@ export function Header() {
 
   return (
     <>
-      <header className="bg-white border-b border-black">
-        <nav className="flex items-center justify-between px-4 py-3 md:px-6 h-[56px]">
-          <Link href="/" className="text-h1-extrabold" onClick={closeMenu}>
+      <header className="sticky top-0 z-50 bg-white dark:bg-zinc-950">
+        <nav className="flex items-center justify-between px-4 py-3 h-[56px]">
+          {/* Logo - Left */}
+          <Link href="/" className="text-h1-extrabold shrink-0" onClick={closeMenu}>
             BELTECHI
           </Link>
 
-          <div className="hidden items-center gap-4 md:flex">
+          {/* Center Nav - Desktop */}
+          <div className="hidden items-center gap-6 md:flex absolute left-1/2 -translate-x-1/2">
             <Link
               href="/"
-              className="text-body-bold text-black transition-opacity hover:opacity-70"
+              className="text-[15px] font-bold text-black dark:text-white transition-opacity hover:opacity-70"
             >
               Portfolio
             </Link>
             <Link
+              href="/services"
+              className="text-[15px] font-bold text-black dark:text-white transition-opacity hover:opacity-70"
+            >
+              Services
+            </Link>
+            <Link
               href="/about"
-              className="text-body-bold text-black transition-opacity hover:opacity-70"
+              className="text-[15px] font-bold text-black dark:text-white transition-opacity hover:opacity-70"
             >
               About
             </Link>
-            <Link
-              href="/contact"
-              className="text-body-bold text-black transition-opacity hover:opacity-70"
-            >
-              Hire me
-            </Link>
           </div>
 
+          {/* Right Actions - Desktop */}
+          <div className="hidden items-center gap-2 md:flex">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Search className="h-4 w-4" />
+            </Button>
+            <Button className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 rounded-full px-4 h-9">
+              Work with me
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
           <button
-            className="text-body-bold text-black md:hidden"
+            className="text-body-bold text-black dark:text-white md:hidden"
             onClick={() => setMenuOpen(true)}
           >
             Menu
@@ -58,39 +72,43 @@ export function Header() {
         </nav>
       </header>
 
+      {/* Mobile Menu Overlay */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[100] bg-white md:hidden">
-          <div className="flex items-center justify-between px-4 h-[56px] border-b border-black">
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-zinc-950 md:hidden">
+          <div className="flex items-center justify-between px-4 h-[56px]">
             <Link href="/" className="text-h1-extrabold" onClick={closeMenu}>
               BELTECHI
             </Link>
             <button onClick={closeMenu} className="p-2" aria-label="Close menu">
-              <X className="size-6 text-black" strokeWidth={2} />
+              <X className="size-6 text-black dark:text-white" strokeWidth={2} />
             </button>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-4 h-[calc(100vh-56px)]">
+          <div className="flex flex-col items-center justify-center gap-6 h-[calc(100vh-56px)]">
             <Link
               href="/"
-              className="text-body-bold text-black transition-opacity hover:opacity-70"
+              className="text-[15px] font-bold text-black dark:text-white transition-opacity hover:opacity-70"
               onClick={closeMenu}
             >
               Portfolio
             </Link>
             <Link
+              href="/services"
+              className="text-[15px] font-bold text-black dark:text-white transition-opacity hover:opacity-70"
+              onClick={closeMenu}
+            >
+              Services
+            </Link>
+            <Link
               href="/about"
-              className="text-body-bold text-black transition-opacity hover:opacity-70"
+              className="text-[15px] font-bold text-black dark:text-white transition-opacity hover:opacity-70"
               onClick={closeMenu}
             >
               About
             </Link>
-            <Link
-              href="/contact"
-              className="text-body-bold text-black transition-opacity hover:opacity-70"
-              onClick={closeMenu}
-            >
-              Hire me
-            </Link>
+            <Button className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 rounded-full px-6 mt-4">
+              Work with me
+            </Button>
           </div>
         </div>
       )}

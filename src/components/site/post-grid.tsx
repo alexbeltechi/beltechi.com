@@ -5,13 +5,33 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Entry, MediaItem } from "@/lib/cms/types";
 
+interface Category {
+  id: string;
+  slug: string;
+  label: string;
+}
+
 interface PostGridProps {
   posts: Entry[];
   mediaMap: Map<string, MediaItem>;
+  categories: Category[];
 }
 
-export function PostGrid({ posts, mediaMap }: PostGridProps) {
+// Format date as "Aug 7, 2025"
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function PostGrid({ posts, mediaMap, categories }: PostGridProps) {
   const [columns, setColumns] = useState(5);
+
+  // Create category lookup map
+  const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
   useEffect(() => {
     const updateColumns = () => {
@@ -42,6 +62,15 @@ export function PostGrid({ posts, mediaMap }: PostGridProps) {
     return mediaMap.get(mediaIds[0]) || null;
   };
 
+  // Get category labels for a post (max 3)
+  const getPostCategories = (post: Entry): string[] => {
+    const categoryIds = (post.data.categories as string[]) || [];
+    return categoryIds
+      .slice(0, 3)
+      .map((id) => categoryMap.get(id)?.label || id)
+      .filter(Boolean);
+  };
+
   // Distribute posts into columns for masonry effect
   const distributeItems = useCallback(() => {
     const columnArrays: Array<{ post: Entry; media: MediaItem }[]> = Array.from(
@@ -59,7 +88,8 @@ export function PostGrid({ posts, mediaMap }: PostGridProps) {
 
       const shortestColumn = columnHeights.indexOf(Math.min(...columnHeights));
       columnArrays[shortestColumn].push({ post, media });
-      columnHeights[shortestColumn] += 288 / aspectRatio;
+      // Add extra height for title and meta (approx 80px)
+      columnHeights[shortestColumn] += 288 / aspectRatio + 80;
     });
 
     return columnArrays;
@@ -71,8 +101,8 @@ export function PostGrid({ posts, mediaMap }: PostGridProps) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <p className="text-body text-mid-grey">No posts yet</p>
-          <p className="text-body text-light-grey mt-2">
+          <p className="text-body text-zinc-500">No posts yet</p>
+          <p className="text-body text-zinc-400 mt-2">
             Create your first post in the admin panel
           </p>
         </div>
@@ -81,28 +111,48 @@ export function PostGrid({ posts, mediaMap }: PostGridProps) {
   }
 
   return (
-    <div className="flex gap-[10px] px-[10px] pb-[10px]">
+    <div className="flex gap-4 px-4 pb-4">
       {columnArrays.map((columnItems, columnIndex) => (
-        <div key={columnIndex} className="flex flex-1 flex-col gap-[10px]">
+        <div key={columnIndex} className="flex flex-1 flex-col gap-4">
           {columnItems.map(({ post, media }) => {
             const aspectRatio =
               media.width && media.height ? media.width / media.height : 1;
+            const postCategories = getPostCategories(post);
+            const postDate = (post.data.date as string) || post.createdAt;
 
             return (
               <Link
                 key={post.id}
                 href={`/post/${post.slug}`}
-                className="relative block w-full overflow-hidden focus:outline-none rounded-none hover:rounded-[24px] transition-[border-radius] duration-300"
-                style={{ aspectRatio }}
+                className="block group"
               >
-                <Image
-                  src={media.url}
-                  alt={(post.data.title as string) || post.slug}
-                  fill
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-                  className="object-cover"
-                  loading="lazy"
-                />
+                {/* Image */}
+                <div
+                  className="relative w-full overflow-hidden rounded-none group-hover:rounded-[24px] transition-[border-radius] duration-300"
+                  style={{ aspectRatio }}
+                >
+                  <Image
+                    src={media.url}
+                    alt={(post.data.title as string) || post.slug}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                    className="object-cover"
+                    loading="lazy"
+                  />
+                </div>
+
+                {/* Title */}
+                <h3 className="mt-3 text-[15px] font-bold text-black dark:text-white leading-tight">
+                  {(post.data.title as string) || post.slug}
+                </h3>
+
+                {/* Categories + Date */}
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[15px]">
+                  {postCategories.map((cat, idx) => (
+                    <span key={idx} className="text-black dark:text-white">{cat}</span>
+                  ))}
+                  <span className="text-zinc-400">{formatDate(postDate)}</span>
+                </div>
               </Link>
             );
           })}

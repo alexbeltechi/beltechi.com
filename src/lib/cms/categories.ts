@@ -17,6 +17,7 @@ export interface Category {
   parentId?: string; // For hierarchical categories (future)
   image?: string;
   order?: number;
+  showOnHomepage?: boolean; // Whether to show in homepage category tabs
   seo?: {
     title?: string;
     description?: string;
@@ -138,6 +139,7 @@ export async function createCategory(
     parentId: category.parentId,
     image: category.image,
     order: category.order ?? data.categories.length,
+    showOnHomepage: category.showOnHomepage ?? true,
     seo: category.seo,
     createdAt: now,
     updatedAt: now,

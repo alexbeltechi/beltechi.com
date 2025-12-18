@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   X,
   Search,
@@ -8,12 +8,12 @@ import {
   Film,
   Loader2,
   Check,
-  CheckCircle2,
-  Circle,
+  Upload,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface MediaPickerProps {
   isOpen: boolean;
@@ -34,8 +34,11 @@ export function MediaPicker({
 }: MediaPickerProps) {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMedia = useCallback(async () => {
     setLoading(true);
@@ -58,15 +61,98 @@ export function MediaPicker({
     }
   }, [isOpen, fetchMedia]);
 
+  const handleUpload = async (files: FileList | File[]) => {
+    setUploading(true);
+    const uploadedIds: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/admin/media", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data?.id) {
+            uploadedIds.push(data.data.id);
+          }
+        }
+      }
+
+      // Refresh media list
+      await fetchMedia();
+
+      // Auto-select the newly uploaded files
+      if (uploadedIds.length > 0) {
+        if (multiple) {
+          const newSelected = new Set(selectedIds);
+          uploadedIds.forEach((id) => {
+            if (!maxSelect || newSelected.size < maxSelect) {
+              newSelected.add(id);
+            }
+          });
+          setSelectedIds(newSelected);
+        } else {
+          // Single select: select the first uploaded file
+          setSelectedIds(new Set([uploadedIds[0]]));
+        }
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Failed to upload files");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      // Only set inactive if leaving the modal entirely
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX;
+      const y = e.clientY;
+      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+        setDragActive(false);
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      // Filter for valid file types
+      const validFiles = Array.from(e.dataTransfer.files).filter(
+        (file) => file.type.startsWith("image/") || file.type.startsWith("video/")
+      );
+      if (validFiles.length > 0) {
+        handleUpload(validFiles);
+      }
+    }
+  };
+
   // Filter media based on accept types and search
   const filteredMedia = useMemo(() => {
     return media.filter((item) => {
       // Search filter
-      if (
-        searchQuery &&
-        !item.originalName.toLowerCase().includes(searchQuery.toLowerCase())
-      ) {
-        return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesOriginalName = item.originalName?.toLowerCase().includes(query);
+        const matchesFilename = item.filename?.toLowerCase().includes(query);
+        const matchesTitle = item.title?.toLowerCase().includes(query);
+        if (!matchesOriginalName && !matchesFilename && !matchesTitle) {
+          return false;
+        }
       }
 
       // Accept filter
@@ -125,7 +211,15 @@ export function MediaPicker({
       />
 
       {/* Modal */}
-      <div className="relative bg-background border border-border rounded-xl w-full max-w-4xl max-h-[85vh] mx-4 flex flex-col overflow-hidden">
+      <div
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        className={`relative bg-background border border-border rounded-xl w-full max-w-4xl max-h-[85vh] mx-4 flex flex-col overflow-hidden transition-colors ${
+          dragActive ? "ring-2 ring-primary ring-offset-2" : ""
+        }`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
@@ -164,7 +258,17 @@ export function MediaPicker({
         </div>
 
         {/* Media Grid */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-4 relative">
+          {/* Drag overlay */}
+          {dragActive && (
+            <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-lg flex items-center justify-center z-10">
+              <div className="text-center">
+                <Upload className="w-10 h-10 text-primary mx-auto mb-2" />
+                <p className="text-primary font-medium">Drop files to upload</p>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -192,42 +296,56 @@ export function MediaPicker({
                   <div
                     key={item.id}
                     onClick={() => !isDisabled && toggleSelect(item.id)}
-                    className={`relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer transition-all ${
-                      isSelected
-                        ? "ring-2 ring-primary"
-                        : isDisabled
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:ring-2 hover:ring-border"
-                    }`}
+                    className={`cursor-pointer group ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
-                    {item.mime.startsWith("image/") ? (
-                      <img
-                        src={item.url}
-                        alt={item.alt || item.originalName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted">
-                        <Film className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-
-                    {/* Selection indicator */}
-                    <div className="absolute top-2 right-2">
-                      {isSelected ? (
-                        <CheckCircle2 className="w-6 h-6 text-primary fill-primary drop-shadow-md" />
+                    {/* Image Square */}
+                    <div
+                      className={`relative aspect-square bg-muted rounded-lg overflow-hidden transition-all ${
+                        isSelected
+                          ? "ring-2 ring-primary"
+                          : "ring-1 ring-border group-hover:ring-foreground/30"
+                      }`}
+                    >
+                      {item.mime.startsWith("image/") ? (
+                        <img
+                          src={item.variants?.thumb?.url || item.url}
+                          alt={item.alt || item.originalName}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <Circle className="w-6 h-6 text-white/80 drop-shadow-md" />
+                        <div className="w-full h-full flex items-center justify-center bg-muted">
+                          <Film className="w-6 h-6 text-muted-foreground" />
+                        </div>
                       )}
+
+                      {/* Selection checkbox */}
+                      <div className="absolute top-2 right-2">
+                        <Checkbox
+                          checked={isSelected}
+                          className="h-5 w-5 border-2 border-white bg-white/20 backdrop-blur-sm shadow-md data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-primary"
+                        />
+                      </div>
+
+                      {/* Type badge */}
+                      <div className="absolute top-2 left-2">
+                        {item.mime.startsWith("image/") ? (
+                          <Image className="w-4 h-4 text-white drop-shadow-md" />
+                        ) : (
+                          <Film className="w-4 h-4 text-white drop-shadow-md" />
+                        )}
+                      </div>
                     </div>
 
-                    {/* Type badge */}
-                    <div className="absolute top-2 left-2">
-                      {item.mime.startsWith("image/") ? (
-                        <Image className="w-4 h-4 text-white drop-shadow-md" />
-                      ) : (
-                        <Film className="w-4 h-4 text-white drop-shadow-md" />
+                    {/* File Info */}
+                    <div className="mt-2 px-0.5">
+                      {item.title && (
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {item.title}
+                        </p>
                       )}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.filename}
+                      </p>
                     </div>
                   </div>
                 );
@@ -238,9 +356,36 @@ export function MediaPicker({
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-          <span className="text-sm text-muted-foreground">
-            {selectedIds.size} selected
-          </span>
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleUpload(e.target.files);
+                  e.target.value = "";
+                }
+              }}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {uploading ? "Uploading..." : "Upload"}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {selectedIds.size} selected
+            </span>
+          </div>
 
           <div className="flex items-center gap-3">
             <Button
