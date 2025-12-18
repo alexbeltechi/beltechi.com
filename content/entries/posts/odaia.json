@@ -1,0 +1,26 @@
+{
+  "id": "d4a4cad5-3ccd-4fb8-817a-fa821b6f609b",
+  "collection": "posts",
+  "slug": "odaia",
+  "status": "published",
+  "visibility": "public",
+  "createdAt": "2025-12-18T20:40:34.528Z",
+  "updatedAt": "2025-12-18T20:40:34.528Z",
+  "publishedAt": "2025-12-18T20:40:34.528Z",
+  "authorId": null,
+  "data": {
+    "title": "Odaia ",
+    "media": [
+      "95fcc628-c6bc-4d55-82ff-d1cf40358bb9",
+      "9d5dd0e1-3d69-4baf-a3d1-db0d5b9a81f4",
+      "0bd08826-1746-4125-9ecd-65068f953134",
+      "f1458682-11af-46d4-a637-065820ff16c2"
+    ],
+    "coverMediaId": "95fcc628-c6bc-4d55-82ff-d1cf40358bb9",
+    "categories": [
+      "design",
+      "brand"
+    ],
+    "date": "2025-12-18T20:40:33.813Z"
+  }
+}
