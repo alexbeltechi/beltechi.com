@@ -160,6 +160,17 @@
       "updatedAt": "2025-12-18T16:51:39.568Z",
       "order": 13,
       "showOnHomepage": false
+    },
+    {
+      "id": "portrait",
+      "slug": "portrait",
+      "name": "Portrait",
+      "label": "Portrait",
+      "color": "#0EA5E9",
+      "order": 14,
+      "showOnHomepage": true,
+      "createdAt": "2025-12-18T19:49:25.131Z",
+      "updatedAt": "2025-12-18T19:49:25.131Z"
     }
   ]
 }
