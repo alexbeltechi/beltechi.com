@@ -9,11 +9,21 @@ import {
   Loader2,
   Check,
   Upload,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  compressImages,
+  validateFilesForUpload,
+  getUploadErrorMessage,
+  formatFileSize,
+  isCompressibleImage,
+  type CompressionProgress,
+} from "@/lib/image-compression";
 
 interface MediaPickerProps {
   isOpen: boolean;
@@ -22,6 +32,15 @@ interface MediaPickerProps {
   multiple?: boolean;
   accept?: string[]; // e.g., ["image/*", "video/*"]
   maxSelect?: number;
+}
+
+interface UploadProgress {
+  fileName: string;
+  status: "compressing" | "uploading" | "done" | "error";
+  progress: number;
+  originalSize?: number;
+  compressedSize?: number;
+  error?: string;
 }
 
 export function MediaPicker({
@@ -34,11 +53,20 @@ export function MediaPicker({
 }: MediaPickerProps) {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Upload state
+  const [uploadProgress, setUploadProgress] = useState<Map<string, UploadProgress>>(new Map());
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const isUploading = useMemo(() => {
+    return Array.from(uploadProgress.values()).some(
+      (p) => p.status === "compressing" || p.status === "uploading"
+    );
+  }, [uploadProgress]);
 
   const fetchMedia = useCallback(async () => {
     setLoading(true);
@@ -58,28 +86,134 @@ export function MediaPicker({
       fetchMedia();
       setSelectedIds(new Set());
       setSearchQuery("");
+      setUploadProgress(new Map());
+      setUploadError(null);
     }
   }, [isOpen, fetchMedia]);
 
   const handleUpload = async (files: FileList | File[]) => {
-    setUploading(true);
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    // Clear previous errors
+    setUploadError(null);
+
+    // Validate files first
+    const validationError = validateFilesForUpload(fileArray);
+    if (validationError) {
+      setUploadError(validationError);
+      return;
+    }
+
+    // Initialize progress for all files
+    const initialProgress = new Map<string, UploadProgress>();
+    fileArray.forEach((file) => {
+      initialProgress.set(file.name, {
+        fileName: file.name,
+        status: isCompressibleImage(file) ? "compressing" : "uploading",
+        progress: 0,
+        originalSize: file.size,
+      });
+    });
+    setUploadProgress(initialProgress);
+
     const uploadedIds: string[] = [];
 
     try {
-      for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append("file", file);
+      // Compress images first
+      const compressionResults = await compressImages(
+        fileArray,
+        (fileName, progress: CompressionProgress) => {
+          setUploadProgress((prev) => {
+            const newMap = new Map(prev);
+            const existing = newMap.get(fileName);
+            if (existing) {
+              newMap.set(fileName, {
+                ...existing,
+                status: "compressing",
+                progress: Math.round(progress.progress * 0.5), // Compression is first 50%
+                compressedSize: progress.compressedSize,
+              });
+            }
+            return newMap;
+          });
+        }
+      );
 
-        const res = await fetch("/api/admin/media", {
-          method: "POST",
-          body: formData,
+      // Upload compressed files
+      for (let i = 0; i < compressionResults.length; i++) {
+        const result = compressionResults[i];
+        const originalFile = fileArray[i];
+
+        // Update status to uploading
+        setUploadProgress((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(originalFile.name, {
+            fileName: originalFile.name,
+            status: "uploading",
+            progress: 50,
+            originalSize: result.originalSize,
+            compressedSize: result.compressedSize,
+          });
+          return newMap;
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.data?.id) {
-            uploadedIds.push(data.data.id);
+        const formData = new FormData();
+        formData.append("file", result.file);
+
+        try {
+          const res = await fetch("/api/admin/media", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.data?.id) {
+              uploadedIds.push(data.data.id);
+            }
+
+            // Mark as done
+            setUploadProgress((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(originalFile.name, {
+                fileName: originalFile.name,
+                status: "done",
+                progress: 100,
+                originalSize: result.originalSize,
+                compressedSize: result.compressedSize,
+              });
+              return newMap;
+            });
+          } else {
+            // Handle upload error
+            const errorMsg = getUploadErrorMessage(res.status, originalFile.name);
+            setUploadProgress((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(originalFile.name, {
+                fileName: originalFile.name,
+                status: "error",
+                progress: 0,
+                originalSize: result.originalSize,
+                compressedSize: result.compressedSize,
+                error: errorMsg,
+              });
+              return newMap;
+            });
           }
+        } catch (error) {
+          console.error("Upload error:", error);
+          setUploadProgress((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(originalFile.name, {
+              fileName: originalFile.name,
+              status: "error",
+              progress: 0,
+              originalSize: result.originalSize,
+              error: "Network error. Please check your connection.",
+            });
+            return newMap;
+          });
         }
       }
 
@@ -101,11 +235,19 @@ export function MediaPicker({
           setSelectedIds(new Set([uploadedIds[0]]));
         }
       }
+
+      // Clear progress after a delay if all successful
+      const hasErrors = Array.from(uploadProgress.values()).some(
+        (p) => p.status === "error"
+      );
+      if (!hasErrors) {
+        setTimeout(() => {
+          setUploadProgress(new Map());
+        }, 2000);
+      }
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to upload files");
-    } finally {
-      setUploading(false);
+      setUploadError("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -200,6 +342,20 @@ export function MediaPicker({
     onClose();
   };
 
+  const clearError = () => {
+    setUploadError(null);
+    // Also clear error items from progress
+    setUploadProgress((prev) => {
+      const newMap = new Map(prev);
+      for (const [key, value] of newMap) {
+        if (value.status === "error") {
+          newMap.delete(key);
+        }
+      }
+      return newMap;
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -243,6 +399,96 @@ export function MediaPicker({
           </Button>
         </div>
 
+        {/* Error Banner */}
+        {uploadError && (
+          <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-destructive font-medium">{uploadError}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-6 w-6"
+              onClick={clearError}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Upload Progress */}
+        {uploadProgress.size > 0 && (
+          <div className="mx-6 mt-4 space-y-2">
+            {Array.from(uploadProgress.values()).map((item) => (
+              <div
+                key={item.fileName}
+                className={`p-3 rounded-lg border ${
+                  item.status === "error"
+                    ? "bg-destructive/10 border-destructive/20"
+                    : item.status === "done"
+                    ? "bg-green-500/10 border-green-500/20"
+                    : "bg-muted border-border"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {item.status === "compressing" && (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                  {item.status === "uploading" && (
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  )}
+                  {item.status === "done" && (
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  )}
+                  {item.status === "error" && (
+                    <AlertCircle className="w-4 h-4 text-destructive" />
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.status === "compressing" && "Optimizing..."}
+                      {item.status === "uploading" && "Uploading..."}
+                      {item.status === "done" && (
+                        <>
+                          {item.originalSize && item.compressedSize && item.originalSize !== item.compressedSize ? (
+                            <>
+                              {formatFileSize(item.originalSize)} → {formatFileSize(item.compressedSize)}
+                              <span className="text-green-600 ml-1">
+                                ({Math.round((1 - item.compressedSize / item.originalSize) * 100)}% smaller)
+                              </span>
+                            </>
+                          ) : (
+                            item.originalSize && formatFileSize(item.originalSize)
+                          )}
+                        </>
+                      )}
+                      {item.status === "error" && (
+                        <span className="text-destructive">{item.error}</span>
+                      )}
+                    </p>
+                  </div>
+
+                  {(item.status === "compressing" || item.status === "uploading") && (
+                    <span className="text-xs text-muted-foreground">{item.progress}%</span>
+                  )}
+                </div>
+
+                {/* Progress bar */}
+                {(item.status === "compressing" || item.status === "uploading") && (
+                  <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${item.progress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Search */}
         <div className="px-6 py-3 border-b border-border">
           <div className="relative">
@@ -265,6 +511,9 @@ export function MediaPicker({
               <div className="text-center">
                 <Upload className="w-10 h-10 text-primary mx-auto mb-2" />
                 <p className="text-primary font-medium">Drop files to upload</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Images will be automatically optimized
+                </p>
               </div>
             </div>
           )}
@@ -373,14 +622,14 @@ export function MediaPicker({
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
+              disabled={isUploading}
             >
-              {uploading ? (
+              {isUploading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Upload className="w-4 h-4 mr-2" />
               )}
-              {uploading ? "Uploading..." : "Upload"}
+              {isUploading ? "Processing..." : "Upload"}
             </Button>
             <span className="text-sm text-muted-foreground">
               {selectedIds.size} selected
