@@ -171,6 +171,17 @@
       "updatedAt": "2025-12-18T20:03:16.751Z",
       "order": 14,
       "showOnHomepage": false
+    },
+    {
+      "id": "brand",
+      "slug": "brand",
+      "name": "Brand",
+      "label": "Brand",
+      "color": "#10B981",
+      "order": 15,
+      "showOnHomepage": true,
+      "createdAt": "2025-12-18T20:40:20.832Z",
+      "updatedAt": "2025-12-18T20:40:20.832Z"
     }
   ]
 }
