@@ -265,31 +265,21 @@ export async function uploadMedia(
       // Next.js Image component handles dynamic optimization at serve-time
       const activeVariant: MediaItem["activeVariant"] = "original";
 
-      // Get primary URL based on active variant
-      const primaryVariant = activeVariant === "original" ? null : variants[activeVariant];
-      
-      // If no variants were generated (image too small), save as primary
-      let primaryPath = primaryVariant?.path || originalResult.path;
-      let primaryUrl = primaryVariant?.url || originalResult.url;
-      
-      if (!primaryVariant) {
-        const noVariantFilename = buildVariantFilename(baseFilename, shortId, null, ext);
-        const noVariantResult = await saveFile(file, noVariantFilename, "", mime);
-        primaryPath = noVariantResult.path;
-        primaryUrl = noVariantResult.url;
-      }
+      // Save primary file (the uploaded original)
+      const primaryFilename = buildVariantFilename(baseFilename, shortId, null, ext);
+      const primaryResult = await saveFile(file, primaryFilename, "", mime);
 
       const item: MediaItem = {
         id,
-        filename: primaryVariant?.filename || buildVariantFilename(baseFilename, shortId, null, ext),
+        filename: primaryFilename,
         originalName,
         slug: `${baseFilename}-${shortId}`,
-        path: primaryPath,
-        url: primaryUrl,
+        path: primaryResult.path,
+        url: primaryResult.url,
         mime,
-        size: primaryVariant?.size || file.length,
-        width: primaryVariant?.width || processed.original.width,
-        height: primaryVariant?.height || processed.original.height,
+        size: file.length,
+        width: processed.original.width,
+        height: processed.original.height,
         original: {
           filename: originalFilename,
           path: originalResult.path,
