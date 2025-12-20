@@ -243,6 +243,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
               {item.mime.startsWith("video/") ? (
                 <video
                   src={item.url}
+                  poster={item.poster?.url}
                   controls
                   className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain"
                 />

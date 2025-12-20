@@ -226,6 +226,7 @@ export function MediaDetailModal({
                 ) : (
                   <video
                     src={item.url}
+                    poster={item.poster?.url}
                     controls
                     className="max-w-full max-h-[70vh] rounded-lg"
                   />

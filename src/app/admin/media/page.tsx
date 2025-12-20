@@ -1174,6 +1174,12 @@ export default function MediaLibraryPage() {
                       alt={item.alt || item.originalName}
                       className="w-full h-full object-cover"
                     />
+                  ) : item.poster?.url ? (
+                    <img
+                      src={item.poster.url}
+                      alt={item.alt || item.originalName}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-muted">
                       <Film className="w-8 h-8 text-muted-foreground" />

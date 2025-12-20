@@ -297,6 +297,13 @@ export interface MediaItem {
     thumb?: ImageVariant; // 400px - admin/tiny
   };
 
+  // Video poster/thumbnail (first frame extracted as JPG)
+  poster?: {
+    url: string;
+    width: number;
+    height: number;
+  };
+
   // Active variant being served as primary URL
   activeVariant: "original" | "display" | "large" | "medium" | "thumb";
 

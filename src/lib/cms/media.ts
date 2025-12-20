@@ -20,6 +20,7 @@ import {
   getImageDimensions,
   DEFAULT_SETTINGS,
 } from "./image-processing";
+import { extractVideoThumbnail, getVideoMetadata } from "./video-processing";
 import { getStorage } from "./storage";
 import { listEntries, updateEntry } from "./entries";
 import { 
@@ -315,6 +316,38 @@ export async function uploadMedia(
   // Get dimensions for video or non-processed images
   const dimensions = await getImageDimensions(file);
 
+  // Check if this is a video and generate thumbnail
+  const isVideo = mime.startsWith("video/");
+  let poster: MediaItem["poster"] = undefined;
+  let videoMetadata: { width: number; height: number; duration: number } | undefined;
+
+  if (isVideo) {
+    try {
+      // Get video metadata (dimensions, duration)
+      videoMetadata = await getVideoMetadata(file);
+      
+      // Extract thumbnail from first frame
+      const thumbnail = await extractVideoThumbnail(file, {
+        timestamp: 0.5, // 0.5 seconds in to avoid black frames
+        maxWidth: 768,
+        quality: 5,
+      });
+      
+      // Save the thumbnail
+      const posterFilename = buildVariantFilename(sanitizedName, shortId, "poster", ".jpg");
+      const posterResult = await saveFile(thumbnail.buffer, posterFilename, "posters", "image/jpeg");
+      
+      poster = {
+        url: posterResult.url,
+        width: thumbnail.width,
+        height: thumbnail.height,
+      };
+    } catch (error) {
+      console.error("Video thumbnail extraction failed:", error);
+      // Continue without poster - not a critical error
+    }
+  }
+
   const item: MediaItem = {
     id,
     filename,
@@ -324,16 +357,18 @@ export async function uploadMedia(
     url: fileResult.url,
     mime,
     size: file.length,
-    width: dimensions?.width,
-    height: dimensions?.height,
+    width: isVideo ? videoMetadata?.width : dimensions?.width,
+    height: isVideo ? videoMetadata?.height : dimensions?.height,
+    duration: isVideo ? videoMetadata?.duration : undefined,
     original: {
       filename,
       path: fileResult.path,
       url: fileResult.url,
-      width: dimensions?.width || 0,
-      height: dimensions?.height || 0,
+      width: (isVideo ? videoMetadata?.width : dimensions?.width) || 0,
+      height: (isVideo ? videoMetadata?.height : dimensions?.height) || 0,
       size: file.length,
     },
+    poster,
     activeVariant: "original",
     title: sanitizedName.replace(/-/g, " "),
     alt: "",
@@ -445,6 +480,11 @@ export async function deleteMedia(
   const primaryFile = useUrl ? item.url : item.path;
   if (primaryFile && !filesToDelete.includes(primaryFile)) {
     filesToDelete.push(primaryFile);
+  }
+
+  // Video poster thumbnail
+  if (item.poster?.url) {
+    filesToDelete.push(item.poster.url);
   }
 
   // Delete all files
