@@ -980,6 +980,33 @@
       "alt": "",
       "createdAt": "2025-12-20T15:43:50.760Z",
       "hash": "d69125d005f7e9b5d53ecaa8438a5e20"
+    },
+    {
+      "id": "25ebf8b2-78c2-467f-a023-eeef98e7e38a",
+      "filename": "dscf8160-21ec.webp",
+      "originalName": "DSCF8160.jpg",
+      "slug": "dscf8160-21ec",
+      "path": "uploads/dscf8160-21ec.webp",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/dscf8160-21ec.webp",
+      "mime": "image/webp",
+      "size": 240530,
+      "width": 1666,
+      "height": 2500,
+      "variants": {
+        "thumb": {
+          "filename": "dscf8160-21ec-thumb.webp",
+          "path": "uploads/variants/dscf8160-21ec-thumb.webp",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/dscf8160-21ec-thumb.webp",
+          "width": 512,
+          "height": 768,
+          "size": 22702
+        }
+      },
+      "activeVariant": "display",
+      "title": "dscf8160",
+      "alt": "",
+      "createdAt": "2025-12-20T15:44:22.868Z",
+      "hash": "932bb6229b40b40020c5dc82e255b6bb"
     }
   ]
 }
