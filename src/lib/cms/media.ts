@@ -334,9 +334,9 @@ export async function uploadMedia(
       });
       
       if (thumbnail) {
-        // Save the thumbnail
+        // Save the thumbnail in variants folder
         const posterFilename = buildVariantFilename(sanitizedName, shortId, "poster", ".jpg");
-        const posterResult = await saveFile(thumbnail.buffer, posterFilename, "posters", "image/jpeg");
+        const posterResult = await saveFile(thumbnail.buffer, posterFilename, "variants", "image/jpeg");
         
         poster = {
           url: posterResult.url,
