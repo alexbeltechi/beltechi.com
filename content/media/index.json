@@ -1223,29 +1223,6 @@
       "alt": "",
       "createdAt": "2025-12-20T15:45:02.499Z",
       "hash": "f6ba5ed55f93a1840d9183f4119f9771"
-    },
-    {
-      "id": "6aa0838f-df67-4f2b-b248-340da3750931",
-      "filename": "bike-alan-compressed2-61ac.mp4",
-      "originalName": "Bike Alan compressed2.mp4",
-      "slug": "bike-alan-compressed2-61ac",
-      "path": "uploads/bike-alan-compressed2-61ac.mp4",
-      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/bike-alan-compressed2-61ac.mp4",
-      "mime": "video/mp4",
-      "size": 3854825,
-      "original": {
-        "filename": "bike-alan-compressed2-61ac.mp4",
-        "path": "uploads/bike-alan-compressed2-61ac.mp4",
-        "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/bike-alan-compressed2-61ac.mp4",
-        "width": 0,
-        "height": 0,
-        "size": 3854825
-      },
-      "activeVariant": "original",
-      "title": "bike alan compressed2",
-      "alt": "",
-      "createdAt": "2025-12-20T15:58:56.746Z",
-      "hash": "2615ae54a0e6a9e819ac5005e54170a1"
     }
   ]
 }
