@@ -316,7 +316,8 @@ function NewPostPageContent() {
           });
 
           if (!uploadRes.ok) {
-            throw new Error("Failed to upload media");
+            const errorData = await uploadRes.json();
+            throw new Error(errorData.error || "Failed to upload media");
           }
 
           const uploadData = await uploadRes.json();
