@@ -481,12 +481,28 @@ function ContentListPageContent() {
       {/* Header - 56px tall */}
       <div className="border-b px-4 h-14 flex items-center">
         <PageHeader title="Posts" count={filteredEntries.length}>
-          <Button asChild>
-            <Link href="/admin/content/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Create post
-            </Link>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create post
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href="/admin/content/posts/new">
+                  <Image className="w-4 h-4 mr-2" />
+                  New Post
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/content/articles/new">
+                  <FileText className="w-4 h-4 mr-2" />
+                  New Article
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </PageHeader>
       </div>
 
