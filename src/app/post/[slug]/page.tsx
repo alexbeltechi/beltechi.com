@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { getEntry } from "@/lib/cms/entries";
 import { getMediaByIds } from "@/lib/cms/media";
 import { listCategories } from "@/lib/cms/categories";
 import { PostCarousel } from "@/components/site/post-carousel";
+import { Button } from "@/components/ui/button";
 import type { PostEntry } from "@/lib/cms/types";
 
 interface PostPageProps {
@@ -56,21 +57,34 @@ export default async function PostPage({ params }: PostPageProps) {
 
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950">
-      {/* Back button - fixed position */}
+      {/* Back button - fixed 16px from top and left on all breakpoints */}
       <div className="fixed top-4 left-4 z-50">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-0.5 px-3 py-2 bg-white dark:bg-zinc-900 rounded-full text-body text-black dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+        {/* Mobile: icon only */}
+        <Button
+          asChild
+          size="icon"
+          className="sm:hidden bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0"
         >
-          <ArrowLeft className="w-5 h-5" />
-          Back
-        </Link>
+          <Link href="/">
+            <ChevronLeft className="w-5 h-5" />
+          </Link>
+        </Button>
+        {/* Larger breakpoints: icon + label */}
+        <Button
+          asChild
+          className="hidden sm:inline-flex bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0 gap-1 pl-2 pr-4"
+        >
+          <Link href="/">
+            <ChevronLeft className="w-5 h-5" />
+            Back
+          </Link>
+        </Button>
       </div>
 
-      {/* Main content with top padding */}
-      <div className="pt-6 flex flex-col items-center gap-4">
-        {/* Carousel Section */}
-        <div className="w-full flex flex-col items-center gap-4">
+      {/* Main content - 16px top margin, full width */}
+      <div className="flex flex-col items-center gap-4 pt-4">
+        {/* Carousel Section - full width to edge */}
+        <div className="w-full">
           <PostCarousel media={orderedMedia} initialIndex={initialCarouselIndex} />
         </div>
 

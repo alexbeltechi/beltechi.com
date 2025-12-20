@@ -15,37 +15,10 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [containerHeight, setContainerHeight] = useState<number | null>(null);
   const dragStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const minSwipeDistance = 50;
-
-  // Find tallest aspect ratio
-  const tallestAspectRatio = Math.min(
-    ...validMedia.map((m) =>
-      m.width && m.height ? m.width / m.height : 1
-    )
-  );
-
-  useEffect(() => {
-    const calculateHeight = () => {
-      if (!containerRef.current) return;
-
-      const hasMultiple = validMedia.length > 1;
-      const maxHeight = window.innerHeight * (hasMultiple ? 0.75 : 0.8);
-      const containerWidth = containerRef.current.offsetWidth;
-      const padding = window.innerWidth >= 768 ? 80 : 32;
-      const availableWidth = containerWidth - padding;
-      const neededHeight = availableWidth / tallestAspectRatio;
-
-      setContainerHeight(Math.min(neededHeight, maxHeight));
-    };
-
-    calculateHeight();
-    window.addEventListener("resize", calculateHeight);
-    return () => window.removeEventListener("resize", calculateHeight);
-  }, [validMedia.length, tallestAspectRatio]);
 
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < validMedia.length - 1;
@@ -151,16 +124,12 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     return `translateX(${baseOffset + dragPercent}%)`;
   };
 
-  const maxVh = hasMultiple ? "calc(80vh - 40px)" : "80vh";
-
   return (
-    <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden">
+    <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden lg:px-4">
       <div
         ref={containerRef}
-        className="relative w-full select-none"
+        className="relative w-full select-none overflow-hidden aspect-[3/4] lg:aspect-video"
         style={{
-          height: containerHeight ? `${containerHeight}px` : maxVh,
-          maxHeight: maxVh,
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",
         }}
         onTouchStart={onTouchStart}
@@ -182,14 +151,14 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
           {validMedia.map((item, index) => (
             <div
               key={item.id}
-              className="flex items-center justify-center p-4"
+              className="relative h-full flex items-center justify-center overflow-hidden"
               style={{ width: `${100 / validMedia.length}%` }}
             >
               {item.mime.startsWith("video/") ? (
                 <video
                   src={item.url}
                   controls
-                  className="max-h-full max-w-full object-contain"
+                  className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain"
                 />
               ) : (
                 <Image
@@ -197,8 +166,8 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                   alt={item.alt || item.originalName}
                   width={item.width || 1200}
                   height={item.height || 800}
-                  sizes="(max-width: 768px) 100vw, 80vw"
-                  className="max-h-full max-w-full object-contain pointer-events-none"
+                  sizes="(max-width: 1024px) 100vw, 80vw"
+                  className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:h-auto lg:object-contain pointer-events-none"
                   priority={index === currentIndex}
                   draggable={false}
                 />
@@ -212,26 +181,26 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
             <button
               onClick={goToPrevious}
               disabled={!canGoPrevious}
-              className={`absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 bg-white dark:bg-zinc-900 border border-black dark:border-zinc-700 transition-all ${
+              className={`absolute left-4 top-1/2 -translate-y-1/2 hidden lg:flex items-center justify-center w-9 h-9 rounded-md bg-white text-black dark:bg-black dark:text-white transition-all ${
                 canGoPrevious
-                  ? "hover:bg-neutral-100 dark:hover:bg-zinc-800 opacity-100"
+                  ? "hover:bg-gray-100 dark:hover:bg-zinc-900 opacity-100"
                   : "opacity-30 cursor-not-allowed"
               }`}
               aria-label="Previous"
             >
-              <ChevronLeft className="w-5 h-5 text-black dark:text-white" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={goToNext}
               disabled={!canGoNext}
-              className={`absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 bg-white dark:bg-zinc-900 border border-black dark:border-zinc-700 transition-all ${
+              className={`absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex items-center justify-center w-9 h-9 rounded-md bg-white text-black dark:bg-black dark:text-white transition-all ${
                 canGoNext
-                  ? "hover:bg-neutral-100 dark:hover:bg-zinc-800 opacity-100"
+                  ? "hover:bg-gray-100 dark:hover:bg-zinc-900 opacity-100"
                   : "opacity-30 cursor-not-allowed"
               }`}
               aria-label="Next"
             >
-              <ChevronRight className="w-5 h-5 text-black dark:text-white" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </>
         )}
@@ -239,7 +208,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
 
       {hasMultiple && (
         <div
-          className="w-full flex items-center justify-center bg-white dark:bg-zinc-950"
+          className="w-full flex items-center justify-center bg-white dark:bg-zinc-950 pt-4"
           style={{ gap: "6px" }}
         >
           {validMedia.map((_, index) => (
