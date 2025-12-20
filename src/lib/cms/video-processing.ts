@@ -3,40 +3,52 @@ import os from "os";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
 
+// Check if we're in a serverless environment (Vercel)
+const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
 // Dynamically import ffmpeg to avoid bundling issues
 let ffmpeg: typeof import("fluent-ffmpeg") | null = null;
 let ffmpegReady = false;
+let ffmpegInitialized = false;
 
 async function initFfmpeg(): Promise<boolean> {
-  if (ffmpegReady) return true;
-  if (ffmpeg === null) {
-    try {
-      // Dynamic imports to avoid Next.js bundling issues
-      const ffmpegModule = await import("fluent-ffmpeg");
-      ffmpeg = ffmpegModule.default || ffmpegModule;
-      
-      // Try to find ffmpeg in system PATH first, then fall back to installer
-      const { execSync } = await import("child_process");
-      try {
-        // Check if ffmpeg is in PATH
-        execSync("ffmpeg -version", { stdio: "ignore" });
-        ffmpegReady = true;
-      } catch {
-        // Try the installer package
-        try {
-          const installer = await import("@ffmpeg-installer/ffmpeg");
-          ffmpeg.setFfmpegPath(installer.path);
-          ffmpegReady = true;
-        } catch (installerError) {
-          console.warn("ffmpeg not available - video thumbnails will be skipped");
-          return false;
-        }
-      }
-    } catch (err) {
-      console.warn("Failed to initialize ffmpeg:", err);
-      return false;
-    }
+  // Skip entirely in serverless environments - ffmpeg binaries don't work there
+  if (isServerless) {
+    return false;
   }
+
+  if (ffmpegInitialized) return ffmpegReady;
+  ffmpegInitialized = true;
+
+  try {
+    // Dynamic imports to avoid Next.js bundling issues
+    const ffmpegModule = await import("fluent-ffmpeg");
+    ffmpeg = ffmpegModule.default || ffmpegModule;
+    
+    // Try to find ffmpeg in system PATH first
+    const { execSync } = await import("child_process");
+    try {
+      // Check if ffmpeg is in PATH
+      execSync("ffmpeg -version", { stdio: "ignore" });
+      ffmpegReady = true;
+      console.log("ffmpeg found in system PATH");
+    } catch {
+      // Try the installer package
+      try {
+        const installer = await import("@ffmpeg-installer/ffmpeg");
+        ffmpeg.setFfmpegPath(installer.path);
+        ffmpegReady = true;
+        console.log("ffmpeg loaded from installer package");
+      } catch {
+        console.warn("ffmpeg not available - video thumbnails will be skipped");
+        return false;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to initialize ffmpeg:", err);
+    return false;
+  }
+  
   return ffmpegReady;
 }
 
