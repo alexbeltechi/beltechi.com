@@ -1071,8 +1071,9 @@ export default function MediaLibraryPage() {
                   </div>
 
                   {/* Checkbox - Top Right */}
-                  <div
-                    className="absolute top-2 right-2 z-10"
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 z-10 w-9 h-9 flex items-center justify-center rounded-md bg-black/40 hover:bg-black/60 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleSelect(item.id);
@@ -1081,8 +1082,9 @@ export default function MediaLibraryPage() {
                     <Checkbox
                       checked={selectedIds.has(item.id)}
                       onCheckedChange={() => toggleSelect(item.id)}
+                      className="border-white data-[state=checked]:bg-white data-[state=checked]:text-black"
                     />
-                  </div>
+                  </button>
 
                   {/* Three-dot menu - visible on hover when no items selected */}
                   {selectedIds.size === 0 && (
