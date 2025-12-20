@@ -196,7 +196,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden lg:px-4">
       <div
         ref={containerRef}
-        className="relative w-full select-none overflow-hidden touch-pan-y"
+        className="relative w-full select-none overflow-hidden"
         style={{
           aspectRatio: isDesktop ? "16/9" : `${mobileAspectRatio}`,
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",

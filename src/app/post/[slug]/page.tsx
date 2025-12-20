@@ -81,8 +81,8 @@ export default async function PostPage({ params }: PostPageProps) {
         </Button>
       </div>
 
-      {/* Main content - 16px top margin, full width */}
-      <div className="flex flex-col items-center gap-4 pt-4">
+      {/* Main content - 16px top margin on desktop only */}
+      <div className="flex flex-col items-center gap-4 lg:pt-4">
         {/* Carousel Section - full width to edge */}
         <div className="w-full">
           <PostCarousel media={orderedMedia} initialIndex={initialCarouselIndex} />
