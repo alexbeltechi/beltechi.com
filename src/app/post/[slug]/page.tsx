@@ -66,7 +66,7 @@ export default async function PostPage({ params }: PostPageProps) {
           className="sm:hidden bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0"
         >
           <Link href="/">
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-6 h-6" />
           </Link>
         </Button>
         {/* Larger breakpoints: icon + label */}
@@ -75,7 +75,7 @@ export default async function PostPage({ params }: PostPageProps) {
           className="hidden sm:inline-flex bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0 gap-1 pl-2 pr-4"
         >
           <Link href="/">
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-6 h-6" />
             Back
           </Link>
         </Button>

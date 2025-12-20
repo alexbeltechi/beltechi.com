@@ -16,9 +16,12 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef<number | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const directionLock = useRef<"horizontal" | "vertical" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const minSwipeDistance = 50;
+  const directionThreshold = 10; // pixels to determine direction
 
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < validMedia.length - 1;
@@ -37,20 +40,25 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     if (dragStartX.current === null) {
       setIsDragging(false);
       setDragOffset(0);
+      directionLock.current = null;
       return;
     }
 
     const distance = -dragOffset;
 
-    if (distance > minSwipeDistance && canGoNext) {
-      goToNext();
-    } else if (distance < -minSwipeDistance && canGoPrevious) {
-      goToPrevious();
+    if (directionLock.current === "horizontal") {
+      if (distance > minSwipeDistance && canGoNext) {
+        goToNext();
+      } else if (distance < -minSwipeDistance && canGoPrevious) {
+        goToPrevious();
+      }
     }
 
     setIsDragging(false);
     setDragOffset(0);
     dragStartX.current = null;
+    dragStartY.current = null;
+    directionLock.current = null;
   }, [dragOffset, canGoNext, canGoPrevious, goToNext, goToPrevious]);
 
   useEffect(() => {
@@ -71,22 +79,49 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   const onTouchStart = (e: React.TouchEvent) => {
     if (validMedia.length <= 1) return;
     dragStartX.current = e.targetTouches[0].clientX;
+    dragStartY.current = e.targetTouches[0].clientY;
+    directionLock.current = null;
     setIsDragging(true);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || dragStartX.current === null) return;
+    if (!isDragging || dragStartX.current === null || dragStartY.current === null) return;
+    
     const currentX = e.targetTouches[0].clientX;
-    let offset = currentX - dragStartX.current;
+    const currentY = e.targetTouches[0].clientY;
+    const deltaX = currentX - dragStartX.current;
+    const deltaY = currentY - dragStartY.current;
 
-    if (
-      (currentIndex === 0 && offset > 0) ||
-      (currentIndex === validMedia.length - 1 && offset < 0)
-    ) {
-      offset = offset * 0.3;
+    // Determine direction lock if not yet set
+    if (directionLock.current === null) {
+      if (Math.abs(deltaX) > directionThreshold || Math.abs(deltaY) > directionThreshold) {
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          directionLock.current = "horizontal";
+        } else {
+          directionLock.current = "vertical";
+        }
+      }
     }
 
-    setDragOffset(offset);
+    // If locked to vertical, let browser handle scroll
+    if (directionLock.current === "vertical") {
+      return;
+    }
+
+    // If locked to horizontal, prevent scroll and handle carousel
+    if (directionLock.current === "horizontal") {
+      e.preventDefault();
+      let offset = deltaX;
+
+      if (
+        (currentIndex === 0 && offset > 0) ||
+        (currentIndex === validMedia.length - 1 && offset < 0)
+      ) {
+        offset = offset * 0.3;
+      }
+
+      setDragOffset(offset);
+    }
   };
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -128,7 +163,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden lg:px-4">
       <div
         ref={containerRef}
-        className="relative w-full select-none overflow-hidden aspect-[3/4] lg:aspect-video"
+        className="relative w-full select-none overflow-hidden aspect-[3/4] lg:aspect-video touch-pan-y"
         style={{
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",
         }}
@@ -188,7 +223,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
               }`}
               aria-label="Previous"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-6 h-6" />
             </button>
             <button
               onClick={goToNext}
@@ -200,7 +235,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
               }`}
               aria-label="Next"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-6 h-6" />
             </button>
           </>
         )}
