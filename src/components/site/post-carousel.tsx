@@ -108,53 +108,73 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goToPrevious, goToNext]);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    if (validMedia.length <= 1) return;
-    dragStartX.current = e.targetTouches[0].clientX;
-    dragStartY.current = e.targetTouches[0].clientY;
-    directionLock.current = null;
-    setIsDragging(true);
-  };
+  // Use native touch events with passive: false to properly prevent scroll
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || validMedia.length <= 1) return;
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || dragStartX.current === null || dragStartY.current === null) return;
-    
-    const currentX = e.targetTouches[0].clientX;
-    const currentY = e.targetTouches[0].clientY;
-    const deltaX = currentX - dragStartX.current;
-    const deltaY = currentY - dragStartY.current;
+    const handleTouchStart = (e: TouchEvent) => {
+      dragStartX.current = e.touches[0].clientX;
+      dragStartY.current = e.touches[0].clientY;
+      directionLock.current = null;
+      setIsDragging(true);
+    };
 
-    // Determine direction lock if not yet set
-    if (directionLock.current === null) {
-      if (Math.abs(deltaX) > directionThreshold || Math.abs(deltaY) > directionThreshold) {
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          directionLock.current = "horizontal";
-        } else {
-          directionLock.current = "vertical";
+    const handleTouchMove = (e: TouchEvent) => {
+      if (dragStartX.current === null || dragStartY.current === null) return;
+
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const deltaX = currentX - dragStartX.current;
+      const deltaY = currentY - dragStartY.current;
+
+      // Determine direction lock if not yet set
+      if (directionLock.current === null) {
+        if (Math.abs(deltaX) > directionThreshold || Math.abs(deltaY) > directionThreshold) {
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            directionLock.current = "horizontal";
+          } else {
+            directionLock.current = "vertical";
+          }
         }
       }
-    }
 
-    // If locked to vertical, let browser handle scroll
-    if (directionLock.current === "vertical") {
-      return;
-    }
-
-    // If locked to horizontal, prevent scroll and handle carousel
-    if (directionLock.current === "horizontal") {
-      e.preventDefault();
-      let offset = deltaX;
-
-      if (
-        (currentIndex === 0 && offset > 0) ||
-        (currentIndex === validMedia.length - 1 && offset < 0)
-      ) {
-        offset = offset * 0.3;
+      // If locked to vertical, let browser handle scroll
+      if (directionLock.current === "vertical") {
+        return;
       }
 
-      setDragOffset(offset);
-    }
-  };
+      // If locked to horizontal, prevent scroll and handle carousel
+      if (directionLock.current === "horizontal") {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        let offset = deltaX;
+        if (
+          (currentIndex === 0 && offset > 0) ||
+          (currentIndex === validMedia.length - 1 && offset < 0)
+        ) {
+          offset = offset * 0.3;
+        }
+        setDragOffset(offset);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      handleDragEnd();
+    };
+
+    // Add listeners with passive: false to allow preventDefault
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [validMedia.length, currentIndex, handleDragEnd, directionThreshold]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     if (validMedia.length <= 1) return;
@@ -201,9 +221,6 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
           aspectRatio: isDesktop ? "16/9" : `${mobileAspectRatio}`,
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",
         }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={handleDragEnd}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={handleDragEnd}
