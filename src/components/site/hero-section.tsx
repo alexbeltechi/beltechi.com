@@ -11,7 +11,7 @@ export function HeroSection() {
         </h1>
         <Button
           asChild
-          className="bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 rounded-full h-10 pl-5 pr-3 gap-0.5"
+          className="bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 rounded-full h-10 pl-[18px] pr-3 gap-0.5"
         >
           <Link href="/contact">
             <span className="font-[family-name:var(--font-syne)] font-medium text-[15px]">
