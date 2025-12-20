@@ -59,6 +59,7 @@ import type { Entry, MediaItem } from "@/lib/cms/types";
 const ITEMS_PER_PAGE = 20;
 
 type ContentFilter = "all" | "posts" | "articles";
+type SortOption = "newest" | "oldest" | "name-asc" | "name-desc";
 
 function ContentListPageContent() {
   const router = useRouter();
@@ -76,6 +77,7 @@ function ContentListPageContent() {
   // Filters
   const [typeFilter, setTypeFilter] = useState<ContentFilter>(urlTab || "all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(urlPage);
 
@@ -146,7 +148,7 @@ function ContentListPageContent() {
 
   // Filter and search entries
   const filteredEntries = useMemo(() => {
-    return entries.filter((entry) => {
+    const filtered = entries.filter((entry) => {
       // Type filter
       if (typeFilter === "posts" && entry.collection !== "posts") return false;
       if (typeFilter === "articles" && entry.collection !== "articles")
@@ -171,7 +173,23 @@ function ContentListPageContent() {
 
       return true;
     });
-  }, [entries, typeFilter, statusFilter, searchQuery]);
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.updatedAt || a.createdAt).getTime() - new Date(b.updatedAt || b.createdAt).getTime();
+        case "name-asc":
+          return ((a.data.title as string) || "").localeCompare((b.data.title as string) || "");
+        case "name-desc":
+          return ((b.data.title as string) || "").localeCompare((a.data.title as string) || "");
+        default:
+          return 0;
+      }
+    });
+  }, [entries, typeFilter, statusFilter, searchQuery, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
@@ -464,11 +482,21 @@ function ContentListPageContent() {
   const isSomeOnPageSelected = selectedOnPage.length > 0 && selectedOnPage.length < paginatedEntries.length;
   const isSomeSelected = selectedIds.size > 0;
 
+  // Sort labels
+  const sortLabels: Record<SortOption, string> = {
+    newest: "Newest first",
+    oldest: "Oldest first",
+    "name-asc": "Name (A-Z)",
+    "name-desc": "Name (Z-A)",
+  };
+
   // Check if filters are non-default
-  const hasActiveFilters = typeFilter !== "all" || statusFilter !== "all" || searchQuery.trim() !== "";
+  const hasActiveFilters = typeFilter !== "all" || statusFilter !== "all" || sortBy !== "newest" || searchQuery.trim() !== "";
 
   // Reset all filters
   const resetFilters = () => {
+    setSearchQuery("");
+    setSortBy("newest");
     setTypeFilter("all");
     setStatusFilter("all");
     setSearchQuery("");
@@ -527,8 +555,8 @@ function ContentListPageContent() {
           />
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-[250px]">
+        {/* Search - fills available space on desktop */}
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search"
@@ -541,21 +569,21 @@ function ContentListPageContent() {
           />
         </div>
 
-        {/* Mobile Filter Button */}
+        {/* Mobile/Tablet Filter Button - visible below xl (1280px) */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setShowFilterModal(true)}
-          className="sm:hidden shrink-0 relative"
+          className="xl:hidden shrink-0 relative"
           aria-label="Open filters"
         >
           <SlidersHorizontal className="h-4 w-4" />
-          {(typeFilter !== "all" || statusFilter !== "all") && (
+          {hasActiveFilters && (
             <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
           )}
         </Button>
 
-        {/* Type Filter - Desktop */}
+        {/* Type Filter - Desktop (xl+) */}
         <Select
           value={typeFilter}
           onValueChange={(value) => {
@@ -564,7 +592,7 @@ function ContentListPageContent() {
             updateURL({ tab: value, page: null });
           }}
         >
-          <SelectTrigger className="w-[140px] hidden sm:flex">
+          <SelectTrigger className="w-[140px] hidden xl:flex">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
@@ -574,9 +602,9 @@ function ContentListPageContent() {
           </SelectContent>
         </Select>
 
-        {/* Status Filter - Desktop */}
+        {/* Status Filter - Desktop (xl+) */}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px] hidden sm:flex">
+          <SelectTrigger className="w-[140px] hidden xl:flex">
             <SelectValue placeholder="All status" />
           </SelectTrigger>
           <SelectContent>
@@ -587,21 +615,32 @@ function ContentListPageContent() {
           </SelectContent>
         </Select>
 
-        {/* Reset Filters Button - Desktop */}
+        {/* Sort - Desktop (xl+) */}
+        <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+          <SelectTrigger className="w-[150px] hidden xl:flex">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+              <SelectItem key={option} value={option}>
+                {sortLabels[option]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Reset Filters Button - Desktop (xl+) */}
         {hasActiveFilters && (
           <Button
             variant="ghost"
             size="icon"
             onClick={resetFilters}
-            className="shrink-0 hidden sm:flex"
+            className="shrink-0 hidden xl:flex"
             aria-label="Reset filters"
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
         )}
-
-        {/* Spacer to push bulk actions to the right */}
-        <div className="flex-1 hidden sm:block" />
 
         {/* Bulk Actions Dropdown */}
         <DropdownMenu>
@@ -872,6 +911,23 @@ function ContentListPageContent() {
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort */}
+            <div className="space-y-2">
+              <Label>Sort by</Label>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {sortLabels[option]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
