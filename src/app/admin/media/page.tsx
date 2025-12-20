@@ -14,6 +14,9 @@ import {
   AlertCircle,
   CheckCircle2,
   MoreVertical,
+  RefreshCw,
+  FolderOpen,
+  FileImage,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { formatRelativeTime } from "@/lib/utils";
@@ -38,6 +41,16 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   compressImages,
   validateFilesForUpload,
@@ -94,6 +107,12 @@ export default function MediaLibraryPage() {
   // Replace functionality
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [showReplacePicker, setShowReplacePicker] = useState(false);
+  
+  // Batch replace
+  const [showBatchReplaceDialog, setShowBatchReplaceDialog] = useState(false);
+  const [batchReplaceMode, setBatchReplaceMode] = useState<"single" | "folder">("folder");
+  const [batchReplacing, setBatchReplacing] = useState(false);
+  const [batchReplaceProgress, setBatchReplaceProgress] = useState<{matched: number; total: number; current: string} | null>(null);
 
   const fetchMedia = useCallback(async () => {
     try {
@@ -469,6 +488,144 @@ export default function MediaLibraryPage() {
     setShowReplacePicker(false);
   };
 
+  // Extract base filename (without shortId suffix) for matching
+  const extractBaseName = (filename: string): string => {
+    // filename format: "name-shortId.ext" or "name-shortId-variant.ext"
+    // We want to match against "name" part
+    const withoutExt = filename.replace(/\.[^.]+$/, "");
+    // Remove the shortId (last segment after dash that's 4 hex chars)
+    const parts = withoutExt.split("-");
+    // Remove variant suffix if present (thumb, display, etc.)
+    const variants = ["thumb", "display", "large", "medium", "original"];
+    if (variants.includes(parts[parts.length - 1])) {
+      parts.pop();
+    }
+    // Remove shortId (4 hex chars)
+    if (parts.length > 1 && /^[a-f0-9]{4}$/i.test(parts[parts.length - 1])) {
+      parts.pop();
+    }
+    return parts.join("-").toLowerCase();
+  };
+
+  // Handle batch replace with folder
+  const handleBatchReplaceFolder = async (files: FileList) => {
+    if (selectedIds.size === 0 || files.length === 0) return;
+
+    setBatchReplacing(true);
+    setBatchReplaceProgress({ matched: 0, total: selectedIds.size, current: "" });
+
+    try {
+      const selectedItems = media.filter((m) => selectedIds.has(m.id));
+      let matchedCount = 0;
+
+      // Create a map of base names to replacement files
+      const replacementMap = new Map<string, File>();
+      for (const file of Array.from(files)) {
+        const baseName = file.name.replace(/\.[^.]+$/, "").toLowerCase();
+        replacementMap.set(baseName, file);
+      }
+
+      for (const item of selectedItems) {
+        const itemBaseName = extractBaseName(item.filename);
+        setBatchReplaceProgress({ matched: matchedCount, total: selectedIds.size, current: item.title || item.filename });
+
+        // Find matching replacement file
+        let matchedFile: File | undefined;
+        for (const [replaceBaseName, file] of replacementMap) {
+          if (itemBaseName.includes(replaceBaseName) || replaceBaseName.includes(itemBaseName)) {
+            matchedFile = file;
+            break;
+          }
+        }
+
+        if (matchedFile) {
+          // Upload replacement and delete old
+          const formData = new FormData();
+          formData.append("file", matchedFile);
+
+          const uploadRes = await fetch("/api/admin/media", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (uploadRes.ok) {
+            // Delete the old file
+            await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
+            matchedCount++;
+          }
+        }
+      }
+
+      setBatchReplaceProgress({ matched: matchedCount, total: selectedIds.size, current: "Done!" });
+
+      // Refresh media list
+      await fetchMedia();
+      setSelectedIds(new Set());
+
+      // Close dialog after a short delay
+      setTimeout(() => {
+        setShowBatchReplaceDialog(false);
+        setBatchReplacing(false);
+        setBatchReplaceProgress(null);
+      }, 1500);
+    } catch (error) {
+      console.error("Batch replace failed:", error);
+      alert("Batch replace failed. Please try again.");
+      setBatchReplacing(false);
+      setBatchReplaceProgress(null);
+    }
+  };
+
+  // Handle batch replace with single file
+  const handleBatchReplaceSingle = async (file: File) => {
+    if (selectedIds.size === 0) return;
+
+    setBatchReplacing(true);
+    setBatchReplaceProgress({ matched: 0, total: selectedIds.size, current: "" });
+
+    try {
+      const selectedItems = media.filter((m) => selectedIds.has(m.id));
+      let replacedCount = 0;
+
+      for (const item of selectedItems) {
+        setBatchReplaceProgress({ matched: replacedCount, total: selectedIds.size, current: item.title || item.filename });
+
+        // Upload replacement and delete old
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadRes = await fetch("/api/admin/media", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          // Delete the old file
+          await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
+          replacedCount++;
+        }
+      }
+
+      setBatchReplaceProgress({ matched: replacedCount, total: selectedIds.size, current: "Done!" });
+
+      // Refresh media list
+      await fetchMedia();
+      setSelectedIds(new Set());
+
+      // Close dialog after a short delay
+      setTimeout(() => {
+        setShowBatchReplaceDialog(false);
+        setBatchReplacing(false);
+        setBatchReplaceProgress(null);
+      }, 1500);
+    } catch (error) {
+      console.error("Batch replace failed:", error);
+      alert("Batch replace failed. Please try again.");
+      setBatchReplacing(false);
+      setBatchReplaceProgress(null);
+    }
+  };
+
   const clearError = () => {
     setUploadError(null);
     // Also clear error items from progress
@@ -687,6 +844,10 @@ export default function MediaLibraryPage() {
                 <DropdownMenuItem onClick={createPostWithMedia}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create post ({selectedIds.size})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowBatchReplaceDialog(true)}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Replace ({selectedIds.size})
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleBulkDelete}
@@ -988,6 +1149,120 @@ export default function MediaLibraryPage() {
         multiple={false}
         accept={["image/*", "video/*"]}
       />
+
+      {/* Batch Replace Dialog */}
+      <Dialog open={showBatchReplaceDialog} onOpenChange={(open) => !batchReplacing && setShowBatchReplaceDialog(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Replace {selectedIds.size} selected files</DialogTitle>
+            <DialogDescription>
+              Choose how you want to replace the selected media files.
+            </DialogDescription>
+          </DialogHeader>
+
+          {batchReplaceProgress ? (
+            <div className="py-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {batchReplaceProgress.current === "Done!" 
+                      ? `Replaced ${batchReplaceProgress.matched} of ${batchReplaceProgress.total} files`
+                      : `Replacing: ${batchReplaceProgress.current}`
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {batchReplaceProgress.matched} / {batchReplaceProgress.total} processed
+                  </p>
+                </div>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${(batchReplaceProgress.matched / batchReplaceProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 py-4">
+                <RadioGroup value={batchReplaceMode} onValueChange={(v) => setBatchReplaceMode(v as "single" | "folder")}>
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-accent cursor-pointer" onClick={() => setBatchReplaceMode("folder")}>
+                    <RadioGroupItem value="folder" id="folder" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="folder" className="font-medium cursor-pointer flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4" />
+                        Select folder (match by filename)
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Files from the folder will be matched to selected items by filename. Best for batch updates.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-accent cursor-pointer" onClick={() => setBatchReplaceMode("single")}>
+                    <RadioGroupItem value="single" id="single" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="single" className="font-medium cursor-pointer flex items-center gap-2">
+                        <FileImage className="w-4 h-4" />
+                        Select single file (replace all)
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        All {selectedIds.size} selected items will be replaced with the same image.
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBatchReplaceDialog(false)}>
+                  Cancel
+                </Button>
+                <Button asChild>
+                  <label className="cursor-pointer">
+                    {batchReplaceMode === "folder" ? (
+                      <>
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        Choose Folder
+                        <input
+                          type="file"
+                          multiple
+                          // @ts-expect-error webkitdirectory is not in the type definitions
+                          webkitdirectory=""
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              handleBatchReplaceFolder(e.target.files);
+                              e.target.value = "";
+                            }
+                          }}
+                          className="hidden"
+                          accept="image/*,video/*"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <FileImage className="mr-2 h-4 w-4" />
+                        Choose File
+                        <input
+                          type="file"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              handleBatchReplaceSingle(e.target.files[0]);
+                              e.target.value = "";
+                            }
+                          }}
+                          className="hidden"
+                          accept="image/*,video/*"
+                        />
+                      </>
+                    )}
+                  </label>
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
