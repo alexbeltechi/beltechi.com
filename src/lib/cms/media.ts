@@ -236,46 +236,42 @@ export async function uploadMedia(
   const canProcess = isProcessableImage(mime);
 
   if (canProcess) {
-    // Process image with variants
+    // Process image with variants - optimized WebP output
     try {
       const processed = await processImage(file, originalName, DEFAULT_SETTINGS);
 
-      // Build filenames
+      // Build filenames - use .webp extension for optimized images
       const baseFilename = processed.sanitizedName || "image";
       const shortId = processed.shortId;
+      const outputExt = DEFAULT_SETTINGS.generateWebP ? ".webp" : ext;
+      const outputMime = DEFAULT_SETTINGS.generateWebP ? "image/webp" : mime;
 
-      // Save original file
-      const originalFilename = buildVariantFilename(baseFilename, shortId, "original", ext);
-      const originalResult = await saveFile(file, originalFilename, "originals", mime);
-
-      // Save variants
-      const variants: MediaItem["variants"] = {};
-      const variantNames = ["display", "large", "medium", "thumb"] as const;
-
-      for (const variantName of variantNames) {
-        const variant = processed.variants[variantName];
-        if (variant) {
-          const variantFilename = buildVariantFilename(baseFilename, shortId, variantName, ext);
-          const variantResult = await saveFile(variant.buffer, variantFilename, "variants", mime);
-
-          variants[variantName] = {
-            filename: variantFilename,
-            path: variantResult.path,
-            url: variantResult.url,
-            width: variant.width,
-            height: variant.height,
-            size: variant.buffer.length,
-          };
-        }
+      // Get the display variant (primary optimized image)
+      const displayVariant = processed.variants.display;
+      if (!displayVariant) {
+        throw new Error("Failed to generate display variant");
       }
 
-      // Default to original (client-compressed image)
-      // Next.js Image component handles dynamic optimization at serve-time
-      const activeVariant: MediaItem["activeVariant"] = "original";
+      // Save primary file (optimized display variant, not original)
+      const primaryFilename = buildVariantFilename(baseFilename, shortId, null, outputExt);
+      const primaryResult = await saveFile(displayVariant.buffer, primaryFilename, "", outputMime);
 
-      // Save primary file (the uploaded original)
-      const primaryFilename = buildVariantFilename(baseFilename, shortId, null, ext);
-      const primaryResult = await saveFile(file, primaryFilename, "", mime);
+      // Save thumb variant
+      const variants: MediaItem["variants"] = {};
+      const thumbVariant = processed.variants.thumb;
+      if (thumbVariant) {
+        const thumbFilename = buildVariantFilename(baseFilename, shortId, "thumb", outputExt);
+        const thumbResult = await saveFile(thumbVariant.buffer, thumbFilename, "variants", outputMime);
+
+        variants.thumb = {
+          filename: thumbFilename,
+          path: thumbResult.path,
+          url: thumbResult.url,
+          width: thumbVariant.width,
+          height: thumbVariant.height,
+          size: thumbVariant.buffer.length,
+        };
+      }
 
       const item: MediaItem = {
         id,
@@ -284,20 +280,12 @@ export async function uploadMedia(
         slug: `${baseFilename}-${shortId}`,
         path: primaryResult.path,
         url: primaryResult.url,
-        mime,
-        size: file.length,
-        width: processed.original.width,
-        height: processed.original.height,
-        original: {
-          filename: originalFilename,
-          path: originalResult.path,
-          url: originalResult.url,
-          width: processed.original.width,
-          height: processed.original.height,
-          size: processed.original.size,
-        },
+        mime: outputMime,
+        size: displayVariant.buffer.length,
+        width: displayVariant.width,
+        height: displayVariant.height,
         variants: Object.keys(variants).length > 0 ? variants : undefined,
-        activeVariant,
+        activeVariant: "display",
         title: sanitizeFilename(originalName).replace(/-/g, " "),
         alt: "",
         createdAt: new Date().toISOString(),
@@ -392,19 +380,22 @@ export async function updateMedia(
   if (updates.activeVariant !== undefined && updates.activeVariant !== item.activeVariant) {
     item.activeVariant = updates.activeVariant;
 
-    if (updates.activeVariant === "original") {
+    if (updates.activeVariant === "original" && item.original) {
       item.url = item.original.url;
       item.path = item.original.path;
       item.width = item.original.width;
       item.height = item.original.height;
       item.size = item.original.size;
-    } else if (item.variants?.[updates.activeVariant]) {
-      const variant = item.variants[updates.activeVariant] as ImageVariant;
-      item.url = variant.url;
-      item.path = variant.path;
-      item.width = variant.width;
-      item.height = variant.height;
-      item.size = variant.size;
+    } else if (updates.activeVariant !== "original") {
+      const variantKey = updates.activeVariant as "display" | "large" | "medium" | "thumb";
+      const variant = item.variants?.[variantKey];
+      if (variant) {
+        item.url = variant.url;
+        item.path = variant.path;
+        item.width = variant.width;
+        item.height = variant.height;
+        item.size = variant.size;
+      }
     }
   }
 
@@ -492,12 +483,15 @@ export function getMediaUrl(
   item: MediaItem,
   variant: "original" | "display" | "large" | "medium" | "thumb" = "large"
 ): string {
-  if (variant === "original") {
+  if (variant === "original" && item.original) {
     return item.original.url;
   }
 
-  if (item.variants?.[variant]) {
-    return item.variants[variant]!.url;
+  if (variant !== "original") {
+    const variantKey = variant as "display" | "large" | "medium" | "thumb";
+    if (item.variants?.[variantKey]) {
+      return item.variants[variantKey]!.url;
+    }
   }
 
   // Fallback to primary URL

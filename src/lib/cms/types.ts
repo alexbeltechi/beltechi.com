@@ -279,8 +279,8 @@ export interface MediaItem {
   height?: number;
   duration?: number; // For video/audio (seconds)
 
-  // Original file (always preserved)
-  original: {
+  // Original file info (optional - not stored to save costs)
+  original?: {
     filename: string;
     path: string;
     url: string;

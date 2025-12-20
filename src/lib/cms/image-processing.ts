@@ -3,14 +3,15 @@ import crypto from "crypto";
 import path from "path";
 import type { ImageVariant, ImageProcessingSettings } from "./types";
 
-// Default settings - minimal processing for fast uploads
-// Client-side compression + Next.js Image handles optimization at serve-time
+// Default settings - optimize images on upload
+// Convert to WebP for 30% smaller files, generate 2 sizes
 export const DEFAULT_SETTINGS: ImageProcessingSettings = {
   variants: {
-    thumb: { maxEdge: 400, quality: 75 },     // Admin grid, tiny previews
+    display: { maxEdge: 2500, quality: 85 },  // Primary optimized image
+    thumb: { maxEdge: 768, quality: 85 },     // Thumbnail for grids/cards
   },
-  defaultActiveVariant: "original",  // Use the uploaded (client-compressed) image
-  generateWebP: false,
+  defaultActiveVariant: "display",
+  generateWebP: true,  // Convert all uploads to WebP
 };
 
 /**
@@ -174,12 +175,14 @@ export async function processImage(
   const originalWidth = metadata.width || 0;
   const originalHeight = metadata.height || 0;
 
-  // Determine output format based on original
-  const format: "jpeg" | "png" | "webp" =
-    metadata.format === "png" ? "png" : "jpeg";
+  // Output format - WebP for best compression, fallback to original format
+  const format: "jpeg" | "png" | "webp" = settings.generateWebP
+    ? "webp"
+    : metadata.format === "png"
+      ? "png"
+      : "jpeg";
 
-  // Generate only thumbnail variant for fast uploads
-  // Client-side compression + Next.js Image handles the rest
+  // Generate optimized variants
   const variants: {
     display?: { buffer: Buffer; width: number; height: number };
     large?: { buffer: Buffer; width: number; height: number };
@@ -187,9 +190,20 @@ export async function processImage(
     thumb?: { buffer: Buffer; width: number; height: number };
   } = {};
 
-  // Only generate thumb variant if original is larger
+  // Generate display variant (primary optimized image)
+  const displayConfig = settings.variants.display;
+  if (displayConfig) {
+    variants.display = await generateVariant(
+      buffer,
+      displayConfig.maxEdge,
+      displayConfig.quality,
+      format
+    );
+  }
+
+  // Generate thumb variant
   const thumbConfig = settings.variants.thumb;
-  if (thumbConfig && (originalWidth > thumbConfig.maxEdge || originalHeight > thumbConfig.maxEdge)) {
+  if (thumbConfig) {
     variants.thumb = await generateVariant(
       buffer,
       thumbConfig.maxEdge,
