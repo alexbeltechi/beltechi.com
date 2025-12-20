@@ -21,6 +21,7 @@ import {
   DEFAULT_SETTINGS,
 } from "./image-processing";
 import { getStorage } from "./storage";
+import { listEntries, updateEntry } from "./entries";
 import { 
   shouldUseBlob, 
   uploadToBlob, 
@@ -496,4 +497,62 @@ export function getMediaUrl(
 
   // Fallback to primary URL
   return item.url;
+}
+
+/**
+ * Replace media references in all entries (posts/articles)
+ * Used when replacing an image to maintain post associations
+ */
+export async function replaceMediaReferences(
+  oldMediaId: string,
+  newMediaId: string
+): Promise<{ updatedCount: number }> {
+  let updatedCount = 0;
+
+  // Update posts
+  const { entries: posts } = await listEntries("posts");
+  for (const post of posts) {
+    let needsUpdate = false;
+    const postData = post.data as { media?: string[]; coverMediaId?: string };
+
+    // Check media array
+    if (postData.media && Array.isArray(postData.media)) {
+      const mediaIndex = postData.media.indexOf(oldMediaId);
+      if (mediaIndex !== -1) {
+        postData.media[mediaIndex] = newMediaId;
+        needsUpdate = true;
+      }
+    }
+
+    // Check coverMediaId
+    if (postData.coverMediaId === oldMediaId) {
+      postData.coverMediaId = newMediaId;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      await updateEntry("posts", post.slug, { data: postData });
+      updatedCount++;
+    }
+  }
+
+  // Update articles
+  const { entries: articles } = await listEntries("articles");
+  for (const article of articles) {
+    let needsUpdate = false;
+    const articleData = article.data as { featuredImage?: string };
+
+    // Check featuredImage
+    if (articleData.featuredImage === oldMediaId) {
+      articleData.featuredImage = newMediaId;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      await updateEntry("articles", article.slug, { data: articleData });
+      updatedCount++;
+    }
+  }
+
+  return { updatedCount };
 }

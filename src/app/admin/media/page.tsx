@@ -581,18 +581,16 @@ export default function MediaLibraryPage() {
           current: item.title || item.filename 
         });
 
-        // Upload replacement
+        // Replace media (uploads new, updates references, deletes old)
         const formData = new FormData();
         formData.append("file", file);
 
-        const uploadRes = await fetch("/api/admin/media", {
+        const replaceRes = await fetch(`/api/admin/media/${item.id}/replace`, {
           method: "POST",
           body: formData,
         });
 
-        if (uploadRes.ok) {
-          // Delete the old file
-          await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
+        if (replaceRes.ok) {
           replacedCount++;
         }
       }
@@ -631,18 +629,16 @@ export default function MediaLibraryPage() {
       for (const item of selectedItems) {
         setBatchReplaceProgress({ matched: replacedCount, total: selectedIds.size, current: item.title || item.filename });
 
-        // Upload replacement and delete old
+        // Replace media (uploads new, updates references, deletes old)
         const formData = new FormData();
         formData.append("file", file);
 
-        const uploadRes = await fetch("/api/admin/media", {
+        const replaceRes = await fetch(`/api/admin/media/${item.id}/replace`, {
           method: "POST",
           body: formData,
         });
 
-        if (uploadRes.ok) {
-          // Delete the old file
-          await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
+        if (replaceRes.ok) {
           replacedCount++;
         }
       }
