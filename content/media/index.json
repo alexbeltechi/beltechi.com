@@ -1060,6 +1060,33 @@
       "alt": "",
       "createdAt": "2025-12-20T15:21:18.398Z",
       "hash": "b0d0674ae6cc0ecc1aeb968c83c21043"
+    },
+    {
+      "id": "1ce78ab0-8c96-4340-bfe5-13754d5267c2",
+      "filename": "8063-f0000071-2567.webp",
+      "originalName": "8063-f0/000071.JPG",
+      "slug": "8063-f0000071-2567",
+      "path": "uploads/8063-f0000071-2567.webp",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/8063-f0000071-2567.webp",
+      "mime": "image/webp",
+      "size": 422196,
+      "width": 1662,
+      "height": 2500,
+      "variants": {
+        "thumb": {
+          "filename": "8063-f0000071-2567-thumb.webp",
+          "path": "uploads/variants/8063-f0000071-2567-thumb.webp",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/8063-f0000071-2567-thumb.webp",
+          "width": 510,
+          "height": 768,
+          "size": 24840
+        }
+      },
+      "activeVariant": "display",
+      "title": "8063 f0000071",
+      "alt": "",
+      "createdAt": "2025-12-20T15:35:30.205Z",
+      "hash": "71efd753d91eb09258d605573764efad"
     }
   ]
 }
