@@ -1,0 +1,264 @@
+# Figma-to-Code Workflow with shadcn/ui
+
+## Overview
+
+This project uses a structured workflow for converting Figma designs to code:
+- **Layout & Spacing**: Replicated exactly from Figma using Tailwind utilities
+- **UI Components**: Built with shadcn/ui components (never raw HTML primitives)
+- **Custom Styles**: Tailwind classes only (no bespoke CSS unless explicitly required)
+
+---
+
+## Pre-Flight: Component Mapping (MANDATORY)
+
+Before generating ANY code from a Figma design, you MUST:
+
+1. **Analyze the design** and list all UI elements
+2. **Map each element** to shadcn components or Tailwind primitives
+3. **Present the mapping table** for user confirmation
+4. **Wait for approval** before writing code
+
+### Mapping Table Format
+
+```
+| Figma Element | shadcn Component | Props/Variants |
+|---------------|------------------|----------------|
+| Primary CTA | Button | variant="default" size="lg" |
+| Secondary action | Button | variant="secondary" |
+| Form field | Input | type="text" |
+| Card container | Card, CardHeader, CardContent | - |
+| Modal | Dialog, DialogContent, DialogHeader | - |
+```
+
+### Example Pre-Flight Response
+
+"Before I implement this design, here's my component mapping:
+
+| Figma Element | Implementation |
+|---------------|----------------|
+| Hero CTA | `Button` variant="default" size="lg" className="rounded-full" |
+| Nav links | `Button` variant="ghost" |
+| Search field | `Input` with search icon |
+| User menu | `DropdownMenu` + `Avatar` |
+| Settings modal | `Dialog` + `DialogContent` |
+
+Please confirm this mapping, or let me know any changes before I proceed."
+
+---
+
+## shadcn Component Requirements
+
+### MUST Use shadcn Components For:
+
+| UI Element | shadcn Component(s) |
+|------------|---------------------|
+| Buttons | `Button` |
+| Text inputs | `Input` |
+| Textareas | `Textarea` |
+| Checkboxes | `Checkbox` |
+| Radio buttons | `RadioGroup`, `RadioGroupItem` |
+| Toggle switches | `Switch` |
+| Dropdowns/Selects | `Select`, `SelectTrigger`, `SelectContent`, `SelectItem` |
+| Modals/Dialogs | `Dialog`, `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogFooter` |
+| Confirmation modals | `AlertDialog` + sub-components |
+| Popovers | `Popover`, `PopoverTrigger`, `PopoverContent` |
+| Tooltips | `Tooltip`, `TooltipTrigger`, `TooltipContent` |
+| Tabs | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` |
+| Cards | `Card`, `CardHeader`, `CardContent`, `CardFooter` |
+| Tables | `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell` |
+| Alerts/Banners | `Alert`, `AlertTitle`, `AlertDescription` |
+| Badges/Tags | `Badge` |
+| Avatars | `Avatar`, `AvatarImage`, `AvatarFallback` |
+| Dividers | `Separator` |
+| Loading states | `Skeleton` |
+| Slide-out panels | `Sheet`, `SheetTrigger`, `SheetContent` |
+| Context menus | `ContextMenu` + sub-components |
+| Dropdown menus | `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem` |
+| Navigation menus | `NavigationMenu` + sub-components |
+| Command palettes | `Command` + sub-components |
+| Date pickers | `Calendar`, `Popover` |
+| Toasts | `Sonner` (toast function) |
+| Progress bars | `Progress` |
+| Sliders | `Slider` |
+| Accordions | `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent` |
+| Collapsibles | `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` |
+| Scroll areas | `ScrollArea` |
+| Form labels | `Label` |
+
+### FORBIDDEN Patterns
+
+Never implement these when shadcn equivalents exist:
+
+```tsx
+// ❌ FORBIDDEN
+<button className="...">Click me</button>
+<input type="text" className="..." />
+<select><option>...</option></select>
+<dialog>...</dialog>
+<div role="checkbox">...</div>
+
+// ✅ REQUIRED
+<Button>Click me</Button>
+<Input type="text" />
+<Select>...</Select>
+<Dialog>...</Dialog>
+<Checkbox />
+```
+
+### Component Availability Check
+
+Before using a component:
+
+1. Check if it exists in `@/components/ui/`
+2. If missing, use shadcn MCP `list_components` to verify availability
+3. If available in shadcn, install: `npx shadcn@latest add <component-name>`
+4. If not in shadcn, compose from existing shadcn primitives + Tailwind
+
+### Import Pattern
+
+Always import from the local ui directory:
+
+```tsx
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardHeader, CardContent } from "@/components/ui/card"
+```
+
+---
+
+## Styling Rules
+
+### Priority Order
+
+1. **shadcn variant/prop** - Use built-in variants first
+   ```tsx
+   <Button variant="outline" size="lg">
+   ```
+
+2. **Tailwind className override** - For design-specific adjustments
+   ```tsx
+   <Button className="rounded-full bg-black">
+   ```
+
+3. **Arbitrary Tailwind values** - For exact Figma measurements
+   ```tsx
+   <div className="w-[347px] gap-[18px]">
+   ```
+
+4. **Custom CSS** - Last resort, must justify why Tailwind can't achieve it
+
+### Layout from Figma
+
+Use Tailwind utilities to match Figma exactly:
+
+- **Spacing**: `p-4`, `gap-6`, `m-[18px]` (arbitrary for exact values)
+- **Sizing**: `w-full`, `h-[56px]`, `max-w-[600px]`
+- **Flexbox**: `flex`, `items-center`, `justify-between`
+- **Grid**: `grid`, `grid-cols-3`, `gap-4`
+- **Position**: `relative`, `absolute`, `fixed`, `inset-0`
+- **Breakpoints**: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
+
+### UI Chrome from shadcn
+
+Use component props for styling, override with className only when necessary:
+
+```tsx
+// Prefer variants
+<Button variant="secondary">  // Not className="bg-gray-100"
+<Badge variant="outline">     // Not className="border border-gray-200"
+<Alert variant="destructive"> // Not className="bg-red-100 text-red-800"
+
+// Override only for design-specific needs
+<Button variant="default" className="rounded-full h-12">
+```
+
+---
+
+## Figma Layer Name Recognition
+
+When you see these layer names in Figma, map to shadcn:
+
+### Buttons
+- `Button`, `Button/Default`, `PrimaryButton` → `Button variant="default"`
+- `Button/Secondary`, `SecondaryButton` → `Button variant="secondary"`
+- `Button/Outline`, `OutlineButton` → `Button variant="outline"`
+- `Button/Ghost`, `GhostButton` → `Button variant="ghost"`
+- `Button/Destructive`, `DestructiveButton` → `Button variant="destructive"`
+- `Button/Link`, `LinkButton` → `Button variant="link"`
+- `Button/Icon`, `IconButton` → `Button size="icon"`
+- `Button/SM`, `SmallButton` → `Button size="sm"`
+- `Button/LG`, `LargeButton` → `Button size="lg"`
+
+### Form Elements
+- `Input`, `TextField`, `TextInput` → `Input`
+- `Textarea`, `TextArea` → `Textarea`
+- `Checkbox` → `Checkbox`
+- `Switch`, `Toggle` → `Switch`
+- `RadioGroup`, `RadioButtons` → `RadioGroup`
+- `Select`, `Dropdown` → `Select`
+- `Label`, `FieldLabel` → `Label`
+
+### Containers
+- `Card` → `Card`
+- `Card/Header` → `CardHeader`
+- `Card/Content`, `Card/Body` → `CardContent`
+- `Card/Footer` → `CardFooter`
+
+### Overlays
+- `Dialog`, `Modal` → `Dialog`
+- `Sheet`, `Drawer`, `SlideOut` → `Sheet`
+- `Popover` → `Popover`
+- `Tooltip` → `Tooltip`
+- `AlertDialog`, `ConfirmDialog` → `AlertDialog`
+
+### Navigation
+- `Tabs` → `Tabs`
+- `TabsList`, `TabBar` → `TabsList`
+- `Tab`, `TabItem` → `TabsTrigger`
+- `TabPanel`, `TabContent` → `TabsContent`
+- `DropdownMenu`, `Menu` → `DropdownMenu`
+- `MenuItem` → `DropdownMenuItem`
+
+### Data Display
+- `Table` → `Table`
+- `TableHeader`, `TableHead` → `TableHeader`
+- `TableRow`, `Row` → `TableRow`
+- `TableCell`, `Cell` → `TableCell`
+- `Badge`, `Tag`, `Chip` → `Badge`
+- `Avatar` → `Avatar`
+- `Separator`, `Divider`, `HR` → `Separator`
+- `Skeleton`, `Placeholder` → `Skeleton`
+
+### Feedback
+- `Alert`, `Banner` → `Alert`
+- `Toast`, `Notification` → Sonner toast()
+- `Progress`, `ProgressBar` → `Progress`
+
+---
+
+## Breakpoint Guidelines
+
+Match Figma frames to Tailwind breakpoints:
+
+| Figma Frame Width | Tailwind Prefix | Description |
+|-------------------|-----------------|-------------|
+| < 640px | (default) | Mobile |
+| 640px+ | `sm:` | Small tablets |
+| 768px+ | `md:` | Tablets |
+| 1024px+ | `lg:` | Small laptops |
+| 1280px+ | `xl:` | Desktops |
+| 1536px+ | `2xl:` | Large screens |
+
+---
+
+## Quality Checklist
+
+Before submitting code:
+
+- [ ] All interactive elements use shadcn components
+- [ ] No raw `<button>`, `<input>`, `<select>` elements
+- [ ] Layout matches Figma spacing exactly
+- [ ] Responsive breakpoints implemented
+- [ ] Dark mode supported (if applicable)
+- [ ] All styles are Tailwind classes
+- [ ] Component mapping was approved before coding

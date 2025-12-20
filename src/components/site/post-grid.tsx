@@ -128,7 +128,7 @@ export function PostGrid({ posts, mediaMap, categories }: PostGridProps) {
               >
                 {/* Image */}
                 <div
-                  className="relative w-full overflow-hidden rounded-none group-hover:rounded-[24px] transition-[border-radius] duration-300"
+                  className="relative w-full overflow-hidden"
                   style={{ aspectRatio }}
                 >
                   <Image
@@ -139,6 +139,8 @@ export function PostGrid({ posts, mediaMap, categories }: PostGridProps) {
                     className="object-cover"
                     loading="lazy"
                   />
+                  {/* Hover brighten overlay */}
+                  <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-[0.05] transition-opacity duration-200 pointer-events-none" />
                 </div>
 
                 {/* Title */}

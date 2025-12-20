@@ -8,7 +8,7 @@
       "slug": "design",
       "name": "Design",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 0
     },
     {
@@ -19,7 +19,7 @@
       "slug": "photography",
       "name": "Photography",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 1
     },
     {
@@ -31,7 +31,7 @@
       "order": 2,
       "showOnHomepage": false,
       "createdAt": "2025-12-18T19:49:25.131Z",
-      "updatedAt": "2025-12-18T20:03:21.908Z"
+      "updatedAt": "2025-12-20T12:56:32.256Z"
     },
     {
       "id": "clothing",
@@ -41,7 +41,7 @@
       "slug": "clothing",
       "name": "Clothing",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 3
     },
     {
@@ -52,7 +52,7 @@
       "slug": "life",
       "name": "Life",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 4
     },
     {
@@ -64,7 +64,7 @@
       "description": "",
       "order": 5,
       "createdAt": "2025-12-18T16:44:50.697Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z"
+      "updatedAt": "2025-12-20T12:56:32.256Z"
     },
     {
       "id": "film-making",
@@ -74,7 +74,7 @@
       "slug": "film-making",
       "name": "Film-making",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 6
     },
     {
@@ -83,7 +83,7 @@
       "slug": "behind-the-scenes",
       "name": "BTS",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "color": "#14B8A6",
       "order": 7,
       "description": "Behind the scenes content",
@@ -97,7 +97,7 @@
       "slug": "gear",
       "name": "Gear",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 8,
       "showOnHomepage": false
     },
@@ -109,7 +109,7 @@
       "slug": "journal",
       "name": "Journal",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 9,
       "showOnHomepage": false
     },
@@ -121,7 +121,7 @@
       "color": "#64748B",
       "order": 10,
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "showOnHomepage": false
     },
     {
@@ -132,7 +132,7 @@
       "slug": "note",
       "name": "Note",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 11,
       "showOnHomepage": false
     },
@@ -144,7 +144,7 @@
       "slug": "tech",
       "name": "Tech",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 12,
       "showOnHomepage": false
     },
@@ -156,7 +156,7 @@
       "slug": "travel",
       "name": "Travel",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 13,
       "showOnHomepage": false
     },
@@ -168,7 +168,7 @@
       "slug": "tutorials",
       "name": "Tutorials",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-18T20:03:16.751Z",
+      "updatedAt": "2025-12-20T12:56:32.256Z",
       "order": 14,
       "showOnHomepage": false
     },
@@ -181,7 +181,7 @@
       "order": 15,
       "showOnHomepage": true,
       "createdAt": "2025-12-18T20:40:20.832Z",
-      "updatedAt": "2025-12-18T20:40:20.832Z"
+      "updatedAt": "2025-12-20T12:56:32.256Z"
     }
   ]
 }

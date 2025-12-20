@@ -25,7 +25,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { IndexPill } from "@/components/lib";
 import type { Entry, MediaItem } from "@/lib/cms/types";
 
 interface MediaPreview {
@@ -50,6 +50,8 @@ interface MediaPreview {
   mediaId?: string;
   isExisting?: boolean;
 }
+
+const MAX_MEDIA = 20;
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -182,7 +184,7 @@ export default function EditPostPage() {
       isExisting: true,
       mediaId: item.id,
     }));
-    setMedia((prev) => [...prev, ...newMedia].slice(0, 10));
+    setMedia((prev) => [...prev, ...newMedia].slice(0, MAX_MEDIA));
   };
 
   const handleReplaceMedia = (index: number) => {
@@ -302,7 +304,7 @@ export default function EditPostPage() {
       url: URL.createObjectURL(file),
       type: file.type.startsWith("video/") ? "video" : "image",
     }));
-    setMedia((prev) => [...prev, ...newMedia].slice(0, 10));
+    setMedia((prev) => [...prev, ...newMedia].slice(0, MAX_MEDIA));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -498,23 +500,20 @@ export default function EditPostPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col h-full">
+        <div className="border-b px-4 h-14 flex items-center">
           <Skeleton className="h-4 w-32" />
         </div>
-        <Skeleton className="h-8 w-48" />
-        <Card>
-          <CardContent className="pt-6">
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-4 py-4 border-b">
             <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 space-y-4">
+          </div>
+          <div className="px-4 py-4 space-y-4">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -524,20 +523,18 @@ export default function EditPostPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+    <div className="flex flex-col h-full">
+      {/* Header - 56px top bar */}
+      <div className="border-b px-4 h-14 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
           <Link
             href="/admin/content?collection=posts"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Posts
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Post</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm text-muted-foreground">Status:</span>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">Edit Post</h1>
             <Badge
               variant={entry.status === "published" ? "default" : "outline"}
               className={cn(
@@ -556,6 +553,7 @@ export default function EditPostPage() {
           }
           disabled={saving || !isDirty}
           variant="outline"
+          size="sm"
         >
           {saving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -566,12 +564,13 @@ export default function EditPostPage() {
         </Button>
       </div>
 
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
       {/* Media Upload */}
-      <Card>
-        <CardContent className="pt-6">
-          <Label className="text-base font-semibold">
+      <div className="px-4 py-4 border-b">
+          <h2 className="text-xl font-medium">
             Media <span className="text-destructive">*</span>
-          </Label>
+          </h2>
 
           <input
             ref={fileInputRef}
@@ -589,7 +588,8 @@ export default function EditPostPage() {
             onDrop={handleFileDrop}
             onClick={() => media.length === 0 && fileInputRef.current?.click()}
             className={cn(
-              "mt-4 border-2 border-dashed rounded-xl p-8 text-center transition-all",
+              "mt-4 text-center transition-all",
+              media.length === 0 && "border-2 border-dashed rounded-none p-8",
               isDraggingFiles && "border-primary bg-primary/5",
               media.length === 0 &&
                 !isDraggingFiles &&
@@ -605,7 +605,7 @@ export default function EditPostPage() {
                     : "Drag & drop files here"}
                 </p>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Images and videos (up to 10)
+                  Images and videos (up to {MAX_MEDIA})
                 </p>
                 <div className="flex items-center justify-center gap-3">
                   <Button
@@ -689,9 +689,7 @@ export default function EditPostPage() {
                         />
                       </div>
 
-                      <div className="absolute top-2 left-2 w-6 h-6 bg-black/80 rounded-full flex items-center justify-center text-xs text-white font-medium">
-                        {index + 1}
-                      </div>
+                      <IndexPill index={index + 1} className="absolute top-2 left-2" />
 
                       {index === coverIndex && (
                         <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-500 rounded-full text-[10px] text-white font-medium">
@@ -701,39 +699,16 @@ export default function EditPostPage() {
                       )}
                     </div>
                   ))}
-
-                  {media.length < 10 && (
-                    <div className="aspect-square border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 bg-muted/50">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => fileInputRef.current?.click()}
-                        title="Upload files"
-                      >
-                        <Upload className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShowMediaPicker(true)}
-                        title="Choose from library"
-                      >
-                        <ImageIcon className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  )}
                 </div>
 
-                <p className="text-xs text-muted-foreground text-center">
-                  Drag to reorder · {media.length}/10 files
+                <p className="text-sm text-muted-foreground text-center">
+                  Drag to reorder · {media.length}/{MAX_MEDIA} files
                 </p>
 
-                <div className="flex items-center justify-center gap-3 pt-2">
+                <div className="flex items-center justify-center gap-3">
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -742,7 +717,7 @@ export default function EditPostPage() {
                   </Button>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowMediaPicker(true)}
                   >
@@ -753,12 +728,10 @@ export default function EditPostPage() {
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
       {/* Details */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
+      <div className="px-4 py-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">
               Title{" "}
@@ -901,8 +874,8 @@ export default function EditPostPage() {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Media Picker Modal */}
       <MediaPicker
@@ -910,7 +883,7 @@ export default function EditPostPage() {
         onClose={() => setShowMediaPicker(false)}
         onSelect={handleMediaLibrarySelect}
         multiple={true}
-        maxSelect={20 - media.length}
+        maxSelect={MAX_MEDIA - media.length}
         accept={["image/*", "video/*"]}
       />
 

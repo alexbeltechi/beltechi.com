@@ -3,16 +3,18 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { PageHeader } from "@/components/lib";
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Configure your CMS settings
-        </p>
+    <div className="flex flex-col h-full">
+      {/* Header - 56px tall */}
+      <div className="border-b px-4 h-14 flex items-center">
+        <PageHeader title="Settings" />
       </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
 
       {/* Collections Info */}
       <Card>
@@ -134,6 +136,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

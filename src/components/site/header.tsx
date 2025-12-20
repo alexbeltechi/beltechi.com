@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,7 +27,7 @@ export function Header() {
       <header className="sticky top-0 z-50 bg-white dark:bg-zinc-950">
         <nav className="flex items-center justify-between px-4 py-3 h-[56px]">
           {/* Logo - Left */}
-          <Link href="/" className="text-h1-extrabold shrink-0" onClick={closeMenu}>
+          <Link href="/" className="text-h1-extrabold text-black dark:text-white shrink-0" onClick={closeMenu}>
             BELTECHI
           </Link>
 
@@ -57,6 +58,7 @@ export function Header() {
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Search className="h-4 w-4" />
             </Button>
+            <ThemeToggle />
             <Button className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 rounded-full px-4 h-9">
               Work with me
             </Button>
@@ -76,7 +78,7 @@ export function Header() {
       {menuOpen && (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-zinc-950 md:hidden">
           <div className="flex items-center justify-between px-4 h-[56px]">
-            <Link href="/" className="text-h1-extrabold" onClick={closeMenu}>
+            <Link href="/" className="text-h1-extrabold text-black dark:text-white" onClick={closeMenu}>
               BELTECHI
             </Link>
             <button onClick={closeMenu} className="p-2" aria-label="Close menu">
@@ -109,6 +111,9 @@ export function Header() {
             <Button className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 rounded-full px-6 mt-4">
               Work with me
             </Button>
+            <div className="mt-4">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       )}

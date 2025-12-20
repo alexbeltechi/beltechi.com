@@ -72,12 +72,11 @@ img {
    All based on Syne font family
    =========================================== */
 
-/* H1 Extrabold - Syne 26px/800/1.2 (Selected tab - BLACK) */
+/* H1 Extrabold - Syne 26px/800/1.2 (Selected tab) */
 .text-h1-extrabold {
   font-size: 26px !important;
   font-weight: 800 !important;
   line-height: 1.2 !important;
-  color: #000000 !important;
 }
 
 /* H1 Bold - Syne 26px/700/1.2 */
@@ -153,7 +152,7 @@ img {
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+  --accent: oklch(0.95 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);

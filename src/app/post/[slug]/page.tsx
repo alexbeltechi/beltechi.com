@@ -55,12 +55,12 @@ export default async function PostPage({ params }: PostPageProps) {
     : null;
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white dark:bg-zinc-950">
       {/* Back button - fixed position */}
       <div className="fixed top-4 left-4 z-50">
         <Link
           href="/"
-          className="inline-flex items-center gap-0.5 px-3 py-2 bg-white rounded-full text-body text-black hover:bg-gray-50 transition-colors"
+          className="inline-flex items-center gap-0.5 px-3 py-2 bg-white dark:bg-zinc-900 rounded-full text-body text-black dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Back
@@ -78,14 +78,14 @@ export default async function PostPage({ params }: PostPageProps) {
         <div className="w-full flex flex-col items-center gap-2 px-4">
           {/* Title */}
           {post.data.title && (
-            <h1 className="text-h1-bold text-black text-center w-full">
+            <h1 className="text-h1-bold text-black dark:text-white text-center w-full">
               {post.data.title as string}
             </h1>
           )}
 
           {/* Description */}
           {post.data.description && (
-            <p className="text-body-editorial text-black text-center w-full">
+            <p className="text-body-editorial text-black dark:text-white text-center w-full">
               {post.data.description as string}
             </p>
           )}
@@ -93,15 +93,15 @@ export default async function PostPage({ params }: PostPageProps) {
           {/* Categories and Date */}
           {(postCategories.length > 0 || formattedDate) && (
             <div className="flex flex-wrap items-center justify-center gap-2 text-body px-4">
-              {/* Categories - dark grey #595959 */}
+              {/* Categories */}
               {postCategories.map((category) => (
-                <span key={category!.id} style={{ color: "#595959" }}>
+                <span key={category!.id} className="text-zinc-500 dark:text-zinc-400">
                   {category!.label}
                 </span>
               ))}
-              {/* Date - mid grey #999 */}
+              {/* Date */}
               {formattedDate && (
-                <span style={{ color: "#999999" }}>{formattedDate}</span>
+                <span className="text-zinc-400 dark:text-zinc-500">{formattedDate}</span>
               )}
             </div>
           )}

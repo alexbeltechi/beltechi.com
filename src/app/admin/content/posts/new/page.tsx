@@ -24,6 +24,7 @@ import { MediaPicker } from "@/components/admin/media-picker";
 import { ImageOptionsMenu } from "@/components/admin/image-options-menu";
 import { MediaDetailModal } from "@/components/admin/media-detail-modal";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
+import { IndexPill } from "@/components/lib";
 import type { MediaItem } from "@/lib/cms/types";
 
 interface MediaPreview {
@@ -504,9 +505,7 @@ function NewPostPageContent() {
                     </div>
 
                     {/* Order badge - top left */}
-                    <div className="absolute top-2 left-2 w-6 h-6 bg-zinc-900/80 rounded-full flex items-center justify-center text-xs text-white font-medium">
-                      {index + 1}
-                    </div>
+                    <IndexPill index={index + 1} className="absolute top-2 left-2" />
 
                     {/* Cover indicator - bottom left */}
                     {index === coverIndex && (

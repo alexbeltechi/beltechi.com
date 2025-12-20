@@ -154,7 +154,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   const maxVh = hasMultiple ? "calc(80vh - 40px)" : "80vh";
 
   return (
-    <div className="relative w-full bg-white overflow-hidden">
+    <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden">
       <div
         ref={containerRef}
         className="relative w-full select-none"
@@ -212,26 +212,26 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
             <button
               onClick={goToPrevious}
               disabled={!canGoPrevious}
-              className={`absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 bg-white border border-black transition-all ${
+              className={`absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 bg-white dark:bg-zinc-900 border border-black dark:border-zinc-700 transition-all ${
                 canGoPrevious
-                  ? "hover:bg-neutral-100 opacity-100"
+                  ? "hover:bg-neutral-100 dark:hover:bg-zinc-800 opacity-100"
                   : "opacity-30 cursor-not-allowed"
               }`}
               aria-label="Previous"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5 text-black dark:text-white" />
             </button>
             <button
               onClick={goToNext}
               disabled={!canGoNext}
-              className={`absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 bg-white border border-black transition-all ${
+              className={`absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 bg-white dark:bg-zinc-900 border border-black dark:border-zinc-700 transition-all ${
                 canGoNext
-                  ? "hover:bg-neutral-100 opacity-100"
+                  ? "hover:bg-neutral-100 dark:hover:bg-zinc-800 opacity-100"
                   : "opacity-30 cursor-not-allowed"
               }`}
               aria-label="Next"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5 text-black dark:text-white" />
             </button>
           </>
         )}
@@ -239,7 +239,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
 
       {hasMultiple && (
         <div
-          className="w-full flex items-center justify-center bg-white"
+          className="w-full flex items-center justify-center bg-white dark:bg-zinc-950"
           style={{ gap: "6px" }}
         >
           {validMedia.map((_, index) => (
@@ -247,15 +247,11 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
               key={index}
               onClick={() => setCurrentIndex(index)}
               aria-label={`Go to image ${index + 1}`}
-              style={{
-                width: index === currentIndex ? 8 : 6,
-                height: index === currentIndex ? 8 : 6,
-                borderRadius: "50%",
-                backgroundColor: index === currentIndex ? "#000" : "#d1d5db",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-              }}
+              className={`rounded-full border-none p-0 cursor-pointer ${
+                index === currentIndex 
+                  ? "w-2 h-2 bg-black dark:bg-white" 
+                  : "w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600"
+              }`}
             />
           ))}
         </div>

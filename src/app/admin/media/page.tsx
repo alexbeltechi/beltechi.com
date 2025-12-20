@@ -13,6 +13,7 @@ import {
   Plus,
   AlertCircle,
   CheckCircle2,
+  MoreVertical,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { formatRelativeTime } from "@/lib/utils";
@@ -31,6 +32,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
   compressImages,
   validateFilesForUpload,
   getUploadErrorMessage,
@@ -38,6 +46,7 @@ import {
   isCompressibleImage,
   type CompressionProgress,
 } from "@/lib/image-compression";
+import { PageHeader } from "@/components/lib";
 
 type FilterType = "all" | "images" | "video" | "unattached";
 
@@ -79,7 +88,6 @@ export default function MediaLibraryPage() {
   const [dateFilter, setDateFilter] = useState<string>("all");
 
   // Bulk select
-  const [bulkSelectMode, setBulkSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   
@@ -370,7 +378,6 @@ export default function MediaLibraryPage() {
 
       setMedia(media.filter((m) => !selectedIds.has(m.id)));
       setSelectedIds(new Set());
-      setBulkSelectMode(false);
       setSelectedMediaId(null);
     } catch (error) {
       console.error("Bulk delete failed:", error);
@@ -426,7 +433,6 @@ export default function MediaLibraryPage() {
   };
 
   const cancelBulkSelect = () => {
-    setBulkSelectMode(false);
     setSelectedIds(new Set());
   };
 
@@ -572,23 +578,14 @@ export default function MediaLibraryPage() {
     all: "All media items",
     images: "Images",
     video: "Video",
-    unattached: "Unattached",
+    unattached: "Unused",
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-120px)] pb-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 lg:mb-6">
-        <div>
-          <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">
-            Media Library
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {filteredMedia.length} of {media.length} files
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full">
+      {/* Header - 56px tall */}
+      <div className="border-b px-4 h-14 flex items-center">
+        <PageHeader title="Media" count={media.length}>
           <Button asChild disabled={isUploading}>
             <label className="cursor-pointer">
               {isUploading ? (
@@ -612,275 +609,213 @@ export default function MediaLibraryPage() {
               />
             </label>
           </Button>
-        </div>
+        </PageHeader>
       </div>
 
-      {/* Error Banner */}
-      {uploadError && (
-        <div className="mb-4 lg:mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm text-destructive font-medium">{uploadError}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 h-6 w-6"
-            onClick={clearError}
-          >
-            <X className="w-4 h-4" />
-          </Button>
+      {/* Filters Row - 56px tall */}
+      <div className="border-b px-4 h-14 flex items-center gap-3">
+        {/* Select All Checkbox - matching posts page */}
+        <div className="flex items-center justify-center w-8 shrink-0">
+          <Checkbox
+            checked={selectedIds.size > 0 && selectedIds.size === filteredMedia.length}
+            onCheckedChange={selectAll}
+            aria-label="Select all"
+          />
         </div>
-      )}
 
-      {/* Upload Progress */}
-      {uploadProgress.size > 0 && (
-        <div className="mb-4 lg:mb-6 space-y-2">
-          {Array.from(uploadProgress.values()).map((item) => (
-            <Card
-              key={item.fileName}
-              className={`p-3 ${
-                item.status === "error"
-                  ? "bg-destructive/10 border-destructive/20"
-                  : item.status === "done"
-                  ? "bg-green-500/10 border-green-500/20"
-                  : ""
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {item.status === "compressing" && (
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                )}
-                {item.status === "uploading" && (
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                )}
-                {item.status === "done" && (
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                )}
-                {item.status === "error" && (
-                  <AlertCircle className="w-4 h-4 text-destructive" />
-                )}
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.fileName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.status === "compressing" && "Optimizing image..."}
-                    {item.status === "uploading" && "Uploading..."}
-                    {item.status === "done" && (
-                      <>
-                        {item.originalSize && item.compressedSize && item.originalSize !== item.compressedSize ? (
-                          <>
-                            {formatFileSize(item.originalSize)} → {formatFileSize(item.compressedSize)}
-                            <span className="text-green-600 ml-1">
-                              ({Math.round((1 - item.compressedSize / item.originalSize) * 100)}% smaller)
-                            </span>
-                          </>
-                        ) : (
-                          item.originalSize && formatFileSize(item.originalSize)
-                        )}
-                      </>
-                    )}
-                    {item.status === "error" && (
-                      <span className="text-destructive">{item.error}</span>
-                    )}
-                  </p>
-                </div>
-
-                {(item.status === "compressing" || item.status === "uploading") && (
-                  <span className="text-xs text-muted-foreground">{item.progress}%</span>
-                )}
-
-                {/* Retry and Dismiss buttons for errors */}
-                {item.status === "error" && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    {item.file && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRetry(item.fileName)}
-                        className="h-7 px-2 text-xs"
-                      >
-                        Retry
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => dismissError(item.fileName)}
-                      className="h-7 w-7"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Progress bar */}
-              {(item.status === "compressing" || item.status === "uploading") && (
-                <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${item.progress}%` }}
-                  />
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Filters Row */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4 lg:mb-6">
         {/* Search */}
-        <div className="relative flex-1">
+        <div className="relative w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-[250px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search media..."
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-10"
+            className="pl-9"
           />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-accent rounded"
-            >
-              <X className="w-3 h-3 text-muted-foreground" />
-            </button>
-          )}
         </div>
 
-        {/* Type, Date, Select - stacked on mobile, inline on desktop */}
-        <div className="flex flex-row gap-2">
-          {/* Type Filter */}
-          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as FilterType)}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px]">
-              <SelectValue placeholder="All media items" />
-            </SelectTrigger>
-            <SelectContent>
-              {(["all", "images", "video", "unattached"] as FilterType[]).map((type) => (
-                <SelectItem key={type} value={type}>
-                  {typeFilterLabels[type]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Type Filter */}
+        <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as FilterType)}>
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            {(["all", "images", "video", "unattached"] as FilterType[]).map((type) => (
+              <SelectItem key={type} value={type}>
+                {typeFilterLabels[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          {/* Date Filter */}
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px]">
-              <SelectValue placeholder="All dates" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All dates</SelectItem>
-              {availableMonths.map(([key, label]) => (
-                <SelectItem key={key} value={key}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Date Filter */}
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="All dates" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All dates</SelectItem>
+            {availableMonths.map(([key, label]) => (
+              <SelectItem key={key} value={key}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          {/* Select Button */}
-          {!bulkSelectMode && (
-            <Button variant="outline" className="shrink-0" onClick={() => setBulkSelectMode(true)}>
-              Select
+        {/* Spacer */}
+        <div className="flex-1 hidden sm:block" />
+
+        {/* Three-dot Bulk Actions Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="shrink-0">
+              <MoreVertical className="h-4 w-4" />
             </Button>
-          )}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={selectAll}>
+              {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={selectAllUnused}>
+              Select unused
+            </DropdownMenuItem>
+            {selectedIds.size > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={createPostWithMedia}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create post ({selectedIds.size})
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleBulkDelete}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete ({selectedIds.size})
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Bulk Select Bar */}
-      {bulkSelectMode && (
-        <Card className="flex flex-col gap-3 p-3 mb-4 lg:mb-6">
-          {/* Mobile: stacked layout */}
-          <div className="flex flex-col gap-2 sm:hidden">
-            {/* Row 1: Create Post + Delete */}
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                onClick={createPostWithMedia}
-                disabled={selectedIds.size === 0}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Post
-              </Button>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        {/* Error Banner */}
+        {uploadError && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-destructive font-medium">{uploadError}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-6 w-6"
+              onClick={clearError}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
 
-              <Button
-                className="flex-1"
-                variant="destructive"
-                onClick={handleBulkDelete}
-                disabled={selectedIds.size === 0 || deleting}
+        {/* Upload Progress */}
+        {uploadProgress.size > 0 && (
+          <div className="mb-4 space-y-2">
+            {Array.from(uploadProgress.values()).map((item) => (
+              <Card
+                key={item.fileName}
+                className={`p-3 ${
+                  item.status === "error"
+                    ? "bg-destructive/10 border-destructive/20"
+                    : item.status === "done"
+                    ? "bg-green-500/10 border-green-500/20"
+                    : ""
+                }`}
               >
-                {deleting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-2 h-4 w-4" />
+                <div className="flex items-center gap-3">
+                  {item.status === "compressing" && (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                  {item.status === "uploading" && (
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  )}
+                  {item.status === "done" && (
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  )}
+                  {item.status === "error" && (
+                    <AlertCircle className="w-4 h-4 text-destructive" />
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.status === "compressing" && "Optimizing image..."}
+                      {item.status === "uploading" && "Uploading..."}
+                      {item.status === "done" && (
+                        <>
+                          {item.originalSize && item.compressedSize && item.originalSize !== item.compressedSize ? (
+                            <>
+                              {formatFileSize(item.originalSize)} → {formatFileSize(item.compressedSize)}
+                              <span className="text-green-600 ml-1">
+                                ({Math.round((1 - item.compressedSize / item.originalSize) * 100)}% smaller)
+                              </span>
+                            </>
+                          ) : (
+                            item.originalSize && formatFileSize(item.originalSize)
+                          )}
+                        </>
+                      )}
+                      {item.status === "error" && (
+                        <span className="text-destructive">{item.error}</span>
+                      )}
+                    </p>
+                  </div>
+
+                  {(item.status === "compressing" || item.status === "uploading") && (
+                    <span className="text-xs text-muted-foreground">{item.progress}%</span>
+                  )}
+
+                  {/* Retry and Dismiss buttons for errors */}
+                  {item.status === "error" && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {item.file && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRetry(item.fileName)}
+                          className="h-7 px-2 text-xs"
+                        >
+                          Retry
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => dismissError(item.fileName)}
+                        className="h-7 w-7"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Progress bar */}
+                {(item.status === "compressing" || item.status === "uploading") && (
+                  <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${item.progress}%` }}
+                    />
+                  </div>
                 )}
-                Delete
-              </Button>
-            </div>
-
-            {/* Row 2: Unused + Select all */}
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={selectAllUnused}>
-                Unused
-              </Button>
-
-              <Button variant="outline" className="flex-1" onClick={selectAll}>
-                {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
-              </Button>
-            </div>
-
-            {/* Row 3: Cancel + count */}
-            <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={cancelBulkSelect}>
-                Cancel
-              </Button>
-              <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
-            </div>
+              </Card>
+            ))}
           </div>
-
-          {/* Desktop: horizontal layout */}
-          <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-3">
-            <Button
-              onClick={createPostWithMedia}
-              disabled={selectedIds.size === 0}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Post
-            </Button>
-
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={selectedIds.size === 0 || deleting}
-            >
-              {deleting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-2 h-4 w-4" />
-              )}
-              Delete
-            </Button>
-
-            <Button variant="outline" onClick={cancelBulkSelect}>
-              Cancel
-            </Button>
-
-            <span className="ml-auto text-sm text-muted-foreground">{selectedIds.size} selected</span>
-
-            <Button variant="outline" size="sm" onClick={selectAllUnused}>
-              Unused
-            </Button>
-
-            <Button variant="outline" size="sm" onClick={selectAll}>
-              {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
-            </Button>
-          </div>
-        </Card>
-      )}
+        )}
 
       {/* Main Grid - Drag Drop Zone */}
       <div
@@ -888,7 +823,7 @@ export default function MediaLibraryPage() {
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`flex-1 rounded-xl transition-colors ${
+        className={`rounded-xl transition-colors ${
           dragActive ? "bg-accent" : ""
         }`}
       >
@@ -942,19 +877,13 @@ export default function MediaLibraryPage() {
             {filteredMedia.map((item) => (
               <div
                 key={item.id}
-                onClick={() => {
-                  if (bulkSelectMode) {
-                    toggleSelect(item.id);
-                  } else {
-                    setSelectedMediaId(item.id);
-                  }
-                }}
+                onClick={() => setSelectedMediaId(item.id)}
                 className="cursor-pointer group"
               >
                 {/* Image Square */}
                 <div
                   className={`relative aspect-square bg-muted rounded-lg overflow-hidden transition-all ${
-                    bulkSelectMode && selectedIds.has(item.id)
+                    selectedIds.has(item.id)
                       ? "ring-2 ring-primary"
                       : "ring-1 ring-border group-hover:ring-foreground/30"
                   }`}
@@ -971,21 +900,32 @@ export default function MediaLibraryPage() {
                     </div>
                   )}
 
-                  {/* Bulk Select Checkbox */}
-                  {bulkSelectMode && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <Checkbox
-                        checked={selectedIds.has(item.id)}
-                        onCheckedChange={() => toggleSelect(item.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-5 w-5 border-2 border-white bg-white/20 backdrop-blur-sm shadow-md data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-primary"
-                      />
-                    </div>
-                  )}
+                  {/* Checkbox - Top Left */}
+                  <div
+                    className="absolute top-2 left-2 z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSelect(item.id);
+                    }}
+                  >
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onCheckedChange={() => toggleSelect(item.id)}
+                    />
+                  </div>
 
-                  {/* Three-dot menu - visible on hover when not in bulk mode */}
-                  {!bulkSelectMode && (
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Type badge - Top Right */}
+                  <div className="absolute top-2 right-2">
+                    {item.mime.startsWith("image/") ? (
+                      <Image className="w-4 h-4 text-white drop-shadow-md" />
+                    ) : (
+                      <Film className="w-4 h-4 text-white drop-shadow-md" />
+                    )}
+                  </div>
+
+                  {/* Three-dot menu - visible on hover when no items selected */}
+                  {selectedIds.size === 0 && (
+                    <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <ImageOptionsMenu
                         onEdit={() => setSelectedMediaId(item.id)}
                         onCreatePost={() => router.push(`/admin/content/posts/new?media=${item.id}`)}
@@ -996,16 +936,7 @@ export default function MediaLibraryPage() {
                     </div>
                   )}
 
-                  {/* Type badge */}
-                  <div className="absolute top-2 left-2">
-                    {item.mime.startsWith("image/") ? (
-                      <Image className="w-4 h-4 text-white drop-shadow-md" />
-                    ) : (
-                      <Film className="w-4 h-4 text-white drop-shadow-md" />
-                    )}
-                  </div>
-
-                  {/* Unattached indicator */}
+                  {/* Unused indicator */}
                   {!usedMediaIds.has(item.id) && (
                     <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-amber-500 rounded text-[10px] text-white font-medium">
                       Unused
@@ -1029,9 +960,10 @@ export default function MediaLibraryPage() {
           </div>
         )}
       </div>
+      </div>
 
       {/* Media Detail Modal - shared component */}
-      {!bulkSelectMode && (
+      {selectedIds.size === 0 && (
         <MediaDetailModal
           mediaId={selectedMediaId}
           onClose={() => setSelectedMediaId(null)}
