@@ -352,6 +352,7 @@ function NewPostPageContent() {
       }
 
       const data = await res.json();
+      setAllowNavigation(true);
       router.push(`/admin/content/posts/${data.data.slug}`);
     } catch (error) {
       console.error("Save error:", error);
