@@ -511,52 +511,93 @@ export default function MediaLibraryPage() {
   const handleBatchReplaceFolder = async (files: FileList) => {
     if (selectedIds.size === 0 || files.length === 0) return;
 
-    setBatchReplacing(true);
-    setBatchReplaceProgress({ matched: 0, total: selectedIds.size, current: "" });
+    const selectedItems = media.filter((m) => selectedIds.has(m.id));
+    
+    // Create a map of base names to replacement files from the folder
+    const folderFiles = new Map<string, File>();
+    for (const file of Array.from(files)) {
+      // Skip non-image/video files
+      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) continue;
+      const baseName = file.name.replace(/\.[^.]+$/, "").toLowerCase();
+      folderFiles.set(baseName, file);
+    }
 
-    try {
-      const selectedItems = media.filter((m) => selectedIds.has(m.id));
-      let matchedCount = 0;
+    // Find matches: for each selected item, find corresponding file in folder
+    const matches: Array<{ item: MediaItem; file: File }> = [];
+    const unmatched: MediaItem[] = [];
 
-      // Create a map of base names to replacement files
-      const replacementMap = new Map<string, File>();
-      for (const file of Array.from(files)) {
-        const baseName = file.name.replace(/\.[^.]+$/, "").toLowerCase();
-        replacementMap.set(baseName, file);
-      }
-
-      for (const item of selectedItems) {
-        const itemBaseName = extractBaseName(item.filename);
-        setBatchReplaceProgress({ matched: matchedCount, total: selectedIds.size, current: item.title || item.filename });
-
-        // Find matching replacement file
-        let matchedFile: File | undefined;
-        for (const [replaceBaseName, file] of replacementMap) {
-          if (itemBaseName.includes(replaceBaseName) || replaceBaseName.includes(itemBaseName)) {
+    for (const item of selectedItems) {
+      const itemBaseName = extractBaseName(item.filename);
+      
+      // Try exact match first, then partial match
+      let matchedFile = folderFiles.get(itemBaseName);
+      
+      // If no exact match, try to find partial match
+      if (!matchedFile) {
+        for (const [folderBaseName, file] of folderFiles) {
+          if (itemBaseName === folderBaseName || 
+              itemBaseName.startsWith(folderBaseName) || 
+              folderBaseName.startsWith(itemBaseName)) {
             matchedFile = file;
             break;
           }
         }
+      }
 
-        if (matchedFile) {
-          // Upload replacement and delete old
-          const formData = new FormData();
-          formData.append("file", matchedFile);
+      if (matchedFile) {
+        matches.push({ item, file: matchedFile });
+      } else {
+        unmatched.push(item);
+      }
+    }
 
-          const uploadRes = await fetch("/api/admin/media", {
-            method: "POST",
-            body: formData,
-          });
+    // Show confirmation with match count
+    if (matches.length === 0) {
+      alert(`No matching files found in the folder.\n\nMake sure the filenames in your folder match the original filenames (e.g., "000004.jpg" matches "000004-xyz.webp").`);
+      return;
+    }
 
-          if (uploadRes.ok) {
-            // Delete the old file
-            await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
-            matchedCount++;
-          }
+    if (unmatched.length > 0) {
+      const proceed = confirm(
+        `Found ${matches.length} matching files out of ${selectedItems.length} selected.\n\n` +
+        `${unmatched.length} items have no match and will be skipped:\n` +
+        `${unmatched.slice(0, 5).map(i => `• ${i.title || i.filename}`).join("\n")}` +
+        `${unmatched.length > 5 ? `\n... and ${unmatched.length - 5} more` : ""}\n\n` +
+        `Continue with ${matches.length} replacements?`
+      );
+      if (!proceed) return;
+    }
+
+    setBatchReplacing(true);
+    setBatchReplaceProgress({ matched: 0, total: matches.length, current: "" });
+
+    try {
+      let replacedCount = 0;
+
+      for (const { item, file } of matches) {
+        setBatchReplaceProgress({ 
+          matched: replacedCount, 
+          total: matches.length, 
+          current: item.title || item.filename 
+        });
+
+        // Upload replacement
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadRes = await fetch("/api/admin/media", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          // Delete the old file
+          await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
+          replacedCount++;
         }
       }
 
-      setBatchReplaceProgress({ matched: matchedCount, total: selectedIds.size, current: "Done!" });
+      setBatchReplaceProgress({ matched: replacedCount, total: matches.length, current: "Done!" });
 
       // Refresh media list
       await fetchMedia();
