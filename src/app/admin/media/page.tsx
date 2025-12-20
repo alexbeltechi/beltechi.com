@@ -900,9 +900,18 @@ export default function MediaLibraryPage() {
                     </div>
                   )}
 
-                  {/* Checkbox - Top Left */}
+                  {/* Type badge - Top Left */}
+                  <div className="absolute top-2 left-2">
+                    {item.mime.startsWith("image/") ? (
+                      <Image className="w-4 h-4 text-white drop-shadow-md" />
+                    ) : (
+                      <Film className="w-4 h-4 text-white drop-shadow-md" />
+                    )}
+                  </div>
+
+                  {/* Checkbox - Top Right */}
                   <div
-                    className="absolute top-2 left-2 z-10"
+                    className="absolute top-2 right-2 z-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleSelect(item.id);
@@ -912,15 +921,6 @@ export default function MediaLibraryPage() {
                       checked={selectedIds.has(item.id)}
                       onCheckedChange={() => toggleSelect(item.id)}
                     />
-                  </div>
-
-                  {/* Type badge - Top Right */}
-                  <div className="absolute top-2 right-2">
-                    {item.mime.startsWith("image/") ? (
-                      <Image className="w-4 h-4 text-white drop-shadow-md" />
-                    ) : (
-                      <Film className="w-4 h-4 text-white drop-shadow-md" />
-                    )}
                   </div>
 
                   {/* Three-dot menu - visible on hover when no items selected */}
