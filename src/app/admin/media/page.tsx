@@ -18,6 +18,7 @@ import {
   FolderOpen,
   FileImage,
   SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { formatRelativeTime } from "@/lib/utils";
@@ -810,8 +811,8 @@ export default function MediaLibraryPage() {
     "name-desc": "Name (Z-A)",
   };
 
-  // Check if any filters are active (for mobile indicator)
-  const hasActiveFilters = typeFilter !== "all" || dateFilter !== "all" || sortBy !== "newest";
+  // Check if any filters are active (for mobile indicator and reset button)
+  const hasActiveFilters = typeFilter !== "all" || dateFilter !== "all" || sortBy !== "newest" || searchQuery !== "";
 
   return (
     <div className="flex flex-col h-full">
@@ -855,8 +856,8 @@ export default function MediaLibraryPage() {
           />
         </div>
 
-        {/* Search */}
-        <div className="relative flex-1 sm:flex-none sm:w-[250px]">
+        {/* Search - fills available space on desktop */}
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
@@ -867,11 +868,11 @@ export default function MediaLibraryPage() {
           />
         </div>
 
-        {/* Mobile Filter Button */}
+        {/* Mobile/Tablet Filter Button - visible below xl (1280px) */}
         <Button
           variant="outline"
           size="icon"
-          className="sm:hidden relative shrink-0"
+          className="xl:hidden relative shrink-0"
           onClick={() => setShowFilterModal(true)}
           aria-label="Open filters"
         >
@@ -881,9 +882,9 @@ export default function MediaLibraryPage() {
           )}
         </Button>
 
-        {/* Type Filter - Desktop */}
+        {/* Type Filter - Desktop (xl+) */}
         <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as FilterType)}>
-          <SelectTrigger className="w-[170px] hidden sm:flex">
+          <SelectTrigger className="w-[170px] hidden xl:flex">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
@@ -895,9 +896,9 @@ export default function MediaLibraryPage() {
           </SelectContent>
         </Select>
 
-        {/* Date Filter - Desktop */}
+        {/* Date Filter - Desktop (xl+) */}
         <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-[140px] hidden sm:flex">
+          <SelectTrigger className="w-[140px] hidden xl:flex">
             <SelectValue placeholder="All dates" />
           </SelectTrigger>
           <SelectContent>
@@ -910,9 +911,9 @@ export default function MediaLibraryPage() {
           </SelectContent>
         </Select>
 
-        {/* Sort - Desktop */}
+        {/* Sort - Desktop (xl+) */}
         <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-          <SelectTrigger className="w-[150px] hidden sm:flex">
+          <SelectTrigger className="w-[150px] hidden xl:flex">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -924,22 +925,21 @@ export default function MediaLibraryPage() {
           </SelectContent>
         </Select>
 
-        {/* Spacer */}
-        <div className="flex-1 hidden sm:block" />
-
-        {/* Reset Filters - Desktop only */}
+        {/* Reset Filters - Desktop only (xl+) */}
         {hasActiveFilters && (
           <Button
             variant="ghost"
-            size="sm"
-            className="hidden sm:flex text-muted-foreground hover:text-foreground"
+            size="icon"
+            className="hidden xl:flex shrink-0"
             onClick={() => {
+              setSearchQuery("");
               setTypeFilter("all");
               setDateFilter("all");
               setSortBy("newest");
             }}
+            aria-label="Reset filters"
           >
-            Reset
+            <RotateCcw className="h-4 w-4" />
           </Button>
         )}
 
@@ -1454,6 +1454,7 @@ export default function MediaLibraryPage() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
+                  setSearchQuery("");
                   setTypeFilter("all");
                   setDateFilter("all");
                   setSortBy("newest");
