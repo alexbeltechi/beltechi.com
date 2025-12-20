@@ -927,6 +927,22 @@ export default function MediaLibraryPage() {
         {/* Spacer */}
         <div className="flex-1 hidden sm:block" />
 
+        {/* Reset Filters - Desktop only */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden sm:flex text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setTypeFilter("all");
+              setDateFilter("all");
+              setSortBy("newest");
+            }}
+          >
+            Reset
+          </Button>
+        )}
+
         {/* Three-dot Bulk Actions Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
