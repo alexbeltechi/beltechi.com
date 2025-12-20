@@ -46,14 +46,15 @@
     },
     {
       "id": "life",
-      "label": "Life",
+      "label": "Lifestyle",
       "color": "#10B981",
       "description": "Personal updates and moments",
       "slug": "life",
-      "name": "Life",
+      "name": "Lifestyle",
       "createdAt": "2025-12-18T14:48:07.732Z",
-      "updatedAt": "2025-12-20T12:56:32.256Z",
-      "order": 4
+      "updatedAt": "2025-12-20T14:47:13.445Z",
+      "order": 4,
+      "showOnHomepage": true
     },
     {
       "id": "bikes",
