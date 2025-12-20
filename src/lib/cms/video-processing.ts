@@ -1,13 +1,44 @@
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-import { Readable, Writable } from "stream";
 import path from "path";
 import os from "os";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
 
-// Set ffmpeg path from installer
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+// Dynamically import ffmpeg to avoid bundling issues
+let ffmpeg: typeof import("fluent-ffmpeg") | null = null;
+let ffmpegReady = false;
+
+async function initFfmpeg(): Promise<boolean> {
+  if (ffmpegReady) return true;
+  if (ffmpeg === null) {
+    try {
+      // Dynamic imports to avoid Next.js bundling issues
+      const ffmpegModule = await import("fluent-ffmpeg");
+      ffmpeg = ffmpegModule.default || ffmpegModule;
+      
+      // Try to find ffmpeg in system PATH first, then fall back to installer
+      const { execSync } = await import("child_process");
+      try {
+        // Check if ffmpeg is in PATH
+        execSync("ffmpeg -version", { stdio: "ignore" });
+        ffmpegReady = true;
+      } catch {
+        // Try the installer package
+        try {
+          const installer = await import("@ffmpeg-installer/ffmpeg");
+          ffmpeg.setFfmpegPath(installer.path);
+          ffmpegReady = true;
+        } catch (installerError) {
+          console.warn("ffmpeg not available - video thumbnails will be skipped");
+          return false;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to initialize ffmpeg:", err);
+      return false;
+    }
+  }
+  return ffmpegReady;
+}
 
 export interface VideoThumbnailResult {
   buffer: Buffer;
@@ -23,16 +54,23 @@ export interface VideoMetadata {
 
 /**
  * Get video metadata (dimensions and duration)
+ * Returns null if ffmpeg is not available
  */
-export async function getVideoMetadata(videoBuffer: Buffer): Promise<VideoMetadata> {
+export async function getVideoMetadata(videoBuffer: Buffer): Promise<VideoMetadata | null> {
+  const ready = await initFfmpeg();
+  if (!ready || !ffmpeg) {
+    return null;
+  }
+
   const tempDir = os.tmpdir();
   const tempFile = path.join(tempDir, `video-${randomUUID()}.mp4`);
   
   try {
     await fs.writeFile(tempFile, videoBuffer);
     
+    const ffmpegInstance = ffmpeg;
     return new Promise((resolve, reject) => {
-      ffmpeg.ffprobe(tempFile, (err, metadata) => {
+      ffmpegInstance.ffprobe(tempFile, (err, metadata) => {
         if (err) {
           reject(err);
           return;
@@ -59,6 +97,7 @@ export async function getVideoMetadata(videoBuffer: Buffer): Promise<VideoMetada
 /**
  * Extract a thumbnail from a video at a specific timestamp
  * Returns a JPG buffer for maximum compatibility
+ * Returns null if ffmpeg is not available
  */
 export async function extractVideoThumbnail(
   videoBuffer: Buffer,
@@ -67,7 +106,12 @@ export async function extractVideoThumbnail(
     maxWidth?: number; // default 768 (same as image thumb)
     quality?: number; // 1-31, lower is better, default 5
   } = {}
-): Promise<VideoThumbnailResult> {
+): Promise<VideoThumbnailResult | null> {
+  const ready = await initFfmpeg();
+  if (!ready || !ffmpeg) {
+    return null;
+  }
+
   const { timestamp = 0.5, maxWidth = 768, quality = 5 } = options;
   
   const tempDir = os.tmpdir();
@@ -80,6 +124,9 @@ export async function extractVideoThumbnail(
     
     // Get video metadata first
     const metadata = await getVideoMetadata(videoBuffer);
+    if (!metadata) {
+      return null;
+    }
     
     // Calculate output dimensions maintaining aspect ratio
     let outputWidth = metadata.width;
@@ -98,8 +145,9 @@ export async function extractVideoThumbnail(
     // Use a safe timestamp (don't exceed video duration)
     const safeTimestamp = Math.min(timestamp, Math.max(0, metadata.duration - 0.1));
     
+    const ffmpegInstance = ffmpeg;
     return new Promise((resolve, reject) => {
-      ffmpeg(inputFile)
+      ffmpegInstance(inputFile)
         .seekInput(safeTimestamp)
         .frames(1)
         .outputOptions([

@@ -324,7 +324,7 @@ export async function uploadMedia(
   if (isVideo) {
     try {
       // Get video metadata (dimensions, duration)
-      videoMetadata = await getVideoMetadata(file);
+      videoMetadata = await getVideoMetadata(file) || undefined;
       
       // Extract thumbnail from first frame
       const thumbnail = await extractVideoThumbnail(file, {
@@ -333,15 +333,17 @@ export async function uploadMedia(
         quality: 5,
       });
       
-      // Save the thumbnail
-      const posterFilename = buildVariantFilename(sanitizedName, shortId, "poster", ".jpg");
-      const posterResult = await saveFile(thumbnail.buffer, posterFilename, "posters", "image/jpeg");
-      
-      poster = {
-        url: posterResult.url,
-        width: thumbnail.width,
-        height: thumbnail.height,
-      };
+      if (thumbnail) {
+        // Save the thumbnail
+        const posterFilename = buildVariantFilename(sanitizedName, shortId, "poster", ".jpg");
+        const posterResult = await saveFile(thumbnail.buffer, posterFilename, "posters", "image/jpeg");
+        
+        poster = {
+          url: posterResult.url,
+          width: thumbnail.width,
+          height: thumbnail.height,
+        };
+      }
     } catch (error) {
       console.error("Video thumbnail extraction failed:", error);
       // Continue without poster - not a critical error
