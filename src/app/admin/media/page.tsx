@@ -17,6 +17,7 @@ import {
   RefreshCw,
   FolderOpen,
   FileImage,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { formatRelativeTime } from "@/lib/utils";
@@ -62,6 +63,7 @@ import {
 import { PageHeader } from "@/components/lib";
 
 type FilterType = "all" | "images" | "video" | "unattached";
+type SortOption = "newest" | "oldest" | "largest" | "smallest" | "name-asc" | "name-desc";
 
 interface UsedMediaResponse {
   usedMediaIds: string[];
@@ -99,6 +101,10 @@ export default function MediaLibraryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  
+  // Mobile filter modal
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   // Bulk select
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -153,7 +159,7 @@ export default function MediaLibraryPage() {
 
   // Filtered media
   const filteredMedia = useMemo(() => {
-    return media.filter((item) => {
+    const filtered = media.filter((item) => {
       if (
         searchQuery &&
         !item.originalName.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -182,7 +188,27 @@ export default function MediaLibraryPage() {
 
       return true;
     });
-  }, [media, searchQuery, typeFilter, dateFilter, usedMediaIds]);
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "largest":
+          return (b.size || 0) - (a.size || 0);
+        case "smallest":
+          return (a.size || 0) - (b.size || 0);
+        case "name-asc":
+          return (a.title || a.filename).localeCompare(b.title || b.filename);
+        case "name-desc":
+          return (b.title || b.filename).localeCompare(a.title || a.filename);
+        default:
+          return 0;
+      }
+    });
+  }, [media, searchQuery, typeFilter, dateFilter, usedMediaIds, sortBy]);
 
   // Navigation for modal
   const currentIndex = selectedMediaId ? filteredMedia.findIndex((m) => m.id === selectedMediaId) : -1;
@@ -775,6 +801,18 @@ export default function MediaLibraryPage() {
     unattached: "Unused",
   };
 
+  const sortLabels: Record<SortOption, string> = {
+    newest: "Newest first",
+    oldest: "Oldest first",
+    largest: "Largest first",
+    smallest: "Smallest first",
+    "name-asc": "Name (A-Z)",
+    "name-desc": "Name (Z-A)",
+  };
+
+  // Check if any filters are active (for mobile indicator)
+  const hasActiveFilters = typeFilter !== "all" || dateFilter !== "all" || sortBy !== "newest";
+
   return (
     <div className="flex flex-col h-full">
       {/* Header - 56px tall */}
@@ -818,7 +856,7 @@ export default function MediaLibraryPage() {
         </div>
 
         {/* Search */}
-        <div className="relative w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-[250px]">
+        <div className="relative flex-1 sm:flex-none sm:w-[250px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
@@ -829,9 +867,23 @@ export default function MediaLibraryPage() {
           />
         </div>
 
-        {/* Type Filter */}
+        {/* Mobile Filter Button */}
+        <Button
+          variant="outline"
+          size="icon"
+          className="sm:hidden relative shrink-0"
+          onClick={() => setShowFilterModal(true)}
+          aria-label="Open filters"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {hasActiveFilters && (
+            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+          )}
+        </Button>
+
+        {/* Type Filter - Desktop */}
         <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as FilterType)}>
-          <SelectTrigger className="w-[170px]">
+          <SelectTrigger className="w-[170px] hidden sm:flex">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
@@ -843,9 +895,9 @@ export default function MediaLibraryPage() {
           </SelectContent>
         </Select>
 
-        {/* Date Filter */}
+        {/* Date Filter - Desktop */}
         <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px] hidden sm:flex">
             <SelectValue placeholder="All dates" />
           </SelectTrigger>
           <SelectContent>
@@ -853,6 +905,20 @@ export default function MediaLibraryPage() {
             {availableMonths.map(([key, label]) => (
               <SelectItem key={key} value={key}>
                 {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Sort - Desktop */}
+        <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+          <SelectTrigger className="w-[150px] hidden sm:flex">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+              <SelectItem key={option} value={option}>
+                {sortLabels[option]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -1304,6 +1370,83 @@ export default function MediaLibraryPage() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Mobile Filter Modal */}
+      <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
+        <DialogContent className="sm:max-w-[320px] max-w-[calc(100%-32px)]">
+          <DialogHeader>
+            <DialogTitle>Filters</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Type Filter */}
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as FilterType)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All types" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["all", "images", "video", "unattached"] as FilterType[]).map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {typeFilterLabels[type]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Filter */}
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All dates" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All dates</SelectItem>
+                  {availableMonths.map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort */}
+            <div className="space-y-2">
+              <Label>Sort by</Label>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(sortLabels) as SortOption[]).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {sortLabels[option]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reset Filters */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setTypeFilter("all");
+                  setDateFilter("all");
+                  setSortBy("newest");
+                }}
+              >
+                Reset filters
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
