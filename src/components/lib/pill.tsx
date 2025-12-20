@@ -196,10 +196,10 @@ export function IndexPill({
       data-slot="index-pill"
       className={cn(
         "inline-flex items-center justify-center",
-        "h-5 min-w-[26px] px-1.5 pt-0.5",
+        "h-5 min-w-[26px] px-1.5 my-0",
         "rounded-md",
         "bg-zinc-600 text-white",
-        "text-[13px] font-normal",
+        "text-[13px] font-normal leading-none",
         className
       )}
       style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
