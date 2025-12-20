@@ -414,7 +414,7 @@ function NewPostPageContent() {
             onClick={() => media.length === 0 && fileInputRef.current?.click()}
             className={cn(
               "mt-4 text-center transition-all",
-              media.length === 0 && "border-2 border-dashed rounded-none p-8",
+              media.length === 0 && "border border-dashed rounded-lg p-8",
               isDraggingFiles && "border-primary bg-primary/5",
               media.length === 0 &&
                 !isDraggingFiles &&
