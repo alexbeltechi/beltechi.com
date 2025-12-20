@@ -59,14 +59,13 @@ export default async function PostPage({ params }: PostPageProps) {
     <main className="min-h-screen bg-white dark:bg-zinc-950">
       {/* Back button - fixed 16px from top and left on all breakpoints */}
       <div className="fixed top-4 left-4 z-50">
-        {/* Mobile: icon only */}
+        {/* Mobile: larger icon-only button (48px with 28px icon) */}
         <Button
           asChild
-          size="icon"
-          className="sm:hidden bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0"
+          className="sm:hidden h-12 w-12 p-0 bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0"
         >
           <Link href="/">
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-7 h-7" />
           </Link>
         </Button>
         {/* Larger breakpoints: icon + label */}

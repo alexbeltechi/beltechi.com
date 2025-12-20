@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { CategoryInput } from "@/components/admin/category-input";
 import { DatePicker } from "@/components/admin/date-picker";
 import { MediaPicker } from "@/components/admin/media-picker";
@@ -25,6 +25,7 @@ import { ImageOptionsMenu } from "@/components/admin/image-options-menu";
 import { MediaDetailModal } from "@/components/admin/media-detail-modal";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
 import { IndexPill } from "@/components/lib";
+import { cn } from "@/lib/utils";
 import type { MediaItem } from "@/lib/cms/types";
 
 interface MediaPreview {
@@ -358,42 +359,41 @@ function NewPostPageContent() {
   };
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2 text-muted-foreground hover:text-foreground">
-            <Link href="/admin/content">
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Link>
-          </Button>
-          <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">
-            New Post
-          </h1>
+    <div className="flex flex-col h-full">
+      {/* Header - 56px top bar */}
+      <div className="border-b px-4 h-14 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/content?collection=posts"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">New Post</h1>
         </div>
 
-        {/* Only Save Draft button at top */}
         <Button
           variant="outline"
+          size="sm"
           onClick={() => handleSave("draft")}
           disabled={saving}
         >
           {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Save className="w-4 h-4" />
+            <Save className="mr-2 h-4 w-4" />
           )}
           Save Draft
         </Button>
       </div>
 
-      {/* Media Upload */}
-      <Card>
-        <CardContent className="pt-6">
-          <Label className="mb-4">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Media Upload */}
+        <div className="px-4 py-4 border-b">
+          <h2 className="text-xl font-medium">
             Media <span className="text-destructive">*</span>
-          </Label>
+          </h2>
 
           {/* Hidden file input */}
           <input
@@ -412,18 +412,19 @@ function NewPostPageContent() {
             onDragLeave={handleFileDragLeave}
             onDrop={handleFileDrop}
             onClick={() => media.length === 0 && fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-6 lg:p-8 text-center transition-all ${
-              isDraggingFiles
-                ? "border-primary bg-primary/5"
-                : media.length === 0
-                  ? "border-border hover:border-primary/50 bg-muted/50 cursor-pointer"
-                  : "border-transparent"
-            }`}
+            className={cn(
+              "mt-4 text-center transition-all",
+              media.length === 0 && "border-2 border-dashed rounded-none p-8",
+              isDraggingFiles && "border-primary bg-primary/5",
+              media.length === 0 &&
+                !isDraggingFiles &&
+                "border-border hover:border-muted-foreground bg-muted/50 cursor-pointer"
+            )}
           >
             {media.length === 0 ? (
               <div>
-                <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-foreground mb-1">
+                <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-muted-foreground mb-1">
                   {isDraggingFiles
                     ? "Drop files here"
                     : "Drag & drop files here"}
@@ -440,7 +441,7 @@ function NewPostPageContent() {
                       fileInputRef.current?.click();
                     }}
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload className="mr-2 h-4 w-4" />
                     Upload
                   </Button>
                   <Button
@@ -451,134 +452,110 @@ function NewPostPageContent() {
                       setShowMediaPicker(true);
                     }}
                   >
-                    <ImageIcon className="w-4 h-4" />
+                    <ImageIcon className="mr-2 h-4 w-4" />
                     Choose from Library
                   </Button>
                 </div>
               </div>
             ) : (
-            <div className="space-y-4">
-              {/* Media Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
-                {media.map((item, index) => (
-                  <div
-                    key={item.id}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                    onClick={() => item.isExisting && item.mediaId && setMediaDetailId(item.mediaId)}
-                    className={`relative aspect-square bg-muted rounded-lg overflow-hidden group cursor-pointer ring-1 ring-transparent hover:ring-foreground transition-all ${
-                      draggedIndex === index ? "opacity-50 scale-95" : ""
-                    }`}
+              <div className="space-y-4">
+                {/* Media Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {media.map((item, index) => (
+                    <div
+                      key={item.id}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      onClick={() => item.isExisting && item.mediaId && setMediaDetailId(item.mediaId)}
+                      className={cn(
+                        "relative aspect-square bg-muted rounded-lg overflow-hidden group cursor-pointer ring-1 ring-transparent hover:ring-primary transition-all",
+                        draggedIndex === index && "opacity-50 scale-95"
+                      )}
+                    >
+                      {item.type === "image" ? (
+                        <img
+                          src={item.url}
+                          alt=""
+                          className="w-full h-full object-cover pointer-events-none"
+                        />
+                      ) : (
+                        <video
+                          src={item.url}
+                          className="w-full h-full object-cover pointer-events-none"
+                        />
+                      )}
+
+                      {/* Drag handle - bottom right, always visible on mobile, hover on desktop */}
+                      <div className="absolute bottom-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <div className="p-1.5 bg-black/60 rounded-full">
+                          <GripVertical className="h-4 w-4 text-white" />
+                        </div>
+                      </div>
+
+                      {/* Three-dot menu - top right, visible on hover */}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ImageOptionsMenu
+                          onEdit={item.isExisting && item.mediaId ? () => setMediaDetailId(item.mediaId!) : undefined}
+                          onCopyUrl={() => navigator.clipboard.writeText(item.url)}
+                          onSetCover={() => setAsCover(index)}
+                          onDelete={() => removeMedia(item.id)}
+                          isCover={index === coverIndex}
+                          showCoverOption={true}
+                        />
+                      </div>
+
+                      {/* Order badge - top left */}
+                      <IndexPill index={index + 1} className="absolute top-2 left-2" />
+
+                      {/* Cover indicator - bottom left */}
+                      {index === coverIndex && (
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-500 rounded-full text-[10px] text-white font-medium">
+                          <Star className="h-3 w-3 fill-white" />
+                          Cover
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-sm text-muted-foreground text-center">
+                  Drag to reorder · {media.length}/10 files
+                </p>
+                
+                {/* Additional buttons below grid */}
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
                   >
-                    {item.type === "image" ? (
-                      <img
-                        src={item.url}
-                        alt=""
-                        className="w-full h-full object-cover pointer-events-none"
-                      />
-                    ) : (
-                      <video
-                        src={item.url}
-                        className="w-full h-full object-cover pointer-events-none"
-                      />
-                    )}
-
-                    {/* Drag handle - bottom right, always visible on mobile, hover on desktop */}
-                    <div className="absolute bottom-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <div className="p-1.5 bg-black/60 rounded-full">
-                        <GripVertical className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-
-                    {/* Three-dot menu - top right, visible on hover */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ImageOptionsMenu
-                        onEdit={item.isExisting && item.mediaId ? () => setMediaDetailId(item.mediaId!) : undefined}
-                        onCopyUrl={() => navigator.clipboard.writeText(item.url)}
-                        onSetCover={() => setAsCover(index)}
-                        onDelete={() => removeMedia(item.id)}
-                        isCover={index === coverIndex}
-                        showCoverOption={true}
-                      />
-                    </div>
-
-                    {/* Order badge - top left */}
-                    <IndexPill index={index + 1} className="absolute top-2 left-2" />
-
-                    {/* Cover indicator - bottom left */}
-                    {index === coverIndex && (
-                      <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-500 rounded-full text-[10px] text-white font-medium">
-                        <Star className="w-3 h-3 fill-white" />
-                        Cover
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Add More */}
-                {media.length < 10 && (
-                  <div className="aspect-square border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 bg-muted/50">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => fileInputRef.current?.click()}
-                      title="Upload files"
-                    >
-                      <Upload className="w-5 h-5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowMediaPicker(true)}
-                      title="Choose from library"
-                    >
-                      <ImageIcon className="w-5 h-5" />
-                    </Button>
-                  </div>
-                )}
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload more
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowMediaPicker(true)}
+                  >
+                    <ImageIcon className="mr-2 h-4 w-4" />
+                    Choose from library
+                  </Button>
+                </div>
               </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                Drag to reorder · {media.length}/10 files
-              </p>
-              
-              {/* Additional buttons below grid */}
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload more
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowMediaPicker(true)}
-                >
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  Choose from library
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Details */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
+        {/* Details */}
+        <div className="px-4 py-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">
-              Title <span className="text-muted-foreground font-normal">(optional)</span>
+              Title{" "}
+              <span className="text-muted-foreground font-normal">(optional)</span>
             </Label>
             <Input
               id="title"
@@ -611,14 +588,12 @@ function NewPostPageContent() {
               <CategoryInput value={categories} onChange={setCategories} />
             </div>
 
-            <div>
-              <DatePicker
-                label="Date"
-                value={publishDate}
-                onChange={setPublishDate}
-                placeholder="Select date (defaults to now)"
-              />
-            </div>
+            <DatePicker
+              label="Date"
+              value={publishDate}
+              onChange={setPublishDate}
+              placeholder="Select date (defaults to now)"
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -652,24 +627,24 @@ function NewPostPageContent() {
             </div>
           </div>
 
+          <Separator />
+
           {/* Publish Button - Full Width */}
-          <div className="pt-6 mt-2 border-t">
-            <Button
-              onClick={() => handleSave("published")}
-              disabled={saving}
-              className="w-full"
-              size="lg"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-              Publish Post
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          <Button
+            onClick={() => handleSave("published")}
+            disabled={saving}
+            className="w-full"
+            size="lg"
+          >
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Eye className="mr-2 h-4 w-4" />
+            )}
+            Publish Post
+          </Button>
+        </div>
+      </div>
 
       {/* Media Picker Modal */}
       <MediaPicker
