@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, ChevronDown, Loader2, Plus } from "lucide-react";
+import { X, ChevronDown, Loader2, Plus, GripVertical } from "lucide-react";
 
 interface Category {
   id: string;
@@ -37,6 +37,7 @@ export function CategoryInput({
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +80,27 @@ export function CategoryInput({
 
   const removeCategory = (categoryId: string) => {
     onChange(value.filter((c) => c !== categoryId));
+  };
+
+  // Drag and drop handlers for reordering
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newValue = [...value];
+    const draggedItem = newValue[draggedIndex];
+    newValue.splice(draggedIndex, 1);
+    newValue.splice(index, 0, draggedItem);
+    onChange(newValue);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
   // Create a new category via API
@@ -197,12 +219,18 @@ export function CategoryInput({
         }}
       >
         {/* Selected categories */}
-        {value.map((catId) => {
+        {value.map((catId, index) => {
           const category = categories.find((c) => c.id === catId);
           return (
             <span
               key={catId}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm"
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              className={`inline-flex items-center gap-1 pl-1 pr-2 py-1 rounded-md text-sm cursor-grab active:cursor-grabbing transition-all ${
+                draggedIndex === index ? "opacity-50 scale-95" : ""
+              }`}
               style={{
                 backgroundColor: category?.color
                   ? `${category.color}20`
@@ -210,6 +238,7 @@ export function CategoryInput({
                 color: category?.color || "#52525b",
               }}
             >
+              <GripVertical className="w-3 h-3 opacity-50" />
               {category?.label || catId}
               <button
                 type="button"
