@@ -1033,6 +1033,33 @@
       "alt": "",
       "createdAt": "2025-12-20T15:21:09.919Z",
       "hash": "730790c17bc6804dc1b5455dd47f116a"
+    },
+    {
+      "id": "c32b3918-093e-4e3d-9911-30b9525ef3f6",
+      "filename": "000004-e93e.webp",
+      "originalName": "000004.JPG",
+      "slug": "000004-e93e",
+      "path": "uploads/000004-e93e.webp",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/000004-e93e.webp",
+      "mime": "image/webp",
+      "size": 588988,
+      "width": 2500,
+      "height": 2496,
+      "variants": {
+        "thumb": {
+          "filename": "000004-e93e-thumb.webp",
+          "path": "uploads/variants/000004-e93e-thumb.webp",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/000004-e93e-thumb.webp",
+          "width": 768,
+          "height": 767,
+          "size": 89806
+        }
+      },
+      "activeVariant": "display",
+      "title": "000004",
+      "alt": "",
+      "createdAt": "2025-12-20T15:21:18.398Z",
+      "hash": "b0d0674ae6cc0ecc1aeb968c83c21043"
     }
   ]
 }
