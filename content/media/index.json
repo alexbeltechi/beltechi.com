@@ -769,6 +769,41 @@
       "alt": "",
       "createdAt": "2025-12-20T14:44:21.912Z",
       "hash": "99722a39d160a9aca97eb26d4487b3d2"
+    },
+    {
+      "id": "dbe367a9-f33d-4991-9d7d-1ec731ec666f",
+      "filename": "000006-6027.jpg",
+      "originalName": "000006.JPG",
+      "slug": "000006-6027",
+      "path": "uploads/000006-6027.jpg",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/000006-6027.jpg",
+      "mime": "image/jpeg",
+      "size": 1700121,
+      "width": 3637,
+      "height": 3632,
+      "original": {
+        "filename": "000006-6027-original.jpg",
+        "path": "uploads/originals/000006-6027-original.jpg",
+        "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/originals/000006-6027-original.jpg",
+        "width": 3637,
+        "height": 3632,
+        "size": 1700121
+      },
+      "variants": {
+        "thumb": {
+          "filename": "000006-6027-thumb.jpg",
+          "path": "uploads/variants/000006-6027-thumb.jpg",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/000006-6027-thumb.jpg",
+          "width": 400,
+          "height": 399,
+          "size": 9115
+        }
+      },
+      "activeVariant": "original",
+      "title": "000006",
+      "alt": "",
+      "createdAt": "2025-12-20T14:44:26.524Z",
+      "hash": "eeab9a8bc7c02b20fc233531e5693325"
     }
   ]
 }
