@@ -1111,10 +1111,14 @@ export default function MediaLibraryPage() {
                     )}
                   </div>
 
-                  {/* Checkbox - Top Right */}
+                  {/* Checkbox - Top Right (visible on hover on desktop, always on mobile or when selected) */}
                   <button
                     type="button"
-                    className="absolute top-1 right-1 z-10 w-9 h-9 flex items-center justify-center rounded-md hover:bg-black/30 transition-colors"
+                    className={`absolute top-1 right-1 z-10 w-9 h-9 flex items-center justify-center rounded-md hover:bg-black/30 transition-all ${
+                      selectedIds.has(item.id)
+                        ? "opacity-100"
+                        : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleSelect(item.id);
