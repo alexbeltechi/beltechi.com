@@ -5,26 +5,24 @@
   "status": "published",
   "visibility": "public",
   "createdAt": "2025-12-18T19:53:26.852Z",
-  "updatedAt": "2025-12-18T20:01:25.920Z",
+  "updatedAt": "2025-12-20T15:39:47.282Z",
   "publishedAt": "2025-12-18T19:53:42.706Z",
   "authorId": null,
   "data": {
     "title": "Kitra",
     "description": "Shooting Kitra while working on a new mural ",
     "media": [
-      "73b2c7ca-6d0e-4d1c-9516-e4e71724409f",
-      "3a618beb-74e3-487e-9e47-3fffc15ab3d7",
-      "854eaf87-a1f6-47f7-ad42-fd514787ebea",
-      "8d44127f-e776-4208-a3b6-a63fcf37455e",
-      "7f3ab25a-744b-4548-8e86-c29e43411d16",
-      "351f44e6-d20b-462d-b1ab-fbe1d7a07bd6",
-      "5bf4c3c1-d052-4fca-88a0-b5031f9ac950",
-      "b3ea3c57-9937-4d19-aed0-f4ae668b045d",
-      "516675a7-7a0f-41bf-a729-62924403fa3b",
-      "ad07512a-d43c-48ed-ad93-de58994b3a57",
-      "e5f94b9b-1da0-498d-a8ab-478d6952d28b"
+      "196b5d49-e6c5-4457-a6cb-d823fef712d9",
+      "40dc97c2-8463-4600-9d40-0bd3d233a51a",
+      "25d3bea9-4fe2-4848-8923-c3e3470b626e",
+      "c380b464-dcea-4ba1-9d96-958e580cc98f",
+      "c72be533-15f3-45b8-b0fd-a28be36b8388",
+      "08ef1d07-93ef-4d68-9df8-e14e5ed3675d",
+      "9b7e9f16-d891-4a70-a06d-b96d072caf07",
+      "17eefc01-75a4-4cb5-a178-bf1deedfb815",
+      "1ce78ab0-8c96-4340-bfe5-13754d5267c2"
     ],
-    "coverMediaId": "73b2c7ca-6d0e-4d1c-9516-e4e71724409f",
+    "coverMediaId": "196b5d49-e6c5-4457-a6cb-d823fef712d9",
     "categories": [
       "photography",
       "portrait"
