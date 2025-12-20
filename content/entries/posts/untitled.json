@@ -5,7 +5,7 @@
   "status": "published",
   "visibility": "public",
   "createdAt": "2025-12-20T14:44:45.400Z",
-  "updatedAt": "2025-12-20T14:45:45.896Z",
+  "updatedAt": "2025-12-20T14:46:01.279Z",
   "publishedAt": "2025-12-20T14:45:45.896Z",
   "authorId": null,
   "data": {
@@ -22,6 +22,6 @@
       "life"
     ],
     "date": "2025-12-20T14:44:44.876Z",
-    "title": "Raodtrip"
+    "title": "Roadtrip"
   }
 }
