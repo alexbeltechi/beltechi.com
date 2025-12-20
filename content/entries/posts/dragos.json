@@ -1,0 +1,25 @@
+{
+  "id": "b6dc4cc0-61fe-4319-ac57-dbd008c8857b",
+  "collection": "posts",
+  "slug": "dragos",
+  "status": "published",
+  "visibility": "public",
+  "createdAt": "2025-12-20T15:22:03.885Z",
+  "updatedAt": "2025-12-20T15:22:03.885Z",
+  "publishedAt": "2025-12-20T15:22:03.885Z",
+  "authorId": null,
+  "data": {
+    "title": "Dragos",
+    "media": [
+      "c32b3918-093e-4e3d-9911-30b9525ef3f6",
+      "068fe636-cfb6-4576-bb93-da53178dbcec",
+      "b39e90b2-6b4e-4f36-9341-5ec9260e2e29"
+    ],
+    "coverMediaId": "c32b3918-093e-4e3d-9911-30b9525ef3f6",
+    "categories": [
+      "photography",
+      "portrait"
+    ],
+    "date": "2025-07-02T21:00:00.000Z"
+  }
+}
