@@ -128,6 +128,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     if (validMedia.length <= 1) return;
     e.preventDefault();
     dragStartX.current = e.clientX;
+    directionLock.current = "horizontal"; // Mouse drag is always horizontal
     setIsDragging(true);
   };
 
