@@ -1073,7 +1073,7 @@ export default function MediaLibraryPage() {
                   {/* Checkbox - Top Right */}
                   <button
                     type="button"
-                    className="absolute top-1 right-1 z-10 w-9 h-9 flex items-center justify-center rounded-md bg-black/40 hover:bg-black/60 transition-colors"
+                    className="absolute top-1 right-1 z-10 w-9 h-9 flex items-center justify-center rounded-md hover:bg-black/30 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleSelect(item.id);
