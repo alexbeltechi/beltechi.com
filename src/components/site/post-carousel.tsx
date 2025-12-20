@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
@@ -22,6 +22,38 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
 
   const minSwipeDistance = 50;
   const directionThreshold = 10; // pixels to determine direction
+
+  // Track if desktop for aspect ratio handling
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
+
+  // Calculate optimal aspect ratio for mobile container
+  // Uses the tallest image's aspect ratio, capped at 3:4 (0.75)
+  const mobileAspectRatio = useMemo(() => {
+    const minRatio = 3 / 4; // 0.75 - cap for very tall images
+    
+    // Get aspect ratios of all images (width/height)
+    const ratios = validMedia.map((item) => {
+      if (item.width && item.height) {
+        return item.width / item.height;
+      }
+      return 1; // default to 1:1 if no dimensions
+    });
+
+    if (ratios.length === 0) return minRatio;
+
+    // Find the smallest ratio (tallest image)
+    const tallestRatio = Math.min(...ratios);
+
+    // Return the tallest ratio, but cap at 3:4
+    return Math.max(tallestRatio, minRatio);
+  }, [validMedia]);
 
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < validMedia.length - 1;
@@ -164,8 +196,9 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden lg:px-4">
       <div
         ref={containerRef}
-        className="relative w-full select-none overflow-hidden aspect-[3/4] lg:aspect-video touch-pan-y"
+        className="relative w-full select-none overflow-hidden touch-pan-y"
         style={{
+          aspectRatio: isDesktop ? "16/9" : `${mobileAspectRatio}`,
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",
         }}
         onTouchStart={onTouchStart}
