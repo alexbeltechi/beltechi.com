@@ -5,7 +5,7 @@
   "status": "published",
   "visibility": "public",
   "createdAt": "2025-12-20T14:44:45.400Z",
-  "updatedAt": "2025-12-20T14:46:01.279Z",
+  "updatedAt": "2025-12-20T14:47:26.361Z",
   "publishedAt": "2025-12-20T14:45:45.896Z",
   "authorId": null,
   "data": {
@@ -19,7 +19,8 @@
     "coverMediaId": "201bd070-cd41-43ce-aabf-fa36fef83eda",
     "categories": [
       "photography",
-      "life"
+      "life",
+      "travel"
     ],
     "date": "2025-12-20T14:44:44.876Z",
     "title": "Roadtrip"
