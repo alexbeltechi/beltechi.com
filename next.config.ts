@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Exclude ffmpeg packages from bundling - they use native binaries
+  serverExternalPackages: [
+    "fluent-ffmpeg",
+    "@ffmpeg-installer/ffmpeg",
+  ],
 };
 
 export default nextConfig;
