@@ -280,13 +280,16 @@ function NewPostPageContent() {
       return;
     }
 
-    if (categories.length === 0) {
-      alert("Please select at least one category");
-      return;
-    }
-
-    // Confirm before publishing
+    // Title and category are required only for publishing
     if (status === "published") {
+      if (!title.trim()) {
+        alert("Please add a title to publish");
+        return;
+      }
+      if (categories.length === 0) {
+        alert("Please select at least one category to publish");
+        return;
+      }
       if (!confirm("Are you sure you want to publish this post?")) {
         return;
       }
@@ -554,8 +557,7 @@ function NewPostPageContent() {
         <div className="px-4 py-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">
-              Title{" "}
-              <span className="text-muted-foreground font-normal">(optional)</span>
+              Title <span className="text-destructive">*</span>
             </Label>
             <Input
               id="title"
