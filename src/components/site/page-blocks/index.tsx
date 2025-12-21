@@ -15,7 +15,8 @@ import { ButtonBlockComponent } from "./button-block";
 // Block Component Map
 // ============================================
 
-const blockComponents: Record<string, React.ComponentType<{ block: PageBlock; isMobile?: boolean }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const blockComponents: Record<string, React.ComponentType<{ block: any; isMobile?: boolean }>> = {
   hero: HeroBlockComponent,
   text: TextBlockComponent,
   image: ImageBlockComponent,
