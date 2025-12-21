@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FileText,
+  File,
   Tag,
   Image,
   Settings,
@@ -49,6 +50,12 @@ export function AdminSidebar({ open, onClose, onToggle }: AdminSidebarProps) {
       icon: FileText,
       label: "Posts",
       active: pathname.startsWith("/admin/content"),
+    },
+    {
+      href: "/admin/pages",
+      icon: File,
+      label: "Pages",
+      active: pathname.startsWith("/admin/pages"),
     },
     {
       href: "/admin/categories",

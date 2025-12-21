@@ -1,0 +1,103 @@
+{
+  "slug": "pages",
+  "name": "Pages",
+  "description": "Custom pages built with blocks",
+  "fields": [
+    {
+      "key": "title",
+      "type": "text",
+      "required": true,
+      "label": "Page Title",
+      "placeholder": "About, Services, Contact..."
+    },
+    {
+      "key": "description",
+      "type": "textarea",
+      "required": false,
+      "label": "Description",
+      "placeholder": "Brief description for SEO",
+      "description": "Used in search results and social sharing"
+    },
+    {
+      "key": "blocks",
+      "type": "blocks",
+      "required": false,
+      "label": "Page Content",
+      "description": "Build your page with blocks",
+      "blockTypes": ["hero", "text", "image", "gallery", "divider", "quote", "video", "button"]
+    },
+    {
+      "key": "settings",
+      "type": "object",
+      "required": false,
+      "label": "Page Settings",
+      "fields": [
+        {
+          "key": "maxWidth",
+          "type": "select",
+          "required": false,
+          "label": "Content Width",
+          "options": [
+            { "value": "narrow", "label": "Narrow (768px)" },
+            { "value": "default", "label": "Default (1024px)" },
+            { "value": "wide", "label": "Wide (1280px)" },
+            { "value": "full", "label": "Full Width" }
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "key": "topPadding",
+          "type": "select",
+          "required": false,
+          "label": "Top Padding",
+          "options": [
+            { "value": "none", "label": "None" },
+            { "value": "sm", "label": "Small" },
+            { "value": "md", "label": "Medium" },
+            { "value": "lg", "label": "Large" },
+            { "value": "xl", "label": "Extra Large" }
+          ],
+          "defaultValue": "lg"
+        },
+        {
+          "key": "bottomPadding",
+          "type": "select",
+          "required": false,
+          "label": "Bottom Padding",
+          "options": [
+            { "value": "none", "label": "None" },
+            { "value": "sm", "label": "Small" },
+            { "value": "md", "label": "Medium" },
+            { "value": "lg", "label": "Large" },
+            { "value": "xl", "label": "Extra Large" }
+          ],
+          "defaultValue": "lg"
+        }
+      ]
+    },
+    {
+      "key": "seoTitle",
+      "type": "text",
+      "required": false,
+      "label": "SEO Title",
+      "placeholder": "Custom title for search engines",
+      "description": "Leave empty to use page title"
+    },
+    {
+      "key": "seoImage",
+      "type": "media",
+      "required": false,
+      "label": "Social Image",
+      "description": "Image shown when sharing on social media"
+    }
+  ],
+  "admin": {
+    "titleField": "title",
+    "subtitleField": "description",
+    "defaultSort": {
+      "field": "title",
+      "direction": "asc"
+    }
+  }
+}
+
