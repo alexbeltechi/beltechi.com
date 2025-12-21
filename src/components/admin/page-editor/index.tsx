@@ -209,7 +209,7 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
   };
 
   const updateBlock = (id: string, updates: Partial<PageBlock>) => {
-    setBlocks(blocks.map((b) => (b.id === id ? { ...b, ...updates } : b)));
+    setBlocks(blocks.map((b) => (b.id === id ? { ...b, ...updates } as PageBlock : b)));
   };
 
   const deleteBlock = (id: string) => {
