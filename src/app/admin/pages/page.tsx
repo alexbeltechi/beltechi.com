@@ -66,8 +66,8 @@ export default function PagesListPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b px-4 shrink-0">
+      {/* Header - 56px tall */}
+      <div className="border-b px-4 h-14 flex items-center shrink-0">
         <PageHeader title="Pages" count={pages.length}>
           <Button asChild>
             <Link href="/admin/pages/new">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -16,6 +16,7 @@ import {
   Eye,
   Loader2,
   ArrowLeft,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ interface PageEditorProps {
 }
 
 type ViewMode = "desktop" | "mobile";
+type SaveStatus = "saved" | "saving" | "unsaved" | "error";
 
 // ============================================
 // Page Editor Component
@@ -82,8 +84,13 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>(isNew ? "unsaved" : "saved");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [currentSlug, setCurrentSlug] = useState(initialData?.slug || "");
+  
+  // Refs for autosave
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstRender = useRef(true);
 
   // Auto-generate slug from title
   const generateSlug = useCallback((text: string) => {
@@ -93,9 +100,103 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
       .replace(/^-|-$/g, "");
   }, []);
 
+  // Autosave function
+  const performAutosave = useCallback(async () => {
+    // Don't autosave if no title (required field)
+    if (!title.trim()) return;
+    
+    // For new pages, we need at least a title before first save
+    if (isNew && !currentSlug) {
+      // First save for new page - save as draft
+      setSaveStatus("saving");
+      try {
+        const pageData: PageData = {
+          title,
+          slug: slug || generateSlug(title),
+          description,
+          blocks,
+          settings,
+        };
+
+        const res = await fetch("/api/admin/collections/pages/entries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: pageData, status: "draft" }),
+        });
+
+        if (!res.ok) throw new Error("Failed to save");
+        
+        const data = await res.json();
+        setCurrentSlug(data.data?.slug || slug);
+        setSaveStatus("saved");
+        
+        // Update URL without full navigation
+        window.history.replaceState(null, "", `/admin/pages/${data.data?.slug || slug}`);
+      } catch {
+        setSaveStatus("error");
+      }
+      return;
+    }
+
+    // Existing page - update
+    if (currentSlug) {
+      setSaveStatus("saving");
+      try {
+        const pageData: PageData = {
+          title,
+          slug: slug || generateSlug(title),
+          description,
+          blocks,
+          settings,
+        };
+
+        const res = await fetch(`/api/admin/collections/pages/entries/${currentSlug}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: pageData }),
+        });
+
+        if (!res.ok) throw new Error("Failed to save");
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("error");
+      }
+    }
+  }, [title, slug, description, blocks, settings, currentSlug, isNew, generateSlug]);
+
+  // Autosave effect - triggers 2 seconds after changes
+  useEffect(() => {
+    // Skip first render
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Mark as unsaved when content changes
+    if (saveStatus === "saved") {
+      setSaveStatus("unsaved");
+    }
+
+    // Clear existing timer
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    // Set new autosave timer (2 seconds after last change)
+    autosaveTimerRef.current = setTimeout(() => {
+      performAutosave();
+    }, 2000);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [title, slug, description, blocks, settings]);
+
   const handleTitleChange = (value: string) => {
     setTitle(value);
-    if (isNew) {
+    if (isNew && !currentSlug) {
       setSlug(generateSlug(value));
     }
   };
@@ -179,14 +280,14 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
     setDraggedIndex(null);
   };
 
-  // Save page
+  // Save page (manual save / publish)
   const handleSave = async (status: "draft" | "published") => {
     if (!title.trim()) {
       alert("Please enter a page title");
       return;
     }
 
-    setSaving(true);
+    setSaveStatus("saving");
     try {
       const pageData: PageData = {
         title,
@@ -196,11 +297,11 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
         settings,
       };
 
-      const endpoint = isNew
-        ? "/api/admin/collections/pages/entries"
-        : `/api/admin/collections/pages/entries/${initialData?.slug}`;
+      const endpoint = currentSlug
+        ? `/api/admin/collections/pages/entries/${currentSlug}`
+        : "/api/admin/collections/pages/entries";
 
-      const method = isNew ? "POST" : "PUT";
+      const method = currentSlug ? "PUT" : "POST";
 
       const res = await fetch(endpoint, {
         method,
@@ -217,12 +318,18 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
       }
 
       const data = await res.json();
-      router.push(`/admin/pages/${data.data?.slug || slug}`);
+      const newSlug = data.data?.slug || slug;
+      setCurrentSlug(newSlug);
+      setSaveStatus("saved");
+      
+      // Update URL if slug changed
+      if (!currentSlug || currentSlug !== newSlug) {
+        window.history.replaceState(null, "", `/admin/pages/${newSlug}`);
+      }
     } catch (error) {
       console.error("Save error:", error);
+      setSaveStatus("error");
       alert(error instanceof Error ? error.message : "Failed to save page");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -280,29 +387,37 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
           <Settings className="h-4 w-4" />
         </Button>
 
-        {/* Save dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button disabled={saving}>
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
+        {/* Save status / dropdown */}
+        {saveStatus === "saved" ? (
+          <Button variant="ghost" disabled className="text-muted-foreground">
+            <Check className="mr-2 h-4 w-4" />
+            Saved
+          </Button>
+        ) : saveStatus === "saving" ? (
+          <Button disabled>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Saving...
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={saveStatus === "error" ? "destructive" : "default"}>
                 <Save className="mr-2 h-4 w-4" />
-              )}
-              Save
-              <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleSave("draft")}>
-              Save as Draft
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSave("published")}>
-              <Eye className="mr-2 h-4 w-4" />
-              Publish
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                {saveStatus === "error" ? "Retry Save" : "Save"}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleSave("draft")}>
+                Save as Draft
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSave("published")}>
+                <Eye className="mr-2 h-4 w-4" />
+                Publish
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Main content */}
@@ -404,23 +519,31 @@ export function PageEditor({ initialData, isNew = false }: PageEditorProps) {
           </div>
         </div>
 
-        {/* Right sidebar - Block settings */}
-        {selectedBlock && (
-          <div className="w-80 border-l bg-background overflow-y-auto shrink-0">
-            <div className="p-4 border-b">
-              <h3 className="font-medium">
-                {blockLabels[selectedBlock.type]?.label || "Block"} Settings
-              </h3>
+        {/* Right sidebar - Block settings (always visible, full height) */}
+        <div className="w-80 border-l bg-background overflow-y-auto shrink-0 flex flex-col">
+          {selectedBlock ? (
+            <>
+              <div className="p-4 border-b shrink-0">
+                <h3 className="font-medium">
+                  {blockLabels[selectedBlock.type]?.label || "Block"} Settings
+                </h3>
+              </div>
+              <div className="p-4 flex-1">
+                <BlockEditor
+                  block={selectedBlock}
+                  onChange={(updates) => updateBlock(selectedBlock.id, updates)}
+                  isMobile={viewMode === "mobile"}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <p className="text-muted-foreground text-sm text-center">
+                Select a block to edit its settings
+              </p>
             </div>
-            <div className="p-4">
-              <BlockEditor
-                block={selectedBlock}
-                onChange={(updates) => updateBlock(selectedBlock.id, updates)}
-                isMobile={viewMode === "mobile"}
-              />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Page Settings Sheet */}
