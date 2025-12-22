@@ -46,9 +46,13 @@ function LoginForm() {
       } else if (result?.ok) {
         router.push(callbackUrl);
         router.refresh();
+      } else {
+        setFormError("Sign in failed. Check NEXTAUTH_SECRET is set.");
+        setLoading(false);
       }
-    } catch {
-      setFormError("Something went wrong. Please try again.");
+    } catch (err) {
+      console.error("Sign in error:", err);
+      setFormError("Connection error. Please try again.");
       setLoading(false);
     }
   };
@@ -77,7 +81,6 @@ function LoginForm() {
               <Input
                 id="username"
                 type="text"
-                placeholder="admin"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -92,7 +95,6 @@ function LoginForm() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
