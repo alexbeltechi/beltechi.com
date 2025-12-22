@@ -1,25 +1,50 @@
 /**
  * Next.js Middleware
  * 
- * Auth is disabled in development when NEXTAUTH_SECRET is not set.
- * Set up GitHub OAuth and NEXTAUTH_SECRET in .env.local to enable auth.
+ * Protects admin routes with NextAuth session check.
+ * Setup page is always accessible for first-time setup.
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export function middleware(request: NextRequest) {
-  // If no NEXTAUTH_SECRET, allow all access (dev mode)
-  if (!process.env.NEXTAUTH_SECRET) {
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Always allow these routes without authentication:
+  // - Login page
+  // - Setup page (first-time setup)
+  // - Auth API routes
+  // - User check API (needed by setup page)
+  if (
+    pathname === "/admin/login" ||
+    pathname === "/admin/setup" ||
+    pathname.startsWith("/api/auth") ||
+    pathname === "/api/admin/users/check" ||
+    pathname === "/api/admin/users/setup"
+  ) {
     return NextResponse.next();
   }
   
-  // In production with auth configured, redirect to login if needed
-  // This will be handled by NextAuth's withAuth when properly configured
+  // Check for valid session token
+  const token = await getToken({ 
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+  
+  // No token = redirect to login
+  // Login page will check if setup is needed
+  if (!token) {
+    const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  
   return NextResponse.next();
 }
 
 // Apply middleware to admin routes only
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
