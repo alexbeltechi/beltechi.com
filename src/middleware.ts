@@ -2,7 +2,7 @@
  * Next.js Middleware
  * 
  * Protects admin routes with NextAuth session check.
- * Setup page is always accessible for first-time setup.
+ * Unauthenticated users are redirected to login.
  */
 
 import { NextResponse } from "next/server";
@@ -12,17 +12,10 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Always allow these routes without authentication:
-  // - Login page
-  // - Setup page (first-time setup)
-  // - Auth API routes
-  // - User check API (needed by setup page)
+  // Always allow these routes without authentication
   if (
     pathname === "/admin/login" ||
-    pathname === "/admin/setup" ||
-    pathname.startsWith("/api/auth") ||
-    pathname === "/api/admin/users/check" ||
-    pathname === "/api/admin/users/setup"
+    pathname.startsWith("/api/auth")
   ) {
     return NextResponse.next();
   }
@@ -34,7 +27,6 @@ export async function middleware(request: NextRequest) {
   });
   
   // No token = redirect to login
-  // Login page will check if setup is needed
   if (!token) {
     const loginUrl = new URL("/admin/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
@@ -44,7 +36,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Apply middleware to admin routes only
+// Apply middleware to admin routes and admin API routes
 export const config = {
   matcher: ["/admin/:path*", "/api/admin/:path*"],
 };

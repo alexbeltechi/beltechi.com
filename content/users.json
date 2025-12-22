@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "id": "user_default_admin",
+      "email": "admin",
+      "name": "Admin",
+      "passwordHash": "$2b$10$UN6pzTV/TjKHmvezWZr4h.sicikdFO7nMKkOcmlVPmeSD5AThpiI.",
+      "role": "owner",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+

@@ -2,7 +2,9 @@
  * Authentication Configuration
  * 
  * Uses NextAuth.js with Credentials provider.
- * Users are stored in content/users.json with hashed passwords.
+ * Users stored in content/users.json with hashed passwords.
+ * 
+ * Default credentials: admin / kombucha
  */
 
 import type { NextAuthOptions, Session } from "next-auth";
@@ -37,19 +39,19 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "admin@example.com" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           return null;
         }
         
-        // Look up user by email
-        const user = await getUserByEmail(credentials.email);
+        // Look up user by username (stored in email field)
+        const user = await getUserByEmail(credentials.username);
         
         if (!user) {
-          console.log(`🚫 Login failed - user not found: ${credentials.email}`);
+          console.log(`🚫 Login failed - user not found: ${credentials.username}`);
           return null;
         }
         
@@ -57,7 +59,7 @@ export const authOptions: NextAuthOptions = {
         const isValid = await verifyPassword(user, credentials.password);
         
         if (!isValid) {
-          console.log(`🚫 Login failed - wrong password: ${credentials.email}`);
+          console.log(`🚫 Login failed - wrong password: ${credentials.username}`);
           return null;
         }
         
@@ -106,7 +108,7 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days - keeps user logged in
   },
 
   debug: process.env.NODE_ENV === "development",

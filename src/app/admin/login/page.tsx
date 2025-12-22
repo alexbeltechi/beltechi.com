@@ -3,11 +3,11 @@
 /**
  * Admin Login Page
  * 
- * Email/password login form using NextAuth Credentials provider.
- * Redirects to setup if no users exist yet.
+ * Simple username/password login form.
+ * Default credentials: admin / kombucha
  */
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -22,33 +22,10 @@ function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/admin";
   const errorParam = searchParams.get("error");
   
-  const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  // Check if setup is needed
-  useEffect(() => {
-    async function checkSetup() {
-      try {
-        const res = await fetch("/api/admin/users/check");
-        const data = await res.json();
-        
-        if (!data.hasUsers) {
-          // No users exist, redirect to setup
-          router.replace("/admin/setup");
-          return;
-        }
-      } catch (err) {
-        console.error("Failed to check setup:", err);
-      } finally {
-        setChecking(false);
-      }
-    }
-    
-    checkSetup();
-  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,14 +34,14 @@ function LoginForm() {
 
     try {
       const result = await signIn("credentials", {
-        email,
+        username,
         password,
         redirect: false,
         callbackUrl,
       });
 
       if (result?.error) {
-        setFormError("Invalid email or password");
+        setFormError("Invalid username or password");
         setLoading(false);
       } else if (result?.ok) {
         router.push(callbackUrl);
@@ -75,18 +52,6 @@ function LoginForm() {
       setLoading(false);
     }
   };
-
-  // Show loading while checking setup status
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -102,21 +67,21 @@ function LoginForm() {
             {/* Error messages */}
             {(formError || errorParam) && (
               <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-                {formError || (errorParam === "CredentialsSignin" ? "Invalid email or password" : "Authentication error")}
+                {formError || (errorParam === "CredentialsSignin" ? "Invalid username or password" : "Authentication error")}
               </div>
             )}
             
-            {/* Email field */}
+            {/* Username field */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="admin"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-                autoComplete="email"
+                autoComplete="username"
                 disabled={loading}
               />
             </div>
@@ -161,7 +126,6 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="flex items-center gap-3 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Loading...</span>
           </div>
         </div>
       }
