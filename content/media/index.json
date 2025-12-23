@@ -1246,6 +1246,33 @@
       "alt": "",
       "createdAt": "2025-12-20T16:17:48.985Z",
       "hash": "2615ae54a0e6a9e819ac5005e54170a1"
+    },
+    {
+      "id": "fdd38513-8922-426b-a5bc-8e1f9e7cd11d",
+      "filename": "img-9219-be30.webp",
+      "originalName": "IMG_9219.jpeg",
+      "slug": "img-9219-be30",
+      "path": "uploads/img-9219-be30.webp",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/img-9219-be30.webp",
+      "mime": "image/webp",
+      "size": 253314,
+      "width": 1406,
+      "height": 2500,
+      "variants": {
+        "thumb": {
+          "filename": "img-9219-be30-thumb.webp",
+          "path": "uploads/variants/img-9219-be30-thumb.webp",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/img-9219-be30-thumb.webp",
+          "width": 432,
+          "height": 768,
+          "size": 23690
+        }
+      },
+      "activeVariant": "display",
+      "title": "img 9219",
+      "alt": "",
+      "createdAt": "2025-12-23T12:52:03.231Z",
+      "hash": "ecfa66db12f149adcec3f7457ab7087a"
     }
   ]
 }
