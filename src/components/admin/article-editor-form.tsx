@@ -6,7 +6,7 @@ import {
   Plus,
   X,
   GripVertical,
-  Save,
+  Check,
   Eye,
   EyeOff,
   Loader2,
@@ -62,8 +62,12 @@ export function ArticleEditorForm({
 
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [entry, setEntry] = useState<Entry | null>(null);
+  const [currentSlug, setCurrentSlug] = useState<string | undefined>(slug);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAutoSaved = useRef(false);
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -348,6 +352,100 @@ export function ArticleEditorForm({
     }
   };
 
+  // Autosave function - saves as draft without closing
+  const autosave = useCallback(async () => {
+    // Don't autosave if already saving or if it's a published entry
+    if (saving || autoSaving) return;
+    if (entry?.status === "published") return;
+    
+    setAutoSaving(true);
+
+    try {
+      const effectiveSlug = currentSlug;
+      const isCreating = !effectiveSlug;
+      
+      const endpoint = isCreating
+        ? "/api/admin/collections/articles/entries"
+        : `/api/admin/collections/articles/entries/${effectiveSlug}`;
+
+      const res = await fetch(endpoint, {
+        method: isCreating ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "draft",
+          data: {
+            title: title || "Untitled",
+            excerpt: excerpt || undefined,
+            content: blocks,
+            categories,
+            tags: tags || undefined,
+            date: publishDate || new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        hasAutoSaved.current = true;
+        
+        // Update entry and initial values
+        setEntry(data.data);
+        setInitialTitle(title || "Untitled");
+        setInitialExcerpt(excerpt);
+        setInitialCategories([...categories]);
+        setInitialTags(tags);
+        setInitialPublishDate(publishDate);
+        setInitialBlocks(JSON.stringify(blocks));
+        
+        // If this was a new article, update the slug
+        if (isCreating && data.data?.slug) {
+          setCurrentSlug(data.data.slug);
+        }
+      }
+    } catch (error) {
+      console.error("Autosave failed:", error);
+    } finally {
+      setAutoSaving(false);
+    }
+  }, [saving, autoSaving, entry?.status, currentSlug, title, excerpt, blocks, categories, tags, publishDate]);
+
+  // Debounced autosave effect
+  useEffect(() => {
+    // Don't autosave during initial load or for published entries
+    if (loading) return;
+    if (entry?.status === "published") return;
+    
+    // For new articles, only start autosaving after user has entered something
+    if (!currentSlug && !title.trim() && !excerpt.trim() && categories.length === 0 && blocks.length === 0) {
+      return;
+    }
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout for autosave (1.5 second delay)
+    saveTimeoutRef.current = setTimeout(() => {
+      autosave();
+    }, 1500);
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [title, excerpt, categories, tags, publishDate, blocks, loading, entry?.status, currentSlug, autosave]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleDelete = async () => {
     if (!isEditMode) return;
 
@@ -380,12 +478,14 @@ export function ArticleEditorForm({
   };
 
   const handleClose = useCallback(() => {
-    if (isDirty && !allowNavigation) {
+    // For published entries, check for unsaved changes
+    // For drafts, changes are autosaved so just close
+    if (entry?.status === "published" && isDirty && !allowNavigation) {
       setShowUnsavedModal(true);
       return;
     }
     onClose?.();
-  }, [isDirty, allowNavigation, onClose]);
+  }, [entry?.status, isDirty, allowNavigation, onClose]);
 
   if (loading) {
     return (
@@ -437,21 +537,42 @@ export function ArticleEditorForm({
           </div>
         </div>
 
-        <Button
-          onClick={() =>
-            handleSave(entry?.status === "published" ? "published" : "draft")
-          }
-          disabled={saving || (isEditMode && !isDirty)}
-          variant="outline"
-          size="sm"
-        >
-          {saving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          {isEditMode ? (isDirty ? "Save" : "Saved") : "Save Draft"}
-        </Button>
+        {/* For published entries, show manual save button */}
+        {entry?.status === "published" ? (
+          <Button
+            onClick={() => handleSave("published")}
+            disabled={saving || !isDirty}
+            variant="outline"
+            size="sm"
+          >
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="mr-2 h-4 w-4" />
+            )}
+            {isDirty ? "Save" : "Saved"}
+          </Button>
+        ) : (
+          /* For drafts, show autosave status */
+          <Button
+            disabled
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+          >
+            {autoSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Saved
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Content */}

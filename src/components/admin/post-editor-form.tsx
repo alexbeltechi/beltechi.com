@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Upload,
   GripVertical,
-  Save,
+  Check,
   Eye,
   EyeOff,
   Loader2,
@@ -70,8 +70,11 @@ export function PostEditorForm({
 
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [entry, setEntry] = useState<Entry | null>(null);
+  const [currentSlug, setCurrentSlug] = useState<string | undefined>(slug);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -512,6 +515,122 @@ export function PostEditorForm({
     }
   };
 
+  // Autosave function - saves as draft without closing
+  // Only autosaves when all media are already uploaded (no pending uploads)
+  const autosave = useCallback(async () => {
+    // Don't autosave if already saving or if it's a published entry
+    if (saving || autoSaving) return;
+    if (entry?.status === "published") return;
+    
+    // Check if all media items are already uploaded (have mediaId)
+    const allMediaUploaded = media.every(m => m.isExisting && m.mediaId);
+    if (media.length > 0 && !allMediaUploaded) {
+      // Don't autosave if there are pending uploads
+      return;
+    }
+    
+    setAutoSaving(true);
+
+    try {
+      const effectiveSlug = currentSlug;
+      const isCreating = !effectiveSlug;
+      
+      const mediaIds = media.map(m => m.mediaId!).filter(Boolean);
+      const coverMediaId = mediaIds[coverIndex] || mediaIds[0];
+      
+      const endpoint = isCreating
+        ? "/api/admin/collections/posts/entries"
+        : `/api/admin/collections/posts/entries/${effectiveSlug}`;
+
+      const res = await fetch(endpoint, {
+        method: isCreating ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "draft",
+          data: {
+            title: title || undefined,
+            description: description || undefined,
+            media: mediaIds,
+            coverMediaId,
+            categories,
+            location: location || undefined,
+            tags: tags || undefined,
+            date: publishDate || new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Update entry and initial values
+        setEntry(data.data);
+        setInitialTitle(title);
+        setInitialDescription(description);
+        setInitialCategories([...categories]);
+        setInitialLocation(location);
+        setInitialTags(tags);
+        setInitialPublishDate(publishDate);
+        setInitialMediaIds(mediaIds);
+        setInitialCoverIndex(coverIndex);
+        
+        // If this was a new post, update the slug
+        if (isCreating && data.data?.slug) {
+          setCurrentSlug(data.data.slug);
+        }
+      }
+    } catch (error) {
+      console.error("Autosave failed:", error);
+    } finally {
+      setAutoSaving(false);
+    }
+  }, [saving, autoSaving, entry?.status, currentSlug, media, coverIndex, title, description, categories, location, tags, publishDate]);
+
+  // Debounced autosave effect
+  useEffect(() => {
+    // Don't autosave during initial load or for published entries
+    if (loading) return;
+    if (entry?.status === "published") return;
+    
+    // For new posts, only start autosaving after user has added something
+    const hasContent = title.trim() !== "" || description.trim() !== "" || 
+                       categories.length > 0 || media.length > 0;
+    if (!currentSlug && !hasContent) {
+      return;
+    }
+    
+    // Check if all media items are already uploaded
+    const allMediaUploaded = media.every(m => m.isExisting && m.mediaId);
+    if (media.length > 0 && !allMediaUploaded) {
+      return;
+    }
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout for autosave (1.5 second delay)
+    saveTimeoutRef.current = setTimeout(() => {
+      autosave();
+    }, 1500);
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [title, description, categories, location, tags, publishDate, media, coverIndex, loading, entry?.status, currentSlug, autosave]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleDelete = async () => {
     if (!isEditMode) return;
 
@@ -545,12 +664,14 @@ export function PostEditorForm({
   };
 
   const handleClose = useCallback(() => {
-    if (isDirty && !allowNavigation) {
+    // For published entries, check for unsaved changes
+    // For drafts, changes are autosaved so just close
+    if (entry?.status === "published" && isDirty && !allowNavigation) {
       setShowUnsavedModal(true);
       return;
     }
     onClose?.();
-  }, [isDirty, allowNavigation, onClose]);
+  }, [entry?.status, isDirty, allowNavigation, onClose]);
 
   if (loading) {
     return (
@@ -606,21 +727,42 @@ export function PostEditorForm({
           </div>
         </div>
 
-        <Button
-          onClick={() =>
-            handleSave(entry?.status === "published" ? "published" : "draft")
-          }
-          disabled={saving || (isEditMode && !isDirty)}
-          variant="outline"
-          size="sm"
-        >
-          {saving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          {isEditMode ? (isDirty ? "Save" : "Saved") : "Save Draft"}
-        </Button>
+        {/* For published entries, show manual save button */}
+        {entry?.status === "published" ? (
+          <Button
+            onClick={() => handleSave("published")}
+            disabled={saving || !isDirty}
+            variant="outline"
+            size="sm"
+          >
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="mr-2 h-4 w-4" />
+            )}
+            {isDirty ? "Save" : "Saved"}
+          </Button>
+        ) : (
+          /* For drafts, show autosave status */
+          <Button
+            disabled
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+          >
+            {autoSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Saved
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Content */}
