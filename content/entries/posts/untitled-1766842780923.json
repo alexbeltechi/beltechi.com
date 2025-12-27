@@ -5,11 +5,33 @@
   "status": "published",
   "visibility": "public",
   "createdAt": "2025-12-27T13:39:40.923Z",
-  "updatedAt": "2025-12-27T13:39:40.923Z",
+  "updatedAt": "2025-12-27T13:39:57.251Z",
   "publishedAt": "2025-12-27T13:39:40.923Z",
   "authorId": null,
   "data": {
     "title": "",
+    "description": "",
+    "media": [
+      "7ad99b0e-bb41-42e9-acff-5d6c4e095249",
+      "de447846-4987-486d-bcb4-48e7a2bfb06d",
+      "062541be-477e-412f-ae52-cbb4dbe69f45",
+      "93d8449e-dd07-40d1-a938-4f8545b49eca",
+      "5dc04036-cdbb-4165-8215-c32c9ec050a9",
+      "5758954f-b462-4cd5-a5a6-b16790dc5db5",
+      "b7e81d60-5f14-48ea-82d0-bc18427bc7e3",
+      "68c81a11-3f11-4c83-be45-2a5ff19bd15b"
+    ],
+    "coverMediaId": "7ad99b0e-bb41-42e9-acff-5d6c4e095249",
+    "categories": [
+      "design",
+      "product"
+    ],
+    "location": "",
+    "tags": "",
+    "date": "2025-12-27T13:39:40.481Z"
+  },
+  "pendingData": {
+    "title": "GetYourGuide: Turning utility into inspiration",
     "description": "",
     "media": [
       "7ad99b0e-bb41-42e9-acff-5d6c4e095249",
