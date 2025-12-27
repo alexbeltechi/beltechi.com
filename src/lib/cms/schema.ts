@@ -68,12 +68,12 @@ export function clearSchemaCache(): void {
  * Validate entry data against schema
  * @param schema - The collection schema
  * @param data - The entry data to validate
- * @param status - The entry status ("draft" or "published"). Required fields are only enforced for "published".
+ * @param status - The entry status. Required fields are only enforced for "published".
  */
 export function validateEntryData(
   schema: CollectionSchema,
   data: Record<string, unknown>,
-  status: "draft" | "published" = "published"
+  status: "draft" | "published" | "archived" = "published"
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
