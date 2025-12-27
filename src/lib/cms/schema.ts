@@ -66,18 +66,22 @@ export function clearSchemaCache(): void {
 
 /**
  * Validate entry data against schema
+ * @param schema - The collection schema
+ * @param data - The entry data to validate
+ * @param status - The entry status ("draft" or "published"). Required fields are only enforced for "published".
  */
 export function validateEntryData(
   schema: CollectionSchema,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  status: "draft" | "published" = "published"
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   for (const field of schema.fields) {
     const value = data[field.key];
 
-    // Check required fields
-    if (field.required) {
+    // Check required fields - only enforce when publishing
+    if (field.required && status === "published") {
       if (value === undefined || value === null || value === "") {
         errors.push(`${field.label} is required`);
         continue;

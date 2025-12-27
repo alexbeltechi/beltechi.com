@@ -141,8 +141,9 @@ export async function createEntry(
     return { error: `Collection "${collection}" not found` };
   }
 
-  // Validate data against schema
-  const validation = validateEntryData(schema, data.data);
+  // Validate data against schema (required fields only enforced when publishing)
+  const status = data.status || "draft";
+  const validation = validateEntryData(schema, data.data, status);
   if (!validation.valid) {
     return { error: validation.errors.join(", ") };
   }
@@ -206,12 +207,13 @@ export async function updateEntry(
     return { error: `Entry "${slug}" not found in "${collection}"` };
   }
 
-  // If updating data, validate against schema
+  // If updating data, validate against schema (required fields only enforced when publishing)
   if (updates.data) {
     const schema = await getCollection(collection);
     if (schema) {
       const mergedData = { ...existing.data, ...updates.data };
-      const validation = validateEntryData(schema, mergedData);
+      const targetStatus = updates.status || existing.status;
+      const validation = validateEntryData(schema, mergedData, targetStatus);
       if (!validation.valid) {
         return { error: validation.errors.join(", ") };
       }
