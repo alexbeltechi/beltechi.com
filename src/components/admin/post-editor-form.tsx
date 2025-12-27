@@ -493,9 +493,9 @@ export function PostEditorForm({
         onSaved(data.data);
       }
 
-      if (isSheet && onClose) {
-        onClose();
-      } else if (!isSheet) {
+      // Don't close the dialog after save - user can continue editing
+      // Only update URL if not in sheet mode and slug changed
+      if (!isSheet) {
         setAllowNavigation(true);
         if (isEditMode && data.data.slug !== slug) {
           router.push(`/admin/content/posts/${data.data.slug}`);
@@ -743,25 +743,20 @@ export function PostEditorForm({
             {isDirty ? "Save" : "Saved"}
           </Button>
         ) : (
-          /* For drafts, show autosave status */
-          <Button
-            disabled
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground"
-          >
+          /* For drafts and new entries, show autosave status */
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {autoSaving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Saving...</span>
               </>
             ) : (
               <>
-                <Check className="mr-2 h-4 w-4" />
-                Saved
+                <Check className="h-4 w-4" />
+                <span>Saved</span>
               </>
             )}
-          </Button>
+          </div>
         )}
       </div>
 
