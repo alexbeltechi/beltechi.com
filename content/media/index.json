@@ -1408,6 +1408,33 @@
       "alt": "",
       "createdAt": "2025-12-27T12:03:16.719Z",
       "hash": "f14407ce3cced350aa865bbe3916c984"
+    },
+    {
+      "id": "7ad99b0e-bb41-42e9-acff-5d6c4e095249",
+      "filename": "macbook-pro-14-4289.webp",
+      "originalName": "MacBook Pro 14.png",
+      "slug": "macbook-pro-14-4289",
+      "path": "uploads/macbook-pro-14-4289.webp",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/macbook-pro-14-4289.webp",
+      "mime": "image/webp",
+      "size": 209022,
+      "width": 2500,
+      "height": 1640,
+      "variants": {
+        "thumb": {
+          "filename": "macbook-pro-14-4289-thumb.webp",
+          "path": "uploads/variants/macbook-pro-14-4289-thumb.webp",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/macbook-pro-14-4289-thumb.webp",
+          "width": 768,
+          "height": 504,
+          "size": 35928
+        }
+      },
+      "activeVariant": "display",
+      "title": "macbook pro 14",
+      "alt": "",
+      "createdAt": "2025-12-27T12:03:20.285Z",
+      "hash": "7cc6129b6183e53e54c627159c5a6b3c"
     }
   ]
 }
