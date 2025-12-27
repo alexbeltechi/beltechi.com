@@ -148,8 +148,8 @@ export function ArticleEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    const saveStatus = entry?.status === "published" ? "published" : "draft";
-    await handleSave(saveStatus);
+    // Always save as draft from the unsaved changes modal
+    await handleSave("draft");
   };
 
   const handleCancelNavigation = () => {

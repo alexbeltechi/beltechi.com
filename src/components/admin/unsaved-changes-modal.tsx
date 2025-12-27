@@ -50,7 +50,7 @@ export function UnsavedChangesModal({
             style={{ backgroundColor: "#18181b", color: "#ffffff" }}
             className="w-full px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? "Saving..." : "Save Draft"}
           </button>
           <button
             onClick={onDiscard}

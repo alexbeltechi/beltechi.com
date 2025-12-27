@@ -169,8 +169,8 @@ export function PostEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    const saveStatus = entry?.status === "published" ? "published" : "draft";
-    await handleSave(saveStatus);
+    // Always save as draft from the unsaved changes modal
+    await handleSave("draft");
     setAllowNavigation(true);
     setShowUnsavedModal(false);
     if (pendingNavUrl) {
