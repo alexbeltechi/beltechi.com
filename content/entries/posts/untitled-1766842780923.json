@@ -5,8 +5,8 @@
   "status": "published",
   "visibility": "public",
   "createdAt": "2025-12-27T13:39:40.923Z",
-  "updatedAt": "2025-12-27T13:40:18.976Z",
-  "publishedAt": "2025-12-27T13:40:18.976Z",
+  "updatedAt": "2025-12-27T13:40:46.585Z",
+  "publishedAt": "2025-12-27T13:40:46.585Z",
   "authorId": null,
   "data": {
     "title": "GetYourGuide: Turning utility into inspiration",
@@ -23,6 +23,7 @@
     ],
     "coverMediaId": "7ad99b0e-bb41-42e9-acff-5d6c4e095249",
     "categories": [
+      "getyourguide",
       "design",
       "product"
     ],
