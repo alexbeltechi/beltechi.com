@@ -152,9 +152,9 @@ export function ArticleEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    // Save with current status (keep published entries published)
+    // Save with current status (keep published entries published, but don't push to live)
     const saveStatus = entry?.status === "published" ? "published" : "draft";
-    await handleSave(saveStatus);
+    await handleSave(saveStatus, false); // false = don't publish to live site
   };
 
   const handleCancelNavigation = () => {
@@ -179,15 +179,20 @@ export function ArticleEditorForm({
         const entry = data.data as Entry;
         setEntry(entry);
 
-        const titleVal = (entry.data.title as string) || "";
-        const excerptVal = (entry.data.excerpt as string) || "";
-        const catsVal = (entry.data.categories as string[]) || [];
-        const rawTags = entry.data.tags;
+        // For published entries, show pendingData (working copy) if it exists, otherwise show data
+        const displayData = entry.status === "published" && entry.pendingData 
+          ? entry.pendingData 
+          : entry.data;
+
+        const titleVal = (displayData.title as string) || "";
+        const excerptVal = (displayData.excerpt as string) || "";
+        const catsVal = (displayData.categories as string[]) || [];
+        const rawTags = displayData.tags;
         const tagsVal = Array.isArray(rawTags)
           ? rawTags.join(", ")
           : (rawTags as string) || "";
-        const dateVal = (entry.data.date as string) || null;
-        const blocksVal = (entry.data.content as Block[]) || [];
+        const dateVal = (displayData.date as string) || null;
+        const blocksVal = (displayData.content as Block[]) || [];
 
         setTitle(titleVal);
         setExcerpt(excerptVal);
@@ -268,9 +273,10 @@ export function ArticleEditorForm({
     setBlocks(newBlocks);
   };
 
-  const handleSave = async (status: "draft" | "published") => {
-    // Only validate required fields when publishing
-    if (status === "published") {
+  // publish: true = push changes to live site, false = save as working copy
+  const handleSave = async (status: "draft" | "published", publish: boolean = true) => {
+    // Only validate required fields when actually publishing to live site
+    if (publish && status === "published") {
       if (!title.trim()) {
         alert("Please enter a title to publish");
         return;
@@ -299,6 +305,7 @@ export function ArticleEditorForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
+          publish, // Tell API whether to push to live site
           data: {
             title,
             excerpt: excerpt || "",
@@ -410,11 +417,12 @@ export function ArticleEditorForm({
     }
   }, [saving, autoSaving, entry?.status, currentSlug, title, excerpt, blocks, categories, tags, publishDate]);
 
-  // Debounced autosave effect
+  // Debounced autosave effect - only triggers when isDirty changes to true
   useEffect(() => {
     // Don't autosave during initial load or for published entries
     if (loading) return;
     if (entry?.status === "published") return;
+    if (!isDirty) return;
     
     // For new articles, only start autosaving after user has entered something
     if (!currentSlug && !title.trim() && !excerpt.trim() && categories.length === 0 && blocks.length === 0) {
@@ -436,7 +444,9 @@ export function ArticleEditorForm({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, excerpt, categories, tags, publishDate, blocks, loading, entry?.status, currentSlug, autosave]);
+    // Only re-run when these specific values change - NOT when autosave function changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirty, loading, entry?.status, currentSlug]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -538,10 +548,10 @@ export function ArticleEditorForm({
           </div>
         </div>
 
-        {/* For published entries, show manual save button (keeps status as published) */}
+        {/* For published entries, show manual save button (saves working copy, not live) */}
         {entry?.status === "published" ? (
           <Button
-            onClick={() => handleSave("published")}
+            onClick={() => handleSave("published", false)}
             disabled={saving || !isDirty}
             variant="outline"
             size="sm"
@@ -842,7 +852,7 @@ export function ArticleEditorForm({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSave("published")}>
+            <AlertDialogAction onClick={() => handleSave("published", true)}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Publish
             </AlertDialogAction>
@@ -862,7 +872,7 @@ export function ArticleEditorForm({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSave("draft")}>
+            <AlertDialogAction onClick={() => handleSave("draft", true)}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Unpublish
             </AlertDialogAction>
@@ -884,7 +894,7 @@ export function ArticleEditorForm({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSave("published")}>
+            <AlertDialogAction onClick={() => handleSave("published", true)}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update & Publish
             </AlertDialogAction>

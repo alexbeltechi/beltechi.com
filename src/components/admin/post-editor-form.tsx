@@ -172,9 +172,9 @@ export function PostEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    // Save with current status (keep published entries published)
+    // Save with current status (keep published entries published, but don't push to live)
     const saveStatus = entry?.status === "published" ? "published" : "draft";
-    await handleSave(saveStatus);
+    await handleSave(saveStatus, false); // false = don't publish to live site
     setAllowNavigation(true);
     setShowUnsavedModal(false);
     if (pendingNavUrl) {
@@ -242,15 +242,20 @@ export function PostEditorForm({
         const entry = data.data as Entry;
         setEntry(entry);
 
-        const titleVal = (entry.data.title as string) || "";
-        const descVal = (entry.data.description as string) || "";
-        const catsVal = (entry.data.categories as string[]) || [];
-        const locVal = (entry.data.location as string) || "";
-        const rawTags = entry.data.tags;
+        // For published entries, show pendingData (working copy) if it exists, otherwise show data
+        const displayData = entry.status === "published" && entry.pendingData 
+          ? entry.pendingData 
+          : entry.data;
+
+        const titleVal = (displayData.title as string) || "";
+        const descVal = (displayData.description as string) || "";
+        const catsVal = (displayData.categories as string[]) || [];
+        const locVal = (displayData.location as string) || "";
+        const rawTags = displayData.tags;
         const tagsVal = Array.isArray(rawTags)
           ? rawTags.join(", ")
           : (rawTags as string) || "";
-        const dateVal = (entry.data.date as string) || null;
+        const dateVal = (displayData.date as string) || null;
 
         setTitle(titleVal);
         setDescription(descVal);
@@ -266,8 +271,8 @@ export function PostEditorForm({
         setInitialTags(tagsVal);
         setInitialPublishDate(dateVal);
 
-        const mediaIds = (entry.data.media as string[]) || [];
-        const coverMediaId = entry.data.coverMediaId as string | undefined;
+        const mediaIds = (displayData.media as string[]) || [];
+        const coverMediaId = displayData.coverMediaId as string | undefined;
 
         if (mediaIds.length > 0) {
           const mediaRes = await fetch("/api/admin/media");
@@ -406,9 +411,10 @@ export function PostEditorForm({
     setDraggedIndex(null);
   };
 
-  const handleSave = async (status: "draft" | "published") => {
-    // Only validate required fields when publishing
-    if (status === "published") {
+  // publish: true = push changes to live site, false = save as working copy
+  const handleSave = async (status: "draft" | "published", publish: boolean = true) => {
+    // Only validate required fields when actually publishing to live site
+    if (publish && status === "published") {
       if (media.length === 0) {
         alert("Please add at least one image or video to publish");
         return;
@@ -458,6 +464,7 @@ export function PostEditorForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
+          publish, // Tell API whether to push to live site
           data: {
             title: title || "",
             description: description || "",
@@ -587,11 +594,12 @@ export function PostEditorForm({
     }
   }, [saving, autoSaving, entry?.status, currentSlug, media, coverIndex, title, description, categories, location, tags, publishDate]);
 
-  // Debounced autosave effect
+  // Debounced autosave effect - only triggers when isDirty changes to true
   useEffect(() => {
     // Don't autosave during initial load or for published entries
     if (loading) return;
     if (entry?.status === "published") return;
+    if (!isDirty) return;
     
     // For new posts, only start autosaving after user has added something
     const hasContent = title.trim() !== "" || description.trim() !== "" || 
@@ -621,7 +629,9 @@ export function PostEditorForm({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, description, categories, location, tags, publishDate, media, coverIndex, loading, entry?.status, currentSlug, autosave]);
+    // Only re-run when these specific values change - NOT when autosave function changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirty, loading, entry?.status, currentSlug]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -728,10 +738,10 @@ export function PostEditorForm({
           </div>
         </div>
 
-        {/* For published entries, show manual save button (keeps status as published) */}
+        {/* For published entries, show manual save button (saves working copy, not live) */}
         {entry?.status === "published" ? (
           <Button
-            onClick={() => handleSave("published")}
+            onClick={() => handleSave("published", false)}
             disabled={saving || !isDirty}
             variant="outline"
             size="sm"
@@ -1147,7 +1157,7 @@ export function PostEditorForm({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSave("published")}>
+            <AlertDialogAction onClick={() => handleSave("published", true)}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Publish
             </AlertDialogAction>
@@ -1167,7 +1177,7 @@ export function PostEditorForm({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSave("draft")}>
+            <AlertDialogAction onClick={() => handleSave("draft", true)}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Unpublish
             </AlertDialogAction>
@@ -1189,7 +1199,7 @@ export function PostEditorForm({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSave("published")}>
+            <AlertDialogAction onClick={() => handleSave("published", true)}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update & Publish
             </AlertDialogAction>

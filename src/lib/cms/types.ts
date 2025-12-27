@@ -113,6 +113,7 @@ export interface EntryBase<T = Record<string, unknown>> {
   authorId: string | null;
   contributors?: string[]; // Co-author IDs (future multi-author)
   data: T;
+  pendingData?: T; // Unpublished changes for published entries
   seo?: SEOData;
   metadata?: Record<string, unknown>; // Extensibility bucket
   external?: Record<string, unknown>; // For migrations/external references

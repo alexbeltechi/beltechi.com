@@ -29,6 +29,7 @@ export async function GET(
 }
 
 // PATCH /api/admin/collections/[collection]/entries/[slug] - Update entry
+// Body can include `publish: true` to push changes live (for published entries)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ collection: string; slug: string }> }
@@ -46,19 +47,23 @@ export async function PATCH(
 
   try {
     const body = await request.json();
+    
+    // publish: true means push changes to live site
+    // publish: false (or undefined) means save as working copy for published entries
+    const shouldPublish = body.publish === true;
 
     const result = await updateEntry(collection, slug, {
       slug: body.slug,
       status: body.status,
       data: body.data,
-    });
+    }, shouldPublish);
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    // Revalidate public pages when entry is published or unpublished
-    if (body.status === "published" || result.entry?.status === "published") {
+    // Revalidate public pages only when actually publishing
+    if (shouldPublish && result.entry?.status === "published") {
       revalidatePath("/", "layout");
       revalidatePath(`/post/${result.entry?.slug || slug}`, "page");
     }
