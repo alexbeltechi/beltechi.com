@@ -1381,6 +1381,33 @@
       "alt": "",
       "createdAt": "2025-12-27T12:03:13.347Z",
       "hash": "dde189747edbaeef0923ac92aad0c703"
+    },
+    {
+      "id": "de447846-4987-486d-bcb4-48e7a2bfb06d",
+      "filename": "iphone-16-mockup-in-a-womans-hand-with-concrete-backdrop-mockuuups-studio-bb32.webp",
+      "originalName": "iPhone 16 mockup in a woman's hand with concrete backdrop (Mockuuups Studio).png",
+      "slug": "iphone-16-mockup-in-a-womans-hand-with-concrete-backdrop-mockuuups-studio-bb32",
+      "path": "uploads/iphone-16-mockup-in-a-womans-hand-with-concrete-backdrop-mockuuups-studio-bb32.webp",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/iphone-16-mockup-in-a-womans-hand-with-concrete-backdrop-mockuuups-studio-bb32.webp",
+      "mime": "image/webp",
+      "size": 80176,
+      "width": 2310,
+      "height": 1732,
+      "variants": {
+        "thumb": {
+          "filename": "iphone-16-mockup-in-a-womans-hand-with-concrete-backdrop-mockuuups-studio-bb32-thumb.webp",
+          "path": "uploads/variants/iphone-16-mockup-in-a-womans-hand-with-concrete-backdrop-mockuuups-studio-bb32-thumb.webp",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/iphone-16-mockup-in-a-womans-hand-with-concrete-backdrop-mockuuups-studio-bb32-thumb.webp",
+          "width": 768,
+          "height": 576,
+          "size": 16782
+        }
+      },
+      "activeVariant": "display",
+      "title": "iphone 16 mockup in a womans hand with concrete backdrop mockuuups studio",
+      "alt": "",
+      "createdAt": "2025-12-27T12:03:16.719Z",
+      "hash": "f14407ce3cced350aa865bbe3916c984"
     }
   ]
 }
