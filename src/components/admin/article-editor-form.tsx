@@ -152,8 +152,9 @@ export function ArticleEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    // Always save as draft - user must explicitly publish to go live
-    await handleSave("draft");
+    // Save with current status (keep published entries published)
+    const saveStatus = entry?.status === "published" ? "published" : "draft";
+    await handleSave(saveStatus);
   };
 
   const handleCancelNavigation = () => {
@@ -537,10 +538,10 @@ export function ArticleEditorForm({
           </div>
         </div>
 
-        {/* For published entries, show manual save button that saves as draft (not live) */}
+        {/* For published entries, show manual save button (keeps status as published) */}
         {entry?.status === "published" ? (
           <Button
-            onClick={() => handleSave("draft")}
+            onClick={() => handleSave("published")}
             disabled={saving || !isDirty}
             variant="outline"
             size="sm"
@@ -779,6 +780,7 @@ export function ArticleEditorForm({
         onSave={handleSaveAndNavigate}
         onCancel={handleCancelNavigation}
         isSaving={saving}
+        isPublished={entry?.status === "published"}
       />
 
       {/* Gallery Media Picker */}

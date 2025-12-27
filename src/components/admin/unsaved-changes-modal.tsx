@@ -8,6 +8,7 @@ interface UnsavedChangesModalProps {
   onSave: () => void;
   onCancel: () => void;
   isSaving?: boolean;
+  isPublished?: boolean;
 }
 
 export function UnsavedChangesModal({
@@ -16,8 +17,11 @@ export function UnsavedChangesModal({
   onSave,
   onCancel,
   isSaving = false,
+  isPublished = false,
 }: UnsavedChangesModalProps) {
   if (!isOpen) return null;
+
+  const saveButtonText = isPublished ? "Save Changes" : "Save Draft";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -50,7 +54,7 @@ export function UnsavedChangesModal({
             style={{ backgroundColor: "#18181b", color: "#ffffff" }}
             className="w-full px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {isSaving ? "Saving..." : "Save Draft"}
+            {isSaving ? "Saving..." : saveButtonText}
           </button>
           <button
             onClick={onDiscard}

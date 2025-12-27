@@ -172,8 +172,9 @@ export function PostEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    // Always save as draft - user must explicitly publish to go live
-    await handleSave("draft");
+    // Save with current status (keep published entries published)
+    const saveStatus = entry?.status === "published" ? "published" : "draft";
+    await handleSave(saveStatus);
     setAllowNavigation(true);
     setShowUnsavedModal(false);
     if (pendingNavUrl) {
@@ -727,10 +728,10 @@ export function PostEditorForm({
           </div>
         </div>
 
-        {/* For published entries, show manual save button that saves as draft (not live) */}
+        {/* For published entries, show manual save button (keeps status as published) */}
         {entry?.status === "published" ? (
           <Button
-            onClick={() => handleSave("draft")}
+            onClick={() => handleSave("published")}
             disabled={saving || !isDirty}
             variant="outline"
             size="sm"
@@ -1109,6 +1110,7 @@ export function PostEditorForm({
         onSave={handleSaveAndNavigate}
         onCancel={handleCancelNavigation}
         isSaving={saving}
+        isPublished={entry?.status === "published"}
       />
 
       {/* Delete Confirmation Dialog */}
