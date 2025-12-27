@@ -991,11 +991,21 @@ function ContentListPageContent() {
       </Dialog>
 
       {/* Editor Sheet (Desktop) */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={(open) => {
+        // Only allow programmatic closing (via handleSheetClose)
+        // Clicking outside or pressing Escape will be handled by the form's close button
+        if (!open) {
+          // Don't close directly - let the form handle it via onClose
+          return;
+        }
+        setSheetOpen(open);
+      }}>
         <SheetContent 
           side="right" 
           className="w-full sm:max-w-[600px] p-0"
           hideCloseButton
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           {editingEntry?.collection === "posts" && (
             <PostEditorForm
