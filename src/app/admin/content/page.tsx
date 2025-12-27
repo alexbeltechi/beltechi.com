@@ -994,7 +994,7 @@ function ContentListPageContent() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent 
           side="right" 
-          className="w-full sm:max-w-[480px] p-0"
+          className="w-full sm:max-w-[600px] p-0"
           hideCloseButton
         >
           {editingEntry?.collection === "posts" && (
