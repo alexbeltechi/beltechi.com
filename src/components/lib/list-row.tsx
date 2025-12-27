@@ -27,7 +27,7 @@ export interface ListRowProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Navigate to this URL on click */
   href?: string;
   /** Click handler (used when no href) */
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   /** Disable hover/click interactions */
   disabled?: boolean;
   /** Show selected state */
@@ -89,7 +89,7 @@ export function ListRow({
     if (disabled) return;
 
     if (onClick) {
-      onClick();
+      onClick(e);
     } else if (href) {
       router.push(href);
     }
@@ -196,4 +196,5 @@ export function ListRowCheckbox({
     </div>
   );
 }
+
 

@@ -44,15 +44,20 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
+import {
   PageHeader,
-  CountPill,
-  TypePill,
-  StatusPill,
   ListRow,
   ListRowContent,
   ListRowCheckbox,
   ListRowActions,
+  TypePill,
+  StatusPill,
 } from "@/components/lib";
+import { PostEditorForm } from "@/components/admin/post-editor-form";
+import { ArticleEditorForm } from "@/components/admin/article-editor-form";
 import type { Entry, MediaItem } from "@/lib/cms/types";
 
 // Constants
@@ -90,43 +95,60 @@ function ContentListPageContent() {
   // Mobile filter modal
   const [showFilterModal, setShowFilterModal] = useState(false);
 
-  // Fetch data on mount
+  // Sheet state for desktop editing
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState<"post" | "article" | null>(null);
+
+  // Check if we're on desktop (lg breakpoint = 1024px)
+  const [isDesktop, setIsDesktop] = useState(false);
+
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const [postsRes, articlesRes, mediaRes] = await Promise.all([
-          fetch("/api/admin/collections/posts/entries"),
-          fetch("/api/admin/collections/articles/entries"),
-          fetch("/api/admin/media"),
-        ]);
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
 
-        const postsData = await postsRes.json();
-        const articlesData = await articlesRes.json();
-        const mediaData = await mediaRes.json();
+  // Fetch data
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [postsRes, articlesRes, mediaRes] = await Promise.all([
+        fetch("/api/admin/collections/posts/entries"),
+        fetch("/api/admin/collections/articles/entries"),
+        fetch("/api/admin/media"),
+      ]);
 
-        const allEntries = [
-          ...(postsData.data || []),
-          ...(articlesData.data || []),
-        ].sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
+      const postsData = await postsRes.json();
+      const articlesData = await articlesRes.json();
+      const mediaData = await mediaRes.json();
 
-        setEntries(allEntries);
+      const allEntries = [
+        ...(postsData.data || []),
+        ...(articlesData.data || []),
+      ].sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
 
-        const map: Record<string, MediaItem> = {};
-        (mediaData.data || []).forEach((item: MediaItem) => {
-          map[item.id] = item;
-        });
-        setMediaMap(map);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setLoading(false);
-      }
+      setEntries(allEntries);
+
+      const map: Record<string, MediaItem> = {};
+      (mediaData.data || []).forEach((item: MediaItem) => {
+        map[item.id] = item;
+      });
+      setMediaMap(map);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -268,6 +290,45 @@ function ContentListPageContent() {
     clearSelection();
   };
 
+  // Handle entry click - open in sheet on desktop, navigate on mobile
+  const handleEntryClick = (entry: Entry, e: React.MouseEvent) => {
+    if (isDesktop) {
+      e.preventDefault();
+      setEditingEntry(entry);
+      setIsCreatingNew(null);
+      setSheetOpen(true);
+    }
+    // On mobile, let the Link handle navigation
+  };
+
+  // Handle create new - open in sheet on desktop, navigate on mobile
+  const handleCreateNew = (type: "post" | "article") => {
+    if (isDesktop) {
+      setEditingEntry(null);
+      setIsCreatingNew(type);
+      setSheetOpen(true);
+    } else {
+      if (type === "post") {
+        router.push("/admin/content/posts/new");
+      } else {
+        router.push("/admin/content/articles/new");
+      }
+    }
+  };
+
+  // Handle sheet close
+  const handleSheetClose = () => {
+    setSheetOpen(false);
+    setEditingEntry(null);
+    setIsCreatingNew(null);
+  };
+
+  // Handle after save in sheet
+  const handleSheetSaved = () => {
+    fetchData();
+    handleSheetClose();
+  };
+
   // Action handlers
   const handleToggleStatus = async (entry: Entry) => {
     const newStatus = entry.status === "published" ? "draft" : "published";
@@ -355,24 +416,7 @@ function ContentListPageContent() {
 
       if (!res.ok) throw new Error("Failed to duplicate");
 
-      // Refresh entries
-      const [postsRes, articlesRes] = await Promise.all([
-        fetch("/api/admin/collections/posts/entries"),
-        fetch("/api/admin/collections/articles/entries"),
-      ]);
-
-      const postsData = await postsRes.json();
-      const articlesData = await articlesRes.json();
-
-      const allEntries = [
-        ...(postsData.data || []),
-        ...(articlesData.data || []),
-      ].sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
-
-      setEntries(allEntries);
+      await fetchData();
     } catch (error) {
       console.error("Failed to duplicate:", error);
       alert("Failed to duplicate entry");
@@ -449,21 +493,7 @@ function ContentListPageContent() {
             );
           }
         }
-        // Refresh entries
-        const [postsRes, articlesRes] = await Promise.all([
-          fetch("/api/admin/collections/posts/entries"),
-          fetch("/api/admin/collections/articles/entries"),
-        ]);
-        const postsData = await postsRes.json();
-        const articlesData = await articlesRes.json();
-        const allEntries = [
-          ...(postsData.data || []),
-          ...(articlesData.data || []),
-        ].sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-        setEntries(allEntries);
+        await fetchData();
       }
 
       clearSelection();
@@ -517,17 +547,13 @@ function ContentListPageContent() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href="/admin/content/posts/new">
-                  <Image className="w-4 h-4 mr-2" />
-                  New Post
-                </Link>
+              <DropdownMenuItem onClick={() => handleCreateNew("post")}>
+                <Image className="w-4 h-4 mr-2" />
+                New Post
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/admin/content/articles/new">
-                  <FileText className="w-4 h-4 mr-2" />
-                  New Article
-                </Link>
+              <DropdownMenuItem onClick={() => handleCreateNew("article")}>
+                <FileText className="w-4 h-4 mr-2" />
+                New Article
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -700,11 +726,9 @@ function ContentListPageContent() {
                 : `Get started by creating your first ${typeFilter === "posts" ? "post" : typeFilter === "articles" ? "article" : "content"}`}
             </p>
             {!searchQuery && (
-              <Button asChild>
-                <Link href="/admin/content/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create New
-                </Link>
+              <Button onClick={() => handleCreateNew("post")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create New
               </Button>
             )}
           </div>
@@ -719,7 +743,8 @@ function ContentListPageContent() {
               return (
                 <ListRow
                   key={entry.id}
-                  href={`/admin/content/${entry.collection}/${entry.slug}`}
+                  href={isDesktop ? undefined : `/admin/content/${entry.collection}/${entry.slug}`}
+                  onClick={(e) => handleEntryClick(entry, e)}
                   selected={isSelected}
                   noBorder={isLast}
                   className="px-4"
@@ -786,13 +811,20 @@ function ContentListPageContent() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/admin/content/${entry.collection}/${entry.slug}`}
-                          >
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                          </Link>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (isDesktop) {
+                              setEditingEntry(entry);
+                              setIsCreatingNew(null);
+                              setSheetOpen(true);
+                            } else {
+                              router.push(`/admin/content/${entry.collection}/${entry.slug}`);
+                            }
+                          }}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => {
@@ -957,6 +989,46 @@ function ContentListPageContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Editor Sheet (Desktop) */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent 
+          side="right" 
+          className="w-full sm:max-w-[480px] p-0"
+          hideCloseButton
+        >
+          {editingEntry?.collection === "posts" && (
+            <PostEditorForm
+              slug={editingEntry.slug}
+              onClose={handleSheetClose}
+              onSaved={handleSheetSaved}
+              isSheet
+            />
+          )}
+          {editingEntry?.collection === "articles" && (
+            <ArticleEditorForm
+              slug={editingEntry.slug}
+              onClose={handleSheetClose}
+              onSaved={handleSheetSaved}
+              isSheet
+            />
+          )}
+          {isCreatingNew === "post" && (
+            <PostEditorForm
+              onClose={handleSheetClose}
+              onSaved={handleSheetSaved}
+              isSheet
+            />
+          )}
+          {isCreatingNew === "article" && (
+            <ArticleEditorForm
+              onClose={handleSheetClose}
+              onSaved={handleSheetSaved}
+              isSheet
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
