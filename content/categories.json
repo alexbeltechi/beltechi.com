@@ -205,6 +205,17 @@
       "showOnHomepage": true,
       "createdAt": "2025-12-27T11:59:13.767Z",
       "updatedAt": "2025-12-27T11:59:13.767Z"
+    },
+    {
+      "id": "getyourguide",
+      "slug": "getyourguide",
+      "name": "GetYourGuide",
+      "label": "GetYourGuide",
+      "color": "#64748B",
+      "order": 18,
+      "showOnHomepage": true,
+      "createdAt": "2025-12-27T13:40:42.629Z",
+      "updatedAt": "2025-12-27T13:40:42.629Z"
     }
   ]
 }
