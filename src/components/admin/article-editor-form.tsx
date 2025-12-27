@@ -264,19 +264,22 @@ export function ArticleEditorForm({
   };
 
   const handleSave = async (status: "draft" | "published") => {
-    if (!title.trim()) {
-      alert("Please enter a title");
-      return;
-    }
+    // Only validate required fields when publishing
+    if (status === "published") {
+      if (!title.trim()) {
+        alert("Please enter a title to publish");
+        return;
+      }
 
-    if (categories.length === 0) {
-      alert("Please select at least one category");
-      return;
-    }
+      if (categories.length === 0) {
+        alert("Please select at least one category to publish");
+        return;
+      }
 
-    if (blocks.length === 0) {
-      alert("Please add at least one content block");
-      return;
+      if (blocks.length === 0) {
+        alert("Please add at least one content block to publish");
+        return;
+      }
     }
 
     setSaving(true);

@@ -403,14 +403,17 @@ export function PostEditorForm({
   };
 
   const handleSave = async (status: "draft" | "published") => {
-    if (media.length === 0) {
-      alert("Please add at least one image or video");
-      return;
-    }
+    // Only validate required fields when publishing
+    if (status === "published") {
+      if (media.length === 0) {
+        alert("Please add at least one image or video to publish");
+        return;
+      }
 
-    if (categories.length === 0) {
-      alert("Please select at least one category");
-      return;
+      if (categories.length === 0) {
+        alert("Please select at least one category to publish");
+        return;
+      }
     }
 
     setSaving(true);
