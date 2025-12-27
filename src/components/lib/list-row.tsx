@@ -106,7 +106,8 @@ export function ListRow({
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 if (onClick) {
-                  onClick();
+                  // Create a synthetic mouse event for keyboard activation
+                  onClick(e as unknown as React.MouseEvent<HTMLDivElement>);
                 } else if (href) {
                   router.push(href);
                 }

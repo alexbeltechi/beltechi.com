@@ -323,10 +323,9 @@ function ContentListPageContent() {
     setIsCreatingNew(null);
   };
 
-  // Handle after save in sheet
+  // Handle after save in sheet - just refresh data, don't close
   const handleSheetSaved = () => {
     fetchData();
-    handleSheetClose();
   };
 
   // Action handlers
