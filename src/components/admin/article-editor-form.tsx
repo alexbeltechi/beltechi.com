@@ -40,8 +40,9 @@ import {
 import { CategoryInput } from "@/components/admin/category-input";
 import { DatePicker } from "@/components/admin/date-picker";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
+import { MediaPicker } from "@/components/admin/media-picker";
 import { cn } from "@/lib/utils";
-import type { Block, Entry } from "@/lib/cms/types";
+import type { Block, Entry, MediaItem } from "@/lib/cms/types";
 
 interface ArticleEditorFormProps {
   slug?: string; // If provided, edit mode. If not, create mode.
@@ -77,6 +78,8 @@ export function ArticleEditorForm({
   const [publishDialog, setPublishDialog] = useState(false);
   const [unpublishDialog, setUnpublishDialog] = useState(false);
   const [updatePublishDialog, setUpdatePublishDialog] = useState(false);
+  const [galleryPickerBlockId, setGalleryPickerBlockId] = useState<string | null>(null);
+  const [galleryMedia, setGalleryMedia] = useState<Record<string, MediaItem[]>>({});
 
   // Track initial values for dirty state
   const [initialTitle, setInitialTitle] = useState("");
@@ -214,9 +217,6 @@ export function ArticleEditorForm({
     switch (type) {
       case "text":
         newBlock = { type: "text", id, html: "" };
-        break;
-      case "image":
-        newBlock = { type: "image", id, mediaId: "", caption: "" };
         break;
       case "gallery":
         newBlock = { type: "gallery", id, mediaIds: [], columns: 2 };
@@ -542,6 +542,8 @@ export function ArticleEditorForm({
                   onUpdate={(updates) => updateBlock(block.id, updates)}
                   onRemove={() => removeBlock(block.id)}
                   onMove={(dir) => moveBlock(index, dir)}
+                  onOpenGalleryPicker={() => setGalleryPickerBlockId(block.id)}
+                  galleryMedia={galleryMedia[block.id] || []}
                 />
               ))}
             </div>
@@ -556,7 +558,7 @@ export function ArticleEditorForm({
               </button>
 
               {showBlockMenu && (
-                <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-background border border-border rounded-lg shadow-lg z-10 grid grid-cols-3 sm:grid-cols-4 gap-2">
+                <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-background border border-border rounded-lg shadow-lg z-10 grid grid-cols-3 gap-2">
                   <BlockTypeButton
                     icon={Type}
                     label="Text"
@@ -564,18 +566,8 @@ export function ArticleEditorForm({
                   />
                   <BlockTypeButton
                     icon={Image}
-                    label="Image"
-                    onClick={() => addBlock("image")}
-                  />
-                  <BlockTypeButton
-                    icon={Image}
                     label="Gallery"
                     onClick={() => addBlock("gallery")}
-                  />
-                  <BlockTypeButton
-                    icon={Film}
-                    label="Video"
-                    onClick={() => addBlock("video")}
                   />
                   <BlockTypeButton
                     icon={Youtube}
@@ -668,6 +660,31 @@ export function ArticleEditorForm({
         onSave={handleSaveAndNavigate}
         onCancel={handleCancelNavigation}
         isSaving={saving}
+      />
+
+      {/* Gallery Media Picker */}
+      <MediaPicker
+        isOpen={!!galleryPickerBlockId}
+        onClose={() => setGalleryPickerBlockId(null)}
+        onSelect={(items) => {
+          if (galleryPickerBlockId) {
+            // Update the gallery media state
+            setGalleryMedia((prev) => ({
+              ...prev,
+              [galleryPickerBlockId]: [...(prev[galleryPickerBlockId] || []), ...items],
+            }));
+            // Update the block's mediaIds
+            const block = blocks.find((b) => b.id === galleryPickerBlockId);
+            if (block && block.type === "gallery") {
+              const existingIds = block.mediaIds || [];
+              const newIds = items.map((item) => item.id);
+              updateBlock(galleryPickerBlockId, { mediaIds: [...existingIds, ...newIds] });
+            }
+          }
+          setGalleryPickerBlockId(null);
+        }}
+        multiple={true}
+        accept={["image/*"]}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -784,6 +801,8 @@ function BlockEditor({
   onUpdate,
   onRemove,
   onMove,
+  onOpenGalleryPicker,
+  galleryMedia,
 }: {
   block: Block;
   index: number;
@@ -791,6 +810,8 @@ function BlockEditor({
   onUpdate: (updates: Partial<Block>) => void;
   onRemove: () => void;
   onMove: (direction: "up" | "down") => void;
+  onOpenGalleryPicker?: () => void;
+  galleryMedia?: MediaItem[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -844,44 +865,6 @@ function BlockEditor({
           />
         )}
 
-        {block.type === "image" && (
-          <div className="space-y-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-            />
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleFileDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                "aspect-video border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer transition-all",
-                isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-muted/50 hover:border-muted-foreground"
-              )}
-            >
-              <div className="text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {isDragging ? "Drop image here" : "Click or drag to upload"}
-                </span>
-              </div>
-            </div>
-            <Input
-              value={block.caption || ""}
-              onChange={(e) => onUpdate({ caption: e.target.value })}
-              placeholder="Caption (optional)"
-            />
-          </div>
-        )}
-
         {block.type === "youtube" && (
           <div className="space-y-3">
             <Input
@@ -921,14 +904,39 @@ function BlockEditor({
         )}
 
         {block.type === "gallery" && (
-          <div
-            className="text-center py-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-muted-foreground text-sm">
-              Click or drag to upload multiple images
-            </p>
+          <div className="space-y-3">
+            {galleryMedia && galleryMedia.length > 0 ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  {galleryMedia.map((item) => (
+                    <div key={item.id} className="relative aspect-square rounded-md overflow-hidden bg-muted">
+                      <img
+                        src={item.variants?.thumb?.url || item.url}
+                        alt={item.alt || ""}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenGalleryPicker}
+                  className="w-full py-2 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md hover:border-muted-foreground transition-colors"
+                >
+                  + Add more images
+                </button>
+              </div>
+            ) : (
+              <div
+                className="text-center py-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
+                onClick={onOpenGalleryPicker}
+              >
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-muted-foreground text-sm">
+                  Click to add images from library
+                </p>
+              </div>
+            )}
           </div>
         )}
 
