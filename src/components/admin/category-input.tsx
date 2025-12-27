@@ -203,15 +203,15 @@ export function CategoryInput({
     <div ref={containerRef} className="relative">
       {/* Label hint */}
       {categories.length > 0 && (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">{suggestedHint}</p>
+        <p className="text-xs text-muted-foreground mb-2">{suggestedHint}</p>
       )}
 
       {/* Input container */}
       <div
-        className={`min-h-[48px] px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border rounded-lg flex flex-wrap gap-2 items-center cursor-text transition-all ${
+        className={`min-h-9 px-3 py-2 bg-background border border-input rounded-md shadow-xs flex flex-wrap gap-2 items-center cursor-text transition-[color,box-shadow] ${
           isOpen
-            ? "border-zinc-900 ring-2 ring-zinc-900 bg-white dark:border-zinc-100 dark:ring-zinc-100 dark:bg-zinc-900"
-            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600"
+            ? "border-ring ring-ring/50 ring-[3px]"
+            : ""
         }`}
         onClick={() => {
           setIsOpen(true);
@@ -266,21 +266,21 @@ export function CategoryInput({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={value.length === 0 ? placeholder : ""}
-          className="flex-1 min-w-[120px] bg-transparent outline-none text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+          className="flex-1 min-w-[120px] bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
         />
 
         {loading || creating ? (
-          <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
+          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
         ) : (
           <ChevronDown
-            className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         )}
       </div>
 
       {/* Dropdown */}
       {isOpen && !loading && (filteredCategories.length > 0 || showCustomOption) && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 py-1 max-h-48 overflow-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md z-10 py-1 max-h-48 overflow-auto">
           {filteredCategories.map((cat) => (
             <button
               key={cat.id}
@@ -289,15 +289,15 @@ export function CategoryInput({
                 addCategory(cat.id);
                 inputRef.current?.focus();
               }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
             >
               <div
                 className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: cat.color }}
               />
-              <span className="text-zinc-900 dark:text-zinc-100">{cat.label}</span>
+              <span className="text-foreground">{cat.label}</span>
               {cat.description && (
-                <span className="text-zinc-400 text-xs ml-auto truncate max-w-[150px]">
+                <span className="text-muted-foreground text-xs ml-auto truncate max-w-[150px]">
                   {cat.description}
                 </span>
               )}
@@ -312,7 +312,7 @@ export function CategoryInput({
                 createNewCategory(inputValue.trim());
                 inputRef.current?.focus();
               }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-700 dark:text-zinc-300 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-2 disabled:opacity-50"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors text-muted-foreground border-t border-border flex items-center gap-2 disabled:opacity-50"
             >
               {creating ? (
                 <Loader2 className="w-3 h-3 animate-spin" />

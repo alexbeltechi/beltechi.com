@@ -159,10 +159,10 @@ export function DatePicker({
         tabIndex={0}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => e.key === "Enter" && setIsOpen(!isOpen)}
-        className={`w-full h-9 px-3 py-2 bg-background border border-input rounded-md text-sm text-left flex items-center gap-2 transition-colors cursor-pointer ${
+        className={`w-full h-9 px-3 py-2 bg-background border border-input rounded-md shadow-xs text-sm text-left flex items-center gap-2 transition-[color,box-shadow] cursor-pointer ${
           isOpen
-            ? "outline-none ring-1 ring-ring"
-            : "hover:border-muted-foreground/50"
+            ? "border-ring ring-ring/50 ring-[3px]"
+            : ""
         }`}
       >
         <Calendar className="w-4 h-4 text-muted-foreground" />
