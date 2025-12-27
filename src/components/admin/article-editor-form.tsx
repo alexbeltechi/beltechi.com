@@ -6,19 +6,18 @@ import {
   Plus,
   X,
   GripVertical,
-  Check,
   Eye,
   EyeOff,
   Loader2,
   Trash2,
   Type,
   Image,
-  Film,
   Youtube,
   Quote,
   Minus,
   Upload,
   Save,
+  ImagePlus,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
@@ -42,6 +41,8 @@ import { CategoryInput } from "@/components/admin/category-input";
 import { DatePicker } from "@/components/admin/date-picker";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
 import { MediaPicker } from "@/components/admin/media-picker";
+import { MediaGrid, mediaItemsToPreview, type MediaPreview } from "@/components/admin/media-grid";
+import { ImageOptionsMenu } from "@/components/admin/image-options-menu";
 import { cn } from "@/lib/utils";
 import type { Block, Entry, MediaItem } from "@/lib/cms/types";
 
@@ -69,6 +70,9 @@ export function ArticleEditorForm({
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
+  const [coverMediaId, setCoverMediaId] = useState<string | null>(null);
+  const [coverMedia, setCoverMedia] = useState<MediaItem | null>(null);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState("");
   const [publishDate, setPublishDate] = useState<string | null>(null);
@@ -81,11 +85,13 @@ export function ArticleEditorForm({
   const [unpublishDialog, setUnpublishDialog] = useState(false);
   const [updatePublishDialog, setUpdatePublishDialog] = useState(false);
   const [galleryPickerBlockId, setGalleryPickerBlockId] = useState<string | null>(null);
-  const [galleryMedia, setGalleryMedia] = useState<Record<string, MediaItem[]>>({});
+  const [galleryMedia, setGalleryMedia] = useState<Record<string, MediaPreview[]>>({});
+  const [replaceTarget, setReplaceTarget] = useState<{ blockId: string; index: number } | null>(null);
 
   // Track initial values for dirty state
   const [initialTitle, setInitialTitle] = useState("");
   const [initialExcerpt, setInitialExcerpt] = useState("");
+  const [initialCoverMediaId, setInitialCoverMediaId] = useState<string | null>(null);
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [initialTags, setInitialTags] = useState("");
   const [initialPublishDate, setInitialPublishDate] = useState<string | null>(null);
@@ -95,12 +101,14 @@ export function ArticleEditorForm({
   const isDirty = isEditMode
     ? title !== initialTitle ||
       excerpt !== initialExcerpt ||
+      coverMediaId !== initialCoverMediaId ||
       JSON.stringify(categories.sort()) !== JSON.stringify(initialCategories.sort()) ||
       tags !== initialTags ||
       publishDate !== initialPublishDate ||
       JSON.stringify(blocks) !== initialBlocks
     : title.trim() !== "" ||
       excerpt.trim() !== "" ||
+      coverMediaId !== null ||
       categories.length > 0 ||
       tags.trim() !== "" ||
       publishDate !== null ||
@@ -184,6 +192,7 @@ export function ArticleEditorForm({
 
         const titleVal = (displayData.title as string) || "";
         const excerptVal = (displayData.excerpt as string) || "";
+        const coverVal = (displayData.featuredImage as string) || null;
         const catsVal = (displayData.categories as string[]) || [];
         const rawTags = displayData.tags;
         const tagsVal = Array.isArray(rawTags)
@@ -194,6 +203,7 @@ export function ArticleEditorForm({
 
         setTitle(titleVal);
         setExcerpt(excerptVal);
+        setCoverMediaId(coverVal);
         setCategories(catsVal);
         setTags(tagsVal);
         setPublishDate(dateVal);
@@ -201,10 +211,48 @@ export function ArticleEditorForm({
 
         setInitialTitle(titleVal);
         setInitialExcerpt(excerptVal);
+        setInitialCoverMediaId(coverVal);
         setInitialCategories(catsVal);
         setInitialTags(tagsVal);
         setInitialPublishDate(dateVal);
         setInitialBlocks(JSON.stringify(blocksVal));
+
+        // Load media items for cover and gallery blocks
+        const galleryBlocks = blocksVal.filter((b: Block) => b.type === "gallery");
+        const galleryMediaIds = galleryBlocks.flatMap((b: Block) => 
+          b.type === "gallery" ? b.mediaIds : []
+        );
+        
+        // Check if we need to fetch media (for cover or galleries)
+        const needsMediaFetch = coverVal || galleryMediaIds.length > 0;
+        
+        if (needsMediaFetch) {
+          const mediaRes = await fetch("/api/admin/media");
+          const mediaData = await mediaRes.json();
+          const mediaItems = (mediaData.data || []) as MediaItem[];
+          
+          // Load cover media
+          if (coverVal) {
+            const coverItem = mediaItems.find((m) => m.id === coverVal);
+            if (coverItem) {
+              setCoverMedia(coverItem);
+            }
+          }
+          
+          // Build galleryMedia state for each gallery block
+          if (galleryMediaIds.length > 0) {
+            const galleryMediaState: Record<string, MediaPreview[]> = {};
+            for (const block of galleryBlocks) {
+              if (block.type === "gallery" && block.mediaIds.length > 0) {
+                const blockMediaItems = block.mediaIds
+                  .map((id: string) => mediaItems.find((m) => m.id === id))
+                  .filter(Boolean) as MediaItem[];
+                galleryMediaState[block.id] = mediaItemsToPreview(blockMediaItems);
+              }
+            }
+            setGalleryMedia(galleryMediaState);
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch entry:", error);
         if (!isSheet) {
@@ -245,30 +293,32 @@ export function ArticleEditorForm({
         return;
     }
 
-    setBlocks([...blocks, newBlock]);
+    setBlocks((prev) => [...prev, newBlock]);
     setShowBlockMenu(false);
   };
 
   const updateBlock = (id: string, updates: Partial<Block>) => {
-    setBlocks(
-      blocks.map((b) => (b.id === id ? { ...b, ...updates } : b)) as Block[]
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...updates } : b)) as Block[]
     );
   };
 
   const removeBlock = (id: string) => {
-    setBlocks(blocks.filter((b) => b.id !== id));
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
   };
 
   const moveBlock = (index: number, direction: "up" | "down") => {
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= blocks.length) return;
+    setBlocks((prev) => {
+      const newIndex = direction === "up" ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= prev.length) return prev;
 
-    const newBlocks = [...blocks];
-    [newBlocks[index], newBlocks[newIndex]] = [
-      newBlocks[newIndex],
-      newBlocks[index],
-    ];
-    setBlocks(newBlocks);
+      const newBlocks = [...prev];
+      [newBlocks[index], newBlocks[newIndex]] = [
+        newBlocks[newIndex],
+        newBlocks[index],
+      ];
+      return newBlocks;
+    });
   };
 
   // publish: true = push changes to live site, false = save as working copy
@@ -307,6 +357,7 @@ export function ArticleEditorForm({
           data: {
             title,
             excerpt: excerpt || "",
+            featuredImage: coverMediaId || undefined,
             content: blocks,
             categories,
             tags: tags || "",
@@ -326,6 +377,7 @@ export function ArticleEditorForm({
         setEntry(data.data);
         setInitialTitle(title);
         setInitialExcerpt(excerpt);
+        setInitialCoverMediaId(coverMediaId);
         setInitialCategories([...categories]);
         setInitialTags(tags);
         setInitialPublishDate(publishDate);
@@ -505,6 +557,48 @@ export function ArticleEditorForm({
             />
           </div>
 
+          {/* Cover Image */}
+          <div className="space-y-2">
+            <Label>Cover</Label>
+            {coverMedia ? (
+              <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg border border-border">
+                <div className="w-12 h-12 rounded-md overflow-hidden bg-muted shrink-0">
+                  <img
+                    src={coverMedia.variants?.thumb?.url || coverMedia.url}
+                    alt={coverMedia.alt || ""}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {coverMedia.originalName || coverMedia.filename}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {(coverMedia.size / (1024 * 1024)).toFixed(1)} MB
+                  </p>
+                </div>
+                <ImageOptionsMenu
+                  onCopyUrl={() => navigator.clipboard.writeText(coverMedia.url)}
+                  onReplace={() => setShowCoverPicker(true)}
+                  onDelete={() => {
+                    setCoverMediaId(null);
+                    setCoverMedia(null);
+                  }}
+                />
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-start text-muted-foreground"
+                onClick={() => setShowCoverPicker(true)}
+              >
+                <ImagePlus className="mr-2 h-4 w-4" />
+                Add cover image
+              </Button>
+            )}
+          </div>
+
           {/* Categories & Date */}
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
@@ -553,19 +647,33 @@ export function ArticleEditorForm({
             </div>
 
             <div className="space-y-3">
-              {blocks.map((block, index) => (
-                <BlockEditor
-                  key={block.id}
-                  block={block}
-                  index={index}
-                  total={blocks.length}
-                  onUpdate={(updates) => updateBlock(block.id, updates)}
-                  onRemove={() => removeBlock(block.id)}
-                  onMove={(dir) => moveBlock(index, dir)}
-                  onOpenGalleryPicker={() => setGalleryPickerBlockId(block.id)}
-                  galleryMedia={galleryMedia[block.id] || []}
-                />
-              ))}
+                {blocks.map((block, index) => (
+                  <BlockEditor
+                    key={block.id}
+                    block={block}
+                    index={index}
+                    total={blocks.length}
+                    onUpdate={(updates) => updateBlock(block.id, updates)}
+                    onRemove={() => removeBlock(block.id)}
+                    onMove={(dir) => moveBlock(index, dir)}
+                    onOpenGalleryPicker={() => setGalleryPickerBlockId(block.id)}
+                    galleryMedia={galleryMedia[block.id] || []}
+                    onGalleryMediaChange={(newMedia) => {
+                      setGalleryMedia((prev) => ({
+                        ...prev,
+                        [block.id]: newMedia,
+                      }));
+                      // Sync mediaIds with block
+                      const mediaIds = newMedia
+                        .filter((m) => m.mediaId)
+                        .map((m) => m.mediaId as string);
+                      updateBlock(block.id, { mediaIds });
+                    }}
+                    onReplaceMedia={(mediaIndex) => {
+                      setReplaceTarget({ blockId: block.id, index: mediaIndex });
+                    }}
+                  />
+                ))}
             </div>
 
             <div className="relative">
@@ -683,16 +791,32 @@ export function ArticleEditorForm({
         isPublished={entry?.status === "published"}
       />
 
+      {/* Cover Image Picker */}
+      <MediaPicker
+        isOpen={showCoverPicker}
+        onClose={() => setShowCoverPicker(false)}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            setCoverMediaId(items[0].id);
+            setCoverMedia(items[0]);
+          }
+          setShowCoverPicker(false);
+        }}
+        multiple={false}
+        accept={["image/*"]}
+      />
+
       {/* Gallery Media Picker */}
       <MediaPicker
         isOpen={!!galleryPickerBlockId}
         onClose={() => setGalleryPickerBlockId(null)}
         onSelect={(items) => {
           if (galleryPickerBlockId) {
-            // Update the gallery media state
+            // Convert MediaItems to MediaPreviews and add to state
+            const newPreviews = mediaItemsToPreview(items);
             setGalleryMedia((prev) => ({
               ...prev,
-              [galleryPickerBlockId]: [...(prev[galleryPickerBlockId] || []), ...items],
+              [galleryPickerBlockId]: [...(prev[galleryPickerBlockId] || []), ...newPreviews],
             }));
             // Update the block's mediaIds
             const block = blocks.find((b) => b.id === galleryPickerBlockId);
@@ -705,6 +829,36 @@ export function ArticleEditorForm({
           setGalleryPickerBlockId(null);
         }}
         multiple={true}
+        accept={["image/*"]}
+      />
+
+      {/* Replace Media Picker */}
+      <MediaPicker
+        isOpen={!!replaceTarget}
+        onClose={() => setReplaceTarget(null)}
+        onSelect={(items) => {
+          if (replaceTarget && items.length > 0) {
+            const { blockId, index } = replaceTarget;
+            const newPreview = mediaItemsToPreview([items[0]])[0];
+            
+            // Update gallery media state
+            setGalleryMedia((prev) => {
+              const blockMedia = [...(prev[blockId] || [])];
+              blockMedia[index] = newPreview;
+              return { ...prev, [blockId]: blockMedia };
+            });
+            
+            // Update block mediaIds
+            const block = blocks.find((b) => b.id === blockId);
+            if (block && block.type === "gallery") {
+              const newMediaIds = [...block.mediaIds];
+              newMediaIds[index] = items[0].id;
+              updateBlock(blockId, { mediaIds: newMediaIds });
+            }
+          }
+          setReplaceTarget(null);
+        }}
+        multiple={false}
         accept={["image/*"]}
       />
 
@@ -824,6 +978,8 @@ function BlockEditor({
   onMove,
   onOpenGalleryPicker,
   galleryMedia,
+  onGalleryMediaChange,
+  onReplaceMedia,
 }: {
   block: Block;
   index: number;
@@ -832,15 +988,11 @@ function BlockEditor({
   onRemove: () => void;
   onMove: (direction: "up" | "down") => void;
   onOpenGalleryPicker?: () => void;
-  galleryMedia?: MediaItem[];
+  galleryMedia?: MediaPreview[];
+  onGalleryMediaChange?: (media: MediaPreview[]) => void;
+  onReplaceMedia?: (index: number) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
 
   return (
     <div className="bg-background border border-border rounded-lg overflow-hidden group shadow-sm">
@@ -925,40 +1077,16 @@ function BlockEditor({
         )}
 
         {block.type === "gallery" && (
-          <div className="space-y-3">
-            {galleryMedia && galleryMedia.length > 0 ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  {galleryMedia.map((item) => (
-                    <div key={item.id} className="relative aspect-square rounded-md overflow-hidden bg-muted">
-                      <img
-                        src={item.variants?.thumb?.url || item.url}
-                        alt={item.alt || ""}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={onOpenGalleryPicker}
-                  className="w-full py-2 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md hover:border-muted-foreground transition-colors"
-                >
-                  + Add more images
-                </button>
-              </div>
-            ) : (
-              <div
-                className="text-center py-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
-                onClick={onOpenGalleryPicker}
-              >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-muted-foreground text-sm">
-                  Click to add images from library
-                </p>
-              </div>
-            )}
-          </div>
+          <MediaGrid
+            media={galleryMedia || []}
+            onMediaChange={onGalleryMediaChange || (() => {})}
+            onOpenLibrary={onOpenGalleryPicker || (() => {})}
+            onReplaceMedia={onReplaceMedia}
+            maxMedia={20}
+            accept="image/*"
+            showUpload={false}
+            emptyStateText="Click to add images from library"
+          />
         )}
 
         {block.type === "video" && (
