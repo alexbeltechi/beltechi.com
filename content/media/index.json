@@ -1327,6 +1327,33 @@
       "alt": "",
       "createdAt": "2025-12-27T12:03:07.852Z",
       "hash": "d508ba53ba29c26c204ec246a3622a9f"
+    },
+    {
+      "id": "93d8449e-dd07-40d1-a938-4f8545b49eca",
+      "filename": "frame-2085653759-3f49.webp",
+      "originalName": "Frame 2085653759.png",
+      "slug": "frame-2085653759-3f49",
+      "path": "uploads/frame-2085653759-3f49.webp",
+      "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/frame-2085653759-3f49.webp",
+      "mime": "image/webp",
+      "size": 71776,
+      "width": 2500,
+      "height": 1406,
+      "variants": {
+        "thumb": {
+          "filename": "frame-2085653759-3f49-thumb.webp",
+          "path": "uploads/variants/frame-2085653759-3f49-thumb.webp",
+          "url": "https://v8zejj5ezmjs0tuz.public.blob.vercel-storage.com/uploads/variants/frame-2085653759-3f49-thumb.webp",
+          "width": 768,
+          "height": 432,
+          "size": 15624
+        }
+      },
+      "activeVariant": "display",
+      "title": "frame 2085653759",
+      "alt": "",
+      "createdAt": "2025-12-27T12:03:10.504Z",
+      "hash": "a5cf004251346e7ddc8c92fd54e98000"
     }
   ]
 }
