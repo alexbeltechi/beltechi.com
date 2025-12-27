@@ -73,6 +73,7 @@ function ContentListPageContent() {
   // URL state
   const urlTab = searchParams.get("tab") as ContentFilter | null;
   const urlPage = parseInt(searchParams.get("page") || "1", 10);
+  const urlEdit = searchParams.get("edit"); // e.g., "posts/luciana"
 
   // Local state
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -167,6 +168,45 @@ function ContentListPageContent() {
       setCurrentPage(pageParam);
     }
   }, [searchParams]);
+
+  // Handle edit param from URL - open sheet when URL has ?edit=posts/slug
+  useEffect(() => {
+    if (!isDesktop || loading) return;
+    
+    const editParam = searchParams.get("edit");
+    
+    if (editParam) {
+      const [collection, slug] = editParam.split("/");
+      
+      if (slug === "new") {
+        // Creating new entry
+        if (collection === "posts" && isCreatingNew !== "post") {
+          setIsCreatingNew("post");
+          setEditingEntry(null);
+          setSheetOpen(true);
+        } else if (collection === "articles" && isCreatingNew !== "article") {
+          setIsCreatingNew("article");
+          setEditingEntry(null);
+          setSheetOpen(true);
+        }
+      } else {
+        // Editing existing entry
+        const entry = entries.find(
+          (e) => e.collection === collection && e.slug === slug
+        );
+        if (entry && editingEntry?.slug !== slug) {
+          setEditingEntry(entry);
+          setIsCreatingNew(null);
+          setSheetOpen(true);
+        }
+      }
+    } else if (sheetOpen && !editParam) {
+      // URL no longer has edit param, close the sheet
+      setSheetOpen(false);
+      setEditingEntry(null);
+      setIsCreatingNew(null);
+    }
+  }, [searchParams, entries, isDesktop, loading]);
 
   // Filter and search entries
   const filteredEntries = useMemo(() => {
@@ -297,6 +337,10 @@ function ContentListPageContent() {
       setEditingEntry(entry);
       setIsCreatingNew(null);
       setSheetOpen(true);
+      // Update URL to reflect the editing entry
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("edit", `${entry.collection}/${entry.slug}`);
+      router.push(`/admin/content?${params.toString()}`, { scroll: false });
     }
     // On mobile, let the Link handle navigation
   };
@@ -307,6 +351,10 @@ function ContentListPageContent() {
       setEditingEntry(null);
       setIsCreatingNew(type);
       setSheetOpen(true);
+      // Update URL to reflect creating new
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("edit", `${type}s/new`);
+      router.push(`/admin/content?${params.toString()}`, { scroll: false });
     } else {
       if (type === "post") {
         router.push("/admin/content/posts/new");
@@ -321,6 +369,11 @@ function ContentListPageContent() {
     setSheetOpen(false);
     setEditingEntry(null);
     setIsCreatingNew(null);
+    // Remove edit param from URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("edit");
+    const newUrl = params.toString() ? `/admin/content?${params.toString()}` : "/admin/content";
+    router.push(newUrl, { scroll: false });
   };
 
   // Handle after save in sheet - just refresh data, don't close
@@ -817,6 +870,10 @@ function ContentListPageContent() {
                               setEditingEntry(entry);
                               setIsCreatingNew(null);
                               setSheetOpen(true);
+                              // Update URL to reflect the editing entry
+                              const params = new URLSearchParams(searchParams.toString());
+                              params.set("edit", `${entry.collection}/${entry.slug}`);
+                              router.push(`/admin/content?${params.toString()}`, { scroll: false });
                             } else {
                               router.push(`/admin/content/${entry.collection}/${entry.slug}`);
                             }
