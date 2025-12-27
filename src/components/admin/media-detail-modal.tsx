@@ -252,16 +252,16 @@ export function MediaDetailModal({
                   <p>
                     <span className="font-medium text-foreground">File type:</span> {item.mime}
                   </p>
-                  <p>
-                    <span className="font-medium text-foreground">File size:</span>{" "}
-                    {formatFileSize(item.original?.size || item.size)}
-                  </p>
-                  {item.original && (
+                  {(item.width && item.height) && (
                     <p>
-                      <span className="font-medium text-foreground">Dimensions:</span>{" "}
-                      {item.original.width} × {item.original.height} pixels
+                      <span className="font-medium text-foreground">File dimensions:</span>{" "}
+                      {item.width} × {item.height} px
                     </p>
                   )}
+                  <p>
+                    <span className="font-medium text-foreground">File size:</span>{" "}
+                    {formatFileSize(item.size)}
+                  </p>
                   {/* Usage info */}
                   <div className="flex items-start gap-1 pt-1">
                     {usages.length > 0 ? (
@@ -290,49 +290,29 @@ export function MediaDetailModal({
                 </div>
 
                 {/* Image Size Selector */}
-                {item.mime.startsWith("image/") && (
+                {item.mime.startsWith("image/") && item.variants?.thumb && (
                   <div className="pt-2 border-t border-border">
                     <Label className="text-xs mb-2 block">Image Size</Label>
-
-                    {item.original ? (
-                      <div className="space-y-1.5">
-                        <VariantButton
-                          name="Original"
-                          variant="original"
-                          activeVariant={item.activeVariant || "original"}
-                          width={item.original.width}
-                          height={item.original.height}
-                          size={item.original.size}
-                          onSelect={() => handleVariantChange("original")}
-                        />
-                        {item.variants?.thumb && (
-                          <VariantButton
-                            name="Thumbnail"
-                            variant="thumb"
-                            activeVariant={item.activeVariant || "original"}
-                            width={item.variants.thumb.width}
-                            height={item.variants.thumb.height}
-                            size={item.variants.thumb.size}
-                            onSelect={() => handleVariantChange("thumb")}
-                          />
-                        )}
-                        {!item.variants?.thumb && (
-                          <p className="text-xs text-muted-foreground italic py-1">
-                            Image is smaller than 400px, no thumbnail generated.
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                        <p className="text-xs text-amber-500">
-                          <strong>Legacy upload</strong> — This image was uploaded before optimization was enabled.
-                          Delete and re-upload to generate optimized sizes.
-                        </p>
-                        <p className="text-xs text-amber-500/70 mt-1">
-                          Current size: {formatFileSize(item.size)}
-                        </p>
-                      </div>
-                    )}
+                    <div className="space-y-1.5">
+                      <VariantButton
+                        name="Display"
+                        variant="display"
+                        activeVariant={item.activeVariant || "display"}
+                        width={item.width || 0}
+                        height={item.height || 0}
+                        size={item.size}
+                        onSelect={() => handleVariantChange("display")}
+                      />
+                      <VariantButton
+                        name="Thumbnail"
+                        variant="thumb"
+                        activeVariant={item.activeVariant || "display"}
+                        width={item.variants.thumb.width}
+                        height={item.variants.thumb.height}
+                        size={item.variants.thumb.size}
+                        onSelect={() => handleVariantChange("thumb")}
+                      />
+                    </div>
                   </div>
                 )}
 
