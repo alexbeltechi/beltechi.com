@@ -18,6 +18,7 @@ import {
   Quote,
   Minus,
   Upload,
+  Save,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
@@ -62,12 +63,9 @@ export function ArticleEditorForm({
 
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
-  const [autoSaving, setAutoSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [entry, setEntry] = useState<Entry | null>(null);
   const [currentSlug, setCurrentSlug] = useState<string | undefined>(slug);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const hasAutoSaved = useRef(false);
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -360,103 +358,6 @@ export function ArticleEditorForm({
     }
   };
 
-  // Autosave function - saves as draft without closing
-  const autosave = useCallback(async () => {
-    // Don't autosave if already saving or if it's a published entry
-    if (saving || autoSaving) return;
-    if (entry?.status === "published") return;
-    
-    setAutoSaving(true);
-
-    try {
-      const effectiveSlug = currentSlug;
-      const isCreating = !effectiveSlug;
-      
-      const endpoint = isCreating
-        ? "/api/admin/collections/articles/entries"
-        : `/api/admin/collections/articles/entries/${effectiveSlug}`;
-
-      const res = await fetch(endpoint, {
-        method: isCreating ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "draft",
-          data: {
-            title: title || "Untitled",
-            excerpt: excerpt || "",
-            content: blocks,
-            categories,
-            tags: tags || "",
-            date: publishDate || new Date().toISOString(),
-          },
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        hasAutoSaved.current = true;
-        
-        // Update entry and initial values
-        setEntry(data.data);
-        setInitialTitle(title || "Untitled");
-        setInitialExcerpt(excerpt);
-        setInitialCategories([...categories]);
-        setInitialTags(tags);
-        setInitialPublishDate(publishDate);
-        setInitialBlocks(JSON.stringify(blocks));
-        
-        // If this was a new article, update the slug
-        if (isCreating && data.data?.slug) {
-          setCurrentSlug(data.data.slug);
-        }
-      }
-    } catch (error) {
-      console.error("Autosave failed:", error);
-    } finally {
-      setAutoSaving(false);
-    }
-  }, [saving, autoSaving, entry?.status, currentSlug, title, excerpt, blocks, categories, tags, publishDate]);
-
-  // Debounced autosave effect - only triggers when isDirty changes to true
-  useEffect(() => {
-    // Don't autosave during initial load or for published entries
-    if (loading) return;
-    if (entry?.status === "published") return;
-    if (!isDirty) return;
-    
-    // For new articles, only start autosaving after user has entered something
-    if (!currentSlug && !title.trim() && !excerpt.trim() && categories.length === 0 && blocks.length === 0) {
-      return;
-    }
-    
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    // Set new timeout for autosave (1.5 second delay)
-    saveTimeoutRef.current = setTimeout(() => {
-      autosave();
-    }, 1500);
-    
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-    // Only re-run when these specific values change - NOT when autosave function changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDirty, loading, entry?.status, currentSlug]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const handleDelete = async () => {
     if (!isEditMode) return;
 
@@ -548,37 +449,26 @@ export function ArticleEditorForm({
           </div>
         </div>
 
-        {/* For published entries, show manual save button (saves working copy, not live) */}
-        {entry?.status === "published" ? (
-          <Button
-            onClick={() => handleSave("published", false)}
-            disabled={saving || !isDirty}
-            variant="outline"
-            size="sm"
-          >
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="mr-2 h-4 w-4" />
-            )}
-            {isDirty ? "Save" : "Saved"}
-          </Button>
-        ) : (
-          /* For drafts and new entries, show autosave status */
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {autoSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                <span>Saved</span>
-              </>
-            )}
-          </div>
-        )}
+        {/* Manual save button - secondary style */}
+        <Button
+          onClick={() => {
+            // For published entries, save to pendingData (not live)
+            // For drafts, save as draft
+            const status = entry?.status === "published" ? "published" : "draft";
+            const publish = false; // Never publish from this button
+            handleSave(status, publish);
+          }}
+          disabled={saving || !isDirty}
+          variant="secondary"
+          size="sm"
+        >
+          {saving ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Save
+        </Button>
       </div>
 
       {/* Content */}
