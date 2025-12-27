@@ -183,6 +183,17 @@
       "showOnHomepage": true,
       "createdAt": "2025-12-18T20:40:20.832Z",
       "updatedAt": "2025-12-20T12:56:32.256Z"
+    },
+    {
+      "id": "code",
+      "slug": "code",
+      "name": "Code",
+      "label": "Code",
+      "color": "#64748B",
+      "order": 16,
+      "showOnHomepage": true,
+      "createdAt": "2025-12-27T08:22:35.614Z",
+      "updatedAt": "2025-12-27T08:22:35.614Z"
     }
   ]
 }
