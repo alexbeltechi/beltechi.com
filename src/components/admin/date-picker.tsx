@@ -148,7 +148,7 @@ export function DatePicker({
   return (
     <div ref={containerRef} className="relative">
       {label && (
-        <label className="block text-sm font-semibold mb-2 text-zinc-900 dark:text-zinc-100">
+        <label className="block text-sm font-medium mb-2 text-foreground">
           {label}
         </label>
       )}
@@ -159,14 +159,14 @@ export function DatePicker({
         tabIndex={0}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => e.key === "Enter" && setIsOpen(!isOpen)}
-        className={`w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border rounded-lg text-sm text-left flex items-center gap-3 transition-all cursor-pointer ${
+        className={`w-full h-9 px-3 py-2 bg-background border border-input rounded-md text-sm text-left flex items-center gap-2 transition-colors cursor-pointer ${
           isOpen
-            ? "border-zinc-900 ring-2 ring-zinc-900 bg-white dark:border-zinc-100 dark:ring-zinc-100 dark:bg-zinc-900"
-            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600"
+            ? "outline-none ring-1 ring-ring"
+            : "hover:border-muted-foreground/50"
         }`}
       >
-        <Calendar className="w-4 h-4 text-zinc-400" />
-        <span className={selectedDate ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-500"}>
+        <Calendar className="w-4 h-4 text-muted-foreground" />
+        <span className={selectedDate ? "text-foreground" : "text-muted-foreground"}>
           {selectedDate ? formatDisplayDate(selectedDate) : placeholder}
         </span>
         {selectedDate && (
@@ -176,16 +176,16 @@ export function DatePicker({
               e.stopPropagation();
               onChange(null);
             }}
-            className="ml-auto p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors"
+            className="ml-auto p-0.5 hover:bg-muted rounded transition-colors"
           >
-            <X className="w-3 h-3 text-zinc-500" />
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
         )}
       </div>
 
       {/* Calendar dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 p-3 w-[280px]">
+        <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md shadow-md z-20 p-3 w-[280px]">
           {/* Month navigation */}
           <div className="flex items-center justify-between mb-3">
             <button
@@ -195,11 +195,11 @@ export function DatePicker({
                   new Date(viewDate.getFullYear(), viewDate.getMonth() - 1)
                 )
               }
-              className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
+              className="p-1 hover:bg-accent rounded transition-colors"
             >
-              <ChevronLeft className="w-4 h-4 dark:text-zinc-300" />
+              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
             </button>
-            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            <span className="text-sm font-medium text-foreground">
               {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
             </span>
             <button
@@ -209,9 +209,9 @@ export function DatePicker({
                   new Date(viewDate.getFullYear(), viewDate.getMonth() + 1)
                 )
               }
-              className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
+              className="p-1 hover:bg-accent rounded transition-colors"
             >
-              <ChevronRight className="w-4 h-4 dark:text-zinc-300" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
 
@@ -220,7 +220,7 @@ export function DatePicker({
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
               <div
                 key={day}
-                className="text-center text-xs text-zinc-400 py-1"
+                className="text-center text-xs text-muted-foreground py-1"
               >
                 {day}
               </div>
@@ -235,10 +235,10 @@ export function DatePicker({
                 type="button"
                 onClick={() => handleSelectDate(date)}
                 className={`
-                  w-8 h-8 text-sm rounded-lg transition-colors
-                  ${!isCurrentMonth ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-700 dark:text-zinc-300"}
-                  ${isToday(date) && !isSelected(date) ? "border border-zinc-300 dark:border-zinc-600" : ""}
-                  ${isSelected(date) ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"}
+                  w-8 h-8 text-sm rounded-md transition-colors
+                  ${!isCurrentMonth ? "text-muted-foreground/50" : "text-foreground"}
+                  ${isToday(date) && !isSelected(date) ? "border border-border" : ""}
+                  ${isSelected(date) ? "bg-primary text-primary-foreground" : "hover:bg-accent"}
                 `}
               >
                 {date.getDate()}
@@ -248,37 +248,37 @@ export function DatePicker({
 
           {/* Time picker */}
           {showTime && (
-            <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
-              <span className="text-sm text-zinc-500 dark:text-zinc-400">Time:</span>
+            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Time:</span>
               <input
                 type="number"
                 min="0"
                 max="23"
                 value={selectedDate?.getHours() ?? 12}
                 onChange={(e) => handleTimeChange("hours", e.target.value)}
-                className="w-14 px-2 py-1 text-sm border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded text-center"
+                className="w-14 px-2 py-1 text-sm border border-input bg-background text-foreground rounded-md text-center"
               />
-              <span className="dark:text-zinc-300">:</span>
+              <span className="text-foreground">:</span>
               <input
                 type="number"
                 min="0"
                 max="59"
                 value={selectedDate?.getMinutes() ?? 0}
                 onChange={(e) => handleTimeChange("minutes", e.target.value)}
-                className="w-14 px-2 py-1 text-sm border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded text-center"
+                className="w-14 px-2 py-1 text-sm border border-input bg-background text-foreground rounded-md text-center"
               />
             </div>
           )}
 
           {/* Quick actions */}
-          <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex gap-2">
+          <div className="mt-3 pt-3 border-t border-border flex gap-2">
             <button
               type="button"
               onClick={() => {
                 onChange(new Date().toISOString());
                 setIsOpen(false);
               }}
-              className="flex-1 px-3 py-1.5 text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg transition-colors"
+              className="flex-1 px-3 py-1.5 text-xs bg-accent hover:bg-accent/80 text-accent-foreground rounded-md transition-colors"
             >
               Today
             </button>
@@ -288,7 +288,7 @@ export function DatePicker({
                 onChange(null);
                 setIsOpen(false);
               }}
-              className="flex-1 px-3 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="flex-1 px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent rounded-md transition-colors"
             >
               Clear
             </button>
