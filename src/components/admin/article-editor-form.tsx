@@ -152,8 +152,9 @@ export function ArticleEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    // Always save as draft from the unsaved changes modal
-    await handleSave("draft");
+    // Save with current status (keep published entries published)
+    const saveStatus = entry?.status === "published" ? "published" : "draft";
+    await handleSave(saveStatus);
   };
 
   const handleCancelNavigation = () => {
@@ -300,10 +301,10 @@ export function ArticleEditorForm({
           status,
           data: {
             title,
-            excerpt: excerpt || undefined,
+            excerpt: excerpt || "",
             content: blocks,
             categories,
-            tags: tags || undefined,
+            tags: tags || "",
             date: publishDate || new Date().toISOString(),
           },
         }),
@@ -375,10 +376,10 @@ export function ArticleEditorForm({
           status: "draft",
           data: {
             title: title || "Untitled",
-            excerpt: excerpt || undefined,
+            excerpt: excerpt || "",
             content: blocks,
             categories,
-            tags: tags || undefined,
+            tags: tags || "",
             date: publishDate || new Date().toISOString(),
           },
         }),
@@ -779,6 +780,7 @@ export function ArticleEditorForm({
         onSave={handleSaveAndNavigate}
         onCancel={handleCancelNavigation}
         isSaving={saving}
+        isPublished={entry?.status === "published"}
       />
 
       {/* Gallery Media Picker */}

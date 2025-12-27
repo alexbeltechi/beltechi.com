@@ -172,8 +172,9 @@ export function PostEditorForm({
   };
 
   const handleSaveAndNavigate = async () => {
-    // Always save as draft from the unsaved changes modal
-    await handleSave("draft");
+    // Save with current status (keep published entries published)
+    const saveStatus = entry?.status === "published" ? "published" : "draft";
+    await handleSave(saveStatus);
     setAllowNavigation(true);
     setShowUnsavedModal(false);
     if (pendingNavUrl) {
@@ -458,13 +459,13 @@ export function PostEditorForm({
         body: JSON.stringify({
           status,
           data: {
-            title: title || undefined,
-            description: description || undefined,
+            title: title || "",
+            description: description || "",
             media: mediaIds,
             coverMediaId,
             categories,
-            location: location || undefined,
-            tags: tags || undefined,
+            location: location || "",
+            tags: tags || "",
             date: publishDate || new Date().toISOString(),
           },
         }),
@@ -548,13 +549,13 @@ export function PostEditorForm({
         body: JSON.stringify({
           status: "draft",
           data: {
-            title: title || undefined,
-            description: description || undefined,
+            title: title || "",
+            description: description || "",
             media: mediaIds,
             coverMediaId,
             categories,
-            location: location || undefined,
-            tags: tags || undefined,
+            location: location || "",
+            tags: tags || "",
             date: publishDate || new Date().toISOString(),
           },
         }),
@@ -1109,6 +1110,7 @@ export function PostEditorForm({
         onSave={handleSaveAndNavigate}
         onCancel={handleCancelNavigation}
         isSaving={saving}
+        isPublished={entry?.status === "published"}
       />
 
       {/* Delete Confirmation Dialog */}
