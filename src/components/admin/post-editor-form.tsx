@@ -682,7 +682,7 @@ export function PostEditorForm({
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {/* Media Upload */}
-        <div className="max-w-2xl mx-auto px-4 py-4 border-b">
+        <div className="px-4 py-4 border-b">
           <Label className="text-base font-medium">
             Media <span className="text-destructive">*</span>
           </Label>
@@ -851,7 +851,7 @@ export function PostEditorForm({
         </div>
 
         {/* Details */}
-        <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+        <div className="px-4 py-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">
               Title{" "}
