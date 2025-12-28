@@ -11,7 +11,7 @@ function EditArticlePageContent() {
   const slug = params.slug as string;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-w-[600px] mx-auto">
       {/* Mobile Header with Back Button */}
       <div className="border-b px-4 h-14 flex items-center gap-3 lg:hidden shrink-0">
         <Link

@@ -43,3 +43,4 @@ export function AdminHeader({ sidebarOpen, onToggleSidebar }: AdminHeaderProps) 
   );
 }
 
+

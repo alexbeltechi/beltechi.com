@@ -34,6 +34,7 @@ export async function PATCH(
       caption: body.caption,
       description: body.description,
       activeVariant: body.activeVariant,
+      tags: body.tags,
     });
 
     if (result.error) {

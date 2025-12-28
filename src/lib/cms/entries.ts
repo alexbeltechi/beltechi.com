@@ -190,7 +190,6 @@ export async function createEntry(
 
 /**
  * Update an existing entry
- * @param publish - If true, changes go live. If false (and entry is published), changes are saved as pending.
  */
 export async function updateEntry(
   collection: string,
@@ -199,8 +198,7 @@ export async function updateEntry(
     slug?: string;
     status?: EntryStatus;
     data?: Record<string, unknown>;
-  },
-  publish: boolean = true
+  }
 ): Promise<{ entry?: Entry; error?: string }> {
   const storage = getStorage();
   const existing = await getEntry(collection, slug);
@@ -224,52 +222,22 @@ export async function updateEntry(
 
   const now = new Date().toISOString();
 
-  // For published entries: save to pendingData unless explicitly publishing
-  const isCurrentlyPublished = existing.status === "published";
-  const isPublishing = publish || updates.status === "published" && existing.status !== "published";
-  
-  let updated: Entry;
-  
-  if (isCurrentlyPublished && !isPublishing && updates.data) {
-    // Save changes to pendingData (working copy), keep data (live version) intact
-    const pendingData = { ...existing.data, ...(existing.pendingData || {}), ...updates.data };
-    updated = {
-      ...existing,
-      slug: updates.slug || existing.slug,
-      status: existing.status, // Keep published
-      updatedAt: now,
-      data: existing.data, // Keep original live data
-      pendingData, // Store pending changes
-    } as Entry;
-  } else if (isPublishing && updates.data) {
-    // Publishing: apply pending changes + new changes to data, clear pendingData
-    const mergedData = { ...existing.data, ...(existing.pendingData || {}), ...updates.data };
-    updated = {
-      ...existing,
-      slug: updates.slug || existing.slug,
-      status: updates.status || existing.status,
-      updatedAt: now,
-      publishedAt: now,
-      data: mergedData,
-      pendingData: undefined, // Clear pending changes
-    } as Entry;
-  } else {
-    // Draft entries or no data changes: normal update
-    const mergedData = updates.data 
-      ? { ...existing.data, ...updates.data } 
-      : existing.data;
-    updated = {
-      ...existing,
-      slug: updates.slug || existing.slug,
-      status: updates.status || existing.status,
-      updatedAt: now,
-      data: mergedData,
-    } as Entry;
-    
-    // Handle publish status change for drafts
-    if (updates.status === "published" && existing.status !== "published") {
-      updated.publishedAt = now;
-    }
+  // Merge data if provided
+  const mergedData = updates.data 
+    ? { ...existing.data, ...updates.data } 
+    : existing.data;
+
+  const updated = {
+    ...existing,
+    slug: updates.slug || existing.slug,
+    status: updates.status || existing.status,
+    updatedAt: now,
+    data: mergedData,
+  } as Entry;
+
+  // Handle publish status change
+  if (updates.status === "published" && existing.status !== "published") {
+    updated.publishedAt = now;
   }
 
   // Get title for commit message

@@ -58,6 +58,7 @@ export function MediaDetailModal({
   const [editTitle, setEditTitle] = useState("");
   const [editCaption, setEditCaption] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editTags, setEditTags] = useState("");
 
   // Fetch media item and usage info
   useEffect(() => {
@@ -80,6 +81,7 @@ export function MediaDetailModal({
           setEditTitle(mediaData.data.title || "");
           setEditCaption(mediaData.data.caption || "");
           setEditDescription(mediaData.data.description || "");
+          setEditTags((mediaData.data.tags || []).join(", "));
         }
         setUsages(usageData.usages || []);
       })
@@ -124,6 +126,10 @@ export function MediaDetailModal({
           title: editTitle,
           caption: editCaption,
           description: editDescription,
+          tags: editTags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
         }),
       });
 
@@ -298,9 +304,9 @@ export function MediaDetailModal({
                         name="Display"
                         variant="display"
                         activeVariant={item.activeVariant || "display"}
-                        width={item.width || 0}
-                        height={item.height || 0}
-                        size={item.size}
+                        width={item.variants.display?.width || item.width || 0}
+                        height={item.variants.display?.height || item.height || 0}
+                        size={item.variants.display?.size || item.size}
                         onSelect={() => handleVariantChange("display")}
                       />
                       <VariantButton
@@ -362,6 +368,18 @@ export function MediaDetailModal({
                       rows={3}
                       className="resize-none"
                     />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs mb-1 block">Tags</Label>
+                    <Input
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      placeholder="name, company, place"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Internal tags for organizing and filtering media
+                    </p>
                   </div>
                 </div>
 

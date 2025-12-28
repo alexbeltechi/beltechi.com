@@ -19,6 +19,7 @@ import {
   FileImage,
   SlidersHorizontal,
   RotateCcw,
+  Pencil,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { formatRelativeTime } from "@/lib/utils";
@@ -51,6 +52,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -62,6 +67,8 @@ import {
   type CompressionProgress,
 } from "@/lib/image-compression";
 import { PageHeader } from "@/components/lib";
+import { PostEditorForm } from "@/components/admin/post-editor-form";
+import { MediaBulkEditModal } from "@/components/admin/media-bulk-edit-modal";
 import { toast } from "sonner";
 
 type FilterType = "all" | "images" | "video" | "unattached";
@@ -122,6 +129,25 @@ export default function MediaLibraryPage() {
   const [batchReplacing, setBatchReplacing] = useState(false);
   const [batchReplaceProgress, setBatchReplaceProgress] = useState<{matched: number; total: number; current: string} | null>(null);
 
+  // Sheet state for creating post with selected media
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [preSelectedMediaIds, setPreSelectedMediaIds] = useState<string[]>([]);
+
+  // Bulk edit modal
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+
+  // Check if we're on desktop (lg breakpoint = 1024px)
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
+
   const fetchMedia = useCallback(async () => {
     try {
       const [mediaRes, usedRes] = await Promise.all([
@@ -142,6 +168,26 @@ export default function MediaLibraryPage() {
 
   useEffect(() => {
     fetchMedia();
+
+    // Refetch when tab becomes visible (e.g., after publishing a post in another section)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchMedia();
+      }
+    };
+
+    // Refetch when window regains focus
+    const handleFocus = () => {
+      fetchMedia();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, [fetchMedia]);
 
   // Get unique months from media for date filter
@@ -162,12 +208,17 @@ export default function MediaLibraryPage() {
   // Filtered media
   const filteredMedia = useMemo(() => {
     const filtered = media.filter((item) => {
-      if (
-        searchQuery &&
-        !item.originalName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !item.filename.toLowerCase().includes(searchQuery.toLowerCase())
-      ) {
-        return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = item.originalName.toLowerCase().includes(query) ||
+                           item.filename.toLowerCase().includes(query);
+        const matchesTags = item.tags?.some((tag) => 
+          tag.toLowerCase().includes(query)
+        );
+        
+        if (!matchesName && !matchesTags) {
+          return false;
+        }
       }
 
       if (typeFilter === "images" && !item.mime.startsWith("image/")) {
@@ -487,9 +538,59 @@ export default function MediaLibraryPage() {
 
   const createPostWithMedia = () => {
     if (selectedIds.size === 0) return;
-    // Pass media IDs via query params
-    const mediaIds = Array.from(selectedIds).join(",");
-    router.push(`/admin/content/posts/new?media=${mediaIds}`);
+    const mediaIds = Array.from(selectedIds);
+    
+    if (isDesktop) {
+      // Open sheet on desktop
+      setPreSelectedMediaIds(mediaIds);
+      setSheetOpen(true);
+    } else {
+      // Navigate to full page on mobile
+      router.push(`/admin/content/posts/new?media=${mediaIds.join(",")}`);
+    }
+  };
+
+  // Handle sheet close
+  const handleSheetClose = () => {
+    setSheetOpen(false);
+    setPreSelectedMediaIds([]);
+  };
+
+  // Handle sheet saved
+  const handleSheetSaved = () => {
+    setSheetOpen(false);
+    setPreSelectedMediaIds([]);
+    setSelectedIds(new Set()); // Clear selection after creating post
+    toast.success("Post created successfully");
+    // Refetch media to update "Unused" badges
+    fetchMedia();
+  };
+
+  // Handle bulk edit save
+  const handleBulkEditSave = async (updates: Partial<MediaItem>) => {
+    try {
+      const ids = Array.from(selectedIds);
+      const response = await fetch("/api/admin/media/bulk-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, updates }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update media");
+      }
+
+      const result = await response.json();
+      toast.success(`Updated ${result.modifiedCount} ${result.modifiedCount === 1 ? "item" : "items"}`);
+      
+      // Refresh media list
+      await fetchMedia();
+      setSelectedIds(new Set()); // Clear selection
+    } catch (error) {
+      console.error("Bulk edit error:", error);
+      toast.error("Failed to update media items");
+      throw error;
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -963,6 +1064,10 @@ export default function MediaLibraryPage() {
             {selectedIds.size > 0 && (
               <>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowBulkEditModal(true)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit ({selectedIds.size})
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={createPostWithMedia}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create post ({selectedIds.size})
@@ -1475,6 +1580,31 @@ export default function MediaLibraryPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Post Editor Sheet (Desktop) */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent 
+          side="right" 
+          className="w-full sm:max-w-[600px] p-0"
+          hideCloseButton
+          noOverlay
+        >
+          <PostEditorForm
+            onClose={handleSheetClose}
+            onSaved={handleSheetSaved}
+            isSheet
+            preSelectedMediaIds={preSelectedMediaIds}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Bulk Edit Modal */}
+      <MediaBulkEditModal
+        open={showBulkEditModal}
+        onOpenChange={setShowBulkEditModal}
+        selectedMedia={media.filter((m) => selectedIds.has(m.id))}
+        onSave={handleBulkEditSave}
+      />
     </div>
   );
 }

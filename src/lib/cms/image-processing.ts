@@ -7,7 +7,7 @@ import type { ImageVariant, ImageProcessingSettings } from "./types";
 // Convert to WebP for 30% smaller files, generate 2 sizes
 export const DEFAULT_SETTINGS: ImageProcessingSettings = {
   variants: {
-    display: { maxEdge: 4000, quality: 85 },  // Primary optimized image (max 4000px)
+    display: { maxEdge: 3500, quality: 85 },  // Primary optimized image (max 3500px)
     thumb: { maxEdge: 768, quality: 85 },     // Thumbnail for grids/cards
   },
   defaultActiveVariant: "display",

@@ -258,8 +258,20 @@ export async function uploadMedia(
       const primaryFilename = buildVariantFilename(baseFilename, shortId, null, outputExt);
       const primaryResult = await saveFile(displayVariant.buffer, primaryFilename, "", outputMime);
 
-      // Save thumb variant
+      // Build variants object
       const variants: MediaItem["variants"] = {};
+      
+      // IMPORTANT: Store display variant info so it's not lost when switching to thumb
+      variants.display = {
+        filename: primaryFilename,
+        path: primaryResult.path,
+        url: primaryResult.url,
+        width: displayVariant.width,
+        height: displayVariant.height,
+        size: displayVariant.buffer.length,
+      };
+
+      // Save thumb variant
       const thumbVariant = processed.variants.thumb;
       if (thumbVariant) {
         const thumbFilename = buildVariantFilename(baseFilename, shortId, "thumb", outputExt);
@@ -397,6 +409,7 @@ export async function updateMedia(
     caption?: string;
     description?: string;
     activeVariant?: MediaItem["activeVariant"];
+    tags?: string[];
   }
 ): Promise<{ item?: MediaItem; error?: string }> {
   const index = await loadIndex();
@@ -413,17 +426,32 @@ export async function updateMedia(
   if (updates.title !== undefined) item.title = updates.title;
   if (updates.caption !== undefined) item.caption = updates.caption;
   if (updates.description !== undefined) item.description = updates.description;
+  if (updates.tags !== undefined) item.tags = updates.tags;
 
   // Update active variant and primary URL
   if (updates.activeVariant !== undefined && updates.activeVariant !== item.activeVariant) {
+    // IMPORTANT: Before changing activeVariant, preserve current display values
+    // if variants.display doesn't exist yet (for old uploads)
+    if (item.activeVariant === "display" && !item.variants?.display && item.width && item.height && item.size) {
+      if (!item.variants) item.variants = {};
+      item.variants.display = {
+        filename: item.filename,
+        path: item.path,
+        url: item.url,
+        width: item.width,
+        height: item.height,
+        size: item.size,
+      };
+    }
+
     item.activeVariant = updates.activeVariant;
 
     if (updates.activeVariant === "original" && item.original) {
       item.url = item.original.url;
       item.path = item.original.path;
-      item.width = item.original.width;
-      item.height = item.original.height;
-      item.size = item.original.size;
+      if (item.original.width !== undefined) item.width = item.original.width;
+      if (item.original.height !== undefined) item.height = item.original.height;
+      if (item.original.size !== undefined) item.size = item.original.size;
     } else if (updates.activeVariant !== "original") {
       const variantKey = updates.activeVariant as "display" | "large" | "medium" | "thumb";
       const variant = item.variants?.[variantKey];

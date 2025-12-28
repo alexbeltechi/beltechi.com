@@ -154,6 +154,7 @@ export function ImageOptionsMenu({
         <button
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             onSetCover();
             setOpen(false);
           }}

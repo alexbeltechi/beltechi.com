@@ -387,8 +387,12 @@ export function PostEditorForm({
     }
   };
 
+  const [preventModalOpen, setPreventModalOpen] = useState(false);
+
   const setAsCover = (index: number) => {
+    setPreventModalOpen(true);
     setCoverIndex(index);
+    setTimeout(() => setPreventModalOpen(false), 100);
   };
 
   const handleFileDragOver = (e: React.DragEvent) => {
@@ -759,11 +763,16 @@ export function PostEditorForm({
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
-                      onClick={() =>
-                        item.isExisting &&
-                        item.mediaId &&
-                        setMediaDetailId(item.mediaId)
-                      }
+                      onClick={(e) => {
+                        // Don't open modal if a menu action was just triggered
+                        if (preventModalOpen) {
+                          return;
+                        }
+                        // Open modal when clicking on the image
+                        if (item.isExisting && item.mediaId) {
+                          setMediaDetailId(item.mediaId);
+                        }
+                      }}
                       className={cn(
                         "relative aspect-square bg-muted rounded-lg overflow-hidden group cursor-pointer ring-1 ring-transparent hover:ring-primary transition-all",
                         draggedIndex === index && "opacity-50 scale-95"
@@ -792,15 +801,29 @@ export function PostEditorForm({
                         <ImageOptionsMenu
                           onEdit={
                             item.isExisting && item.mediaId
-                              ? () => setMediaDetailId(item.mediaId!)
+                              ? () => {
+                                  setPreventModalOpen(true);
+                                  setMediaDetailId(item.mediaId!);
+                                  setTimeout(() => setPreventModalOpen(false), 100);
+                                }
                               : undefined
                           }
-                          onCopyUrl={() =>
-                            navigator.clipboard.writeText(item.url)
-                          }
+                          onCopyUrl={() => {
+                            setPreventModalOpen(true);
+                            navigator.clipboard.writeText(item.url);
+                            setTimeout(() => setPreventModalOpen(false), 100);
+                          }}
                           onSetCover={() => setAsCover(index)}
-                          onReplace={() => handleReplaceMedia(index)}
-                          onDelete={() => removeMedia(item.id)}
+                          onReplace={() => {
+                            setPreventModalOpen(true);
+                            handleReplaceMedia(index);
+                            setTimeout(() => setPreventModalOpen(false), 100);
+                          }}
+                          onDelete={() => {
+                            setPreventModalOpen(true);
+                            removeMedia(item.id);
+                            setTimeout(() => setPreventModalOpen(false), 100);
+                          }}
                           isCover={index === coverIndex}
                           showCoverOption={true}
                         />
