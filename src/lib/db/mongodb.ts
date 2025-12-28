@@ -7,7 +7,11 @@
 
 import { MongoClient, Db } from "mongodb";
 
-const options = {};
+const options = {
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
+  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+  maxPoolSize: 10, // Limit connection pool size
+};
 
 let client: MongoClient | null = null;
 let clientPromise: Promise<MongoClient> | null = null;
