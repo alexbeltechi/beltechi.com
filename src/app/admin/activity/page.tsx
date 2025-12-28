@@ -6,6 +6,9 @@ import { formatRelativeTime } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+// Force dynamic rendering to avoid MongoDB connection during build
+export const dynamic = 'force-dynamic';
+
 export default async function ActivityPage() {
   // Fetch stats
   const [postsResult, articlesResult, mediaResult] = await Promise.all([
