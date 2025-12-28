@@ -1,11 +1,15 @@
 "use client";
 
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { PostEditorForm } from "@/components/admin/post-editor-form";
 
 function NewPostPageContent() {
+  const searchParams = useSearchParams();
+  const mediaIds = searchParams.get("media")?.split(",").filter(Boolean) || [];
+
   return (
     <div className="flex flex-col h-full">
       {/* Mobile Header with Back Button */}
@@ -21,7 +25,7 @@ function NewPostPageContent() {
 
       {/* Form Content */}
       <div className="flex-1 overflow-hidden">
-        <PostEditorForm />
+        <PostEditorForm preSelectedMediaIds={mediaIds} />
       </div>
     </div>
   );

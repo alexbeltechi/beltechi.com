@@ -58,6 +58,7 @@ interface PostEditorFormProps {
   onClose?: () => void; // For sheet/modal usage
   onSaved?: (entry: Entry) => void; // Callback after successful save
   isSheet?: boolean; // Whether rendered in a sheet
+  preSelectedMediaIds?: string[]; // Pre-populate media from media library
 }
 
 export function PostEditorForm({
@@ -65,6 +66,7 @@ export function PostEditorForm({
   onClose,
   onSaved,
   isSheet = false,
+  preSelectedMediaIds = [],
 }: PostEditorFormProps) {
   const router = useRouter();
   const isEditMode = !!slug;
@@ -316,6 +318,43 @@ export function PostEditorForm({
 
     fetchEntry();
   }, [slug, router, isEditMode, isSheet]);
+
+  // Pre-populate media from query params (create mode with media selection)
+  useEffect(() => {
+    if (isEditMode || preSelectedMediaIds.length === 0) return;
+
+    async function loadInitialMedia() {
+      try {
+        const mediaRes = await fetch("/api/admin/media");
+        const mediaData = await mediaRes.json();
+        const allMedia = mediaData.data || [];
+
+        const existingMedia: MediaPreview[] = preSelectedMediaIds
+          .map((id: string) => {
+            const item = allMedia.find((m: { id: string }) => m.id === id);
+            if (item) {
+              return {
+                id: Math.random().toString(36).slice(2),
+                url: item.url,
+                type: item.mime.startsWith("video/") ? "video" : "image",
+                isExisting: true,
+                mediaId: item.id,
+              } as MediaPreview;
+            }
+            return null;
+          })
+          .filter(Boolean) as MediaPreview[];
+
+        if (existingMedia.length > 0) {
+          setMedia(existingMedia);
+        }
+      } catch (error) {
+        console.error("Failed to load initial media:", error);
+      }
+    }
+
+    loadInitialMedia();
+  }, [preSelectedMediaIds, isEditMode]);
 
   const handleFileSelect = (files: FileList | File[]) => {
     const fileArray = Array.from(files);

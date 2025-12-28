@@ -11,6 +11,10 @@ const options = {
   serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
   socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
   maxPoolSize: 10, // Limit connection pool size
+  minPoolSize: 1, // Keep at least 1 connection alive
+  maxIdleTimeMS: 10000, // Close idle connections after 10s
+  retryWrites: true, // Retry failed writes
+  retryReads: true, // Retry failed reads
 };
 
 let client: MongoClient | null = null;
