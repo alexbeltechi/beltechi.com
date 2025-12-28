@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/lib";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -179,8 +180,9 @@ export default function CategoriesPage() {
       await fetchCategories();
       setNewCategory({ label: "", color: "#64748B", description: "", showOnHomepage: true });
       setShowAddForm(false);
+      toast.success("Category created successfully");
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to add category");
+      toast.error(error instanceof Error ? error.message : "Failed to add category");
     } finally {
       setSaving(false);
     }
@@ -203,8 +205,9 @@ export default function CategoriesPage() {
       await fetchCategories();
       setEditingId(null);
       setEditForm({});
+      toast.success("Category updated successfully");
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to update category");
+      toast.error(error instanceof Error ? error.message : "Failed to update category");
     } finally {
       setSaving(false);
     }
@@ -227,8 +230,9 @@ export default function CategoriesPage() {
       await fetchCategories();
       selectedIds.delete(id);
       setSelectedIds(new Set(selectedIds));
+      toast.success("Category deleted successfully");
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to delete category");
+      toast.error(error instanceof Error ? error.message : "Failed to delete category");
     } finally {
       setActionLoading(null);
     }
@@ -250,8 +254,9 @@ export default function CategoriesPage() {
       }
 
       await fetchCategories();
+      toast.success(`Category ${newVisibility ? "shown on" : "hidden from"} homepage`);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to update visibility");
+      toast.error(error instanceof Error ? error.message : "Failed to update visibility");
     } finally {
       setActionLoading(null);
     }
@@ -312,8 +317,9 @@ export default function CategoriesPage() {
 
       await fetchCategories();
       clearSelection();
+      toast.success(`Successfully ${actionLabels[action]} ${selectedIds.size} categories`);
     } catch (error) {
-      alert(`Failed to ${actionLabels[action]} some categories`);
+      toast.error(`Failed to ${actionLabels[action]} some categories`);
     } finally {
       setActionLoading(null);
     }

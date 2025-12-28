@@ -4,10 +4,10 @@
       "id": "user_default_admin",
       "email": "admin",
       "name": "Admin",
-      "passwordHash": "$2b$10$UN6pzTV/TjKHmvezWZr4h.sicikdFO7nMKkOcmlVPmeSD5AThpiI.",
+      "passwordHash": "$2b$10$kjCrDu0eGI6zS87q5YyfO.g51USQsadEoIZaYVKJIpKBJBdzRMkKi",
       "role": "owner",
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "lastLoginAt": "2025-12-22T08:43:36.508Z"
+      "lastLoginAt": "2025-12-28T10:40:50.466Z"
     }
   ]
 }

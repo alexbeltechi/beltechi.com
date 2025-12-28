@@ -59,6 +59,7 @@ import {
 import { PostEditorForm } from "@/components/admin/post-editor-form";
 import { ArticleEditorForm } from "@/components/admin/article-editor-form";
 import type { Entry, MediaItem } from "@/lib/cms/types";
+import { toast } from "sonner";
 
 // Constants
 const ITEMS_PER_PAGE = 20;
@@ -423,7 +424,7 @@ function ContentListPageContent() {
       );
     } catch (error) {
       console.error("Failed to update status:", error);
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     } finally {
       setActionLoading(null);
     }
@@ -450,9 +451,10 @@ function ContentListPageContent() {
       setEntries(entries.filter((e) => e.id !== entry.id));
       selectedIds.delete(entry.id);
       setSelectedIds(new Set(selectedIds));
+      toast.success("Entry deleted successfully");
     } catch (error) {
       console.error("Failed to delete:", error);
-      alert("Failed to delete entry");
+      toast.error("Failed to delete entry");
     } finally {
       setActionLoading(null);
     }
@@ -469,9 +471,10 @@ function ContentListPageContent() {
       if (!res.ok) throw new Error("Failed to duplicate");
 
       await fetchData();
+      toast.success("Entry duplicated successfully");
     } catch (error) {
       console.error("Failed to duplicate:", error);
-      alert("Failed to duplicate entry");
+      toast.error("Failed to duplicate entry");
     } finally {
       setActionLoading(null);
     }
@@ -549,9 +552,10 @@ function ContentListPageContent() {
       }
 
       clearSelection();
+      toast.success(`Successfully ${action === "publish" ? "published" : action === "unpublish" ? "unpublished" : action === "delete" ? "deleted" : "duplicated"} ${selectedIds.size} entries`);
     } catch (error) {
       console.error(`Failed to ${action}:`, error);
-      alert(`Failed to ${action} some entries`);
+      toast.error(`Failed to ${action} some entries`);
     } finally {
       setActionLoading(null);
     }

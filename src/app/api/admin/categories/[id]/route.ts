@@ -4,6 +4,7 @@ import {
   updateCategory,
   deleteCategory,
 } from "@/lib/cms/categories";
+import { handleDatabaseError, isDatabaseError } from "@/lib/api/error-handler";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -25,6 +26,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ data: category });
   } catch (error) {
     console.error("Failed to get category:", error);
+    if (isDatabaseError(error)) {
+      return handleDatabaseError(error);
+    }
     return NextResponse.json(
       { error: "Failed to get category" },
       { status: 500 }
@@ -48,6 +52,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ data: category });
   } catch (error) {
     console.error("Failed to update category:", error);
+    if (isDatabaseError(error)) {
+      return handleDatabaseError(error);
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update category" },
       { status: 400 }
@@ -63,6 +70,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to delete category:", error);
+    if (isDatabaseError(error)) {
+      return handleDatabaseError(error);
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to delete category" },
       { status: 400 }

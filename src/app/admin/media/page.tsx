@@ -62,6 +62,7 @@ import {
   type CompressionProgress,
 } from "@/lib/image-compression";
 import { PageHeader } from "@/components/lib";
+import { toast } from "sonner";
 
 type FilterType = "all" | "images" | "video" | "unattached";
 type SortOption = "newest" | "oldest" | "largest" | "smallest" | "name-asc" | "name-desc";
@@ -398,9 +399,10 @@ export default function MediaLibraryPage() {
       }
       setMedia(media.filter((m) => m.id !== id));
       if (selectedMediaId === id) setSelectedMediaId(null);
+      toast.success("File deleted successfully");
     } catch (error) {
       console.error("Delete failed:", error);
-      alert("Failed to delete the file. Please try again.");
+      toast.error("Failed to delete the file. Please try again.");
     }
   };
 
@@ -425,9 +427,10 @@ export default function MediaLibraryPage() {
       setMedia(media.filter((m) => !selectedIds.has(m.id)));
       setSelectedIds(new Set());
       setSelectedMediaId(null);
+      toast.success(`Successfully deleted ${selectedIds.size} file(s)`);
     } catch (error) {
       console.error("Bulk delete failed:", error);
-      alert("Failed to delete some files");
+      toast.error("Failed to delete some files");
     } finally {
       setDeleting(false);
     }
@@ -580,7 +583,7 @@ export default function MediaLibraryPage() {
 
     // Show confirmation with match count
     if (matches.length === 0) {
-      alert(`No matching files found in the folder.\n\nMake sure the filenames in your folder match the original filenames (e.g., "000004.jpg" matches "000004-xyz.webp").`);
+      toast.error("No matching files found in the folder. Make sure the filenames match the original filenames (e.g., '000004.jpg' matches '000004-xyz.webp').");
       return;
     }
 
@@ -636,7 +639,7 @@ export default function MediaLibraryPage() {
       }, 1500);
     } catch (error) {
       console.error("Batch replace failed:", error);
-      alert("Batch replace failed. Please try again.");
+      toast.error("Batch replace failed. Please try again.");
       setBatchReplacing(false);
       setBatchReplaceProgress(null);
     }
@@ -684,7 +687,7 @@ export default function MediaLibraryPage() {
       }, 1500);
     } catch (error) {
       console.error("Batch replace failed:", error);
-      alert("Batch replace failed. Please try again.");
+      toast.error("Batch replace failed. Please try again.");
       setBatchReplacing(false);
       setBatchReplaceProgress(null);
     }

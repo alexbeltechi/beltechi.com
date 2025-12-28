@@ -4,6 +4,7 @@ import {
   createCategory,
   reorderCategories,
 } from "@/lib/cms/categories";
+import { handleDatabaseError, isDatabaseError } from "@/lib/api/error-handler";
 
 // GET /api/admin/categories - List all categories
 export async function GET() {
@@ -12,6 +13,9 @@ export async function GET() {
     return NextResponse.json({ data: categories });
   } catch (error) {
     console.error("Failed to list categories:", error);
+    if (isDatabaseError(error)) {
+      return handleDatabaseError(error);
+    }
     return NextResponse.json(
       { error: "Failed to list categories" },
       { status: 500 }
@@ -43,6 +47,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: category }, { status: 201 });
   } catch (error) {
     console.error("Failed to create category:", error);
+    if (isDatabaseError(error)) {
+      return handleDatabaseError(error);
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create category" },
       { status: 400 }
@@ -66,6 +73,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ data: categories });
   } catch (error) {
     console.error("Failed to reorder categories:", error);
+    if (isDatabaseError(error)) {
+      return handleDatabaseError(error);
+    }
     return NextResponse.json(
       { error: "Failed to reorder categories" },
       { status: 500 }

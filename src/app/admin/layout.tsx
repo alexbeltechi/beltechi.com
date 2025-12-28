@@ -5,6 +5,8 @@ import { Syne, Inter } from "next/font/google";
 import { usePathname } from "next/navigation";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AdminSidebar, AdminHeader } from "@/components/admin/layout";
+import { DatabaseErrorHandler } from "@/components/admin/database-error-handler";
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 const syne = Syne({
@@ -79,7 +81,10 @@ export default function AdminLayout({
       enableSystem
       disableTransitionOnChange
     >
-      <AdminLayoutContent>{children}</AdminLayoutContent>
+      <DatabaseErrorHandler>
+        <AdminLayoutContent>{children}</AdminLayoutContent>
+      </DatabaseErrorHandler>
+      <Toaster />
     </ThemeProvider>
   );
 }
