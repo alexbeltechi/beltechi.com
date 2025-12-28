@@ -36,7 +36,7 @@ export async function listEntries(
   // Build sort
   const sortField = options.sortField || "createdAt";
   const sortDir = options.sortDirection === "asc" ? 1 : -1;
-  const sort = { [sortField]: sortDir };
+  const sort: { [key: string]: 1 | -1 } = { [sortField]: sortDir as 1 | -1 };
 
   // Query with pagination
   const limit = options.limit || 1000;

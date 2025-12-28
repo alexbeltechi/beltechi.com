@@ -27,7 +27,7 @@ export async function listUsers(): Promise<Omit<User, "passwordHash">[]> {
 
   const users = await usersCollection.find({}).toArray();
   
-  return users.map(({ passwordHash, ...user }) => user) as Omit<User, "passwordHash">[];
+  return users.map(({ passwordHash, ...user }) => user) as unknown as Omit<User, "passwordHash">[];
 }
 
 /**
