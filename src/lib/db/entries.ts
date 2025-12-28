@@ -5,7 +5,7 @@
  */
 
 import { getDb, Collections } from "@/lib/db/mongodb";
-import type { Entry, EntryStatus } from "../types";
+import type { Entry, EntryStatus } from "@/lib/cms/types";
 import { ObjectId } from "mongodb";
 
 /**

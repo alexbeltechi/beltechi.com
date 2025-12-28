@@ -6,7 +6,7 @@
  */
 
 import { getDb, Collections } from "@/lib/db/mongodb";
-import type { MediaItem } from "../types";
+import type { MediaItem } from "@/lib/cms/types";
 import { ObjectId } from "mongodb";
 
 /**
