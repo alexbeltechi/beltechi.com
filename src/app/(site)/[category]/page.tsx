@@ -6,6 +6,9 @@ import { listCategories } from "@/lib/cms/categories";
 import type { MediaItem } from "@/lib/cms/types";
 import { notFound } from "next/navigation";
 
+// Force dynamic rendering to avoid MongoDB connection during build
+export const dynamic = 'force-dynamic';
+
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
 }

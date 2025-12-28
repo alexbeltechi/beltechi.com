@@ -8,6 +8,9 @@ import { PostCarousel } from "@/components/site/post-carousel";
 import { Button } from "@/components/ui/button";
 import type { PostEntry } from "@/lib/cms/types";
 
+// Force dynamic rendering to avoid MongoDB connection during build
+export const dynamic = 'force-dynamic';
+
 interface PostPageProps {
   params: Promise<{ slug: string }>;
 }

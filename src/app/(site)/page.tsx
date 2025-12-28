@@ -7,6 +7,9 @@ import { getMediaByIds } from "@/lib/cms/media";
 import { listCategories } from "@/lib/cms/categories";
 import type { MediaItem } from "@/lib/cms/types";
 
+// Force dynamic rendering to avoid MongoDB connection during build
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
   // Fetch published posts and categories in parallel
   const [posts, allCategories] = await Promise.all([
