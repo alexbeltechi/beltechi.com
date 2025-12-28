@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getEntry, createEntry } from "@/lib/cms/entries";
+import { getEntry, createEntry } from "@/lib/db/entries";
 import { getCollection } from "@/lib/cms/schema";
 
 // POST /api/admin/collections/[collection]/entries/[slug]/duplicate - Duplicate entry
@@ -62,5 +62,6 @@ export async function POST(
     );
   }
 }
+
 
 

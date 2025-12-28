@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { listEntries, createEntry } from "@/lib/cms/entries";
+import { listEntries, createEntry } from "@/lib/db/entries";
 import { getCollection } from "@/lib/cms/schema";
 import type { EntryStatus } from "@/lib/cms/types";
 import { handleDatabaseError, isDatabaseError } from "@/lib/api/error-handler";

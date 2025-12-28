@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { getEntry } from "@/lib/cms/entries";
+import { getEntry } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/cms/media";
 import { listCategories } from "@/lib/cms/categories";
 import { PostCarousel } from "@/components/site/post-carousel";

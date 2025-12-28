@@ -2,7 +2,7 @@ import { CategoryTabs } from "@/components/site/category-tabs";
 import { PostGrid } from "@/components/site/post-grid";
 import { HeroSection } from "@/components/site/hero-section";
 import { ServicesSection } from "@/components/site/services-section";
-import { getPublishedEntries } from "@/lib/cms/entries";
+import { getPublishedEntries } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/cms/media";
 import { listCategories } from "@/lib/cms/categories";
 import type { MediaItem } from "@/lib/cms/types";

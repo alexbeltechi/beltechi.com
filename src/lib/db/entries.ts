@@ -7,6 +7,21 @@
 import { getDb, Collections } from "@/lib/db/mongodb";
 import type { Entry, EntryStatus } from "@/lib/cms/types";
 import { ObjectId } from "mongodb";
+import { getCollection, validateEntryData } from "@/lib/cms/schema";
+import { v4 as uuidv4 } from "uuid";
+
+/**
+ * Slugify text for URLs
+ */
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\-\-+/g, "-");
+}
 
 /**
  * List all entries in a collection
@@ -72,23 +87,58 @@ export async function getEntry(
  */
 export async function createEntry(
   collection: string,
-  data: Omit<Entry, "id" | "createdAt" | "updatedAt">
-): Promise<Entry> {
+  data: {
+    title?: string;
+    slug?: string;
+    status?: EntryStatus;
+    data: Record<string, unknown>;
+  }
+): Promise<{ entry?: Entry; error?: string }> {
   const db = await getDb();
   const entriesCollection = db.collection(Collections.ENTRIES);
 
+  // Validate collection exists
+  const schema = await getCollection(collection);
+  if (!schema) {
+    return { error: `Collection "${collection}" not found` };
+  }
+
+  // Validate data against schema (required fields only enforced when publishing)
+  const status = data.status || "draft";
+  const validation = validateEntryData(schema, data.data, status);
+  if (!validation.valid) {
+    return { error: validation.errors.join(", ") };
+  }
+
+  // Generate slug from title or use provided
+  const titleField = schema.admin.titleField;
+  const title = (data.data[titleField] as string) || data.title || "untitled";
+  let slug = data.slug || slugify(title);
+
+  // Ensure slug is unique
+  const existing = await getEntry(collection, slug);
+  if (existing) {
+    slug = `${slug}-${Date.now()}`;
+  }
+
   const now = new Date().toISOString();
-  const entry = {
-    ...data,
-    id: new ObjectId().toString(),
-    collection,
+
+  const entry: Entry = {
+    id: uuidv4(),
+    collection: collection as any,
+    slug,
+    status: data.status || "draft",
+    visibility: "public",
     createdAt: now,
     updatedAt: now,
+    publishedAt: data.status === "published" ? now : null,
+    authorId: null,
+    data: data.data as any,
   };
 
   await entriesCollection.insertOne(entry as unknown as Record<string, unknown>);
 
-  return entry as Entry;
+  return { entry };
 }
 
 /**
@@ -97,28 +147,68 @@ export async function createEntry(
 export async function updateEntry(
   collection: string,
   slug: string,
-  updates: Partial<Entry>
-): Promise<Entry> {
+  updates: {
+    slug?: string;
+    status?: EntryStatus;
+    data?: Record<string, unknown>;
+  }
+): Promise<{ entry?: Entry; error?: string }> {
   const db = await getDb();
   const entriesCollection = db.collection(Collections.ENTRIES);
 
+  // Get existing entry
+  const existing = await getEntry(collection, slug);
+  if (!existing) {
+    return { error: `Entry "${slug}" not found in "${collection}"` };
+  }
+
+  // Validate collection exists
+  const schema = await getCollection(collection);
+  if (!schema) {
+    return { error: `Collection "${collection}" not found` };
+  }
+
+  // Merge data
+  const mergedData = updates.data ? { ...existing.data, ...updates.data } : existing.data;
+
+  // Validate data against schema
+  const status = updates.status || existing.status;
+  const validation = validateEntryData(schema, mergedData, status);
+  if (!validation.valid) {
+    return { error: validation.errors.join(", ") };
+  }
+
   const now = new Date().toISOString();
-  const updateDoc = {
+
+  // Handle slug change
+  let newSlug = slug;
+  if (updates.slug && updates.slug !== slug) {
+    // Check if new slug is unique
+    const slugExists = await getEntry(collection, updates.slug);
+    if (slugExists) {
+      return { error: `Slug "${updates.slug}" is already in use` };
+    }
+    newSlug = updates.slug;
+  }
+
+  const updated = {
+    ...existing,
     ...updates,
+    slug: newSlug,
+    data: mergedData as any,
     updatedAt: now,
-  };
+    publishedAt:
+      updates.status === "published" && !existing.publishedAt
+        ? now
+        : existing.publishedAt,
+  } as Entry;
 
   await entriesCollection.updateOne(
     { collection, slug },
-    { $set: updateDoc }
+    { $set: updated }
   );
 
-  const entry = await entriesCollection.findOne({ collection, slug });
-  if (!entry) {
-    throw new Error(`Entry not found: ${slug}`);
-  }
-
-  return entry as unknown as Entry;
+  return { entry: updated };
 }
 
 /**
@@ -127,11 +217,17 @@ export async function updateEntry(
 export async function deleteEntry(
   collection: string,
   slug: string
-): Promise<void> {
+): Promise<{ success: boolean; error?: string }> {
   const db = await getDb();
   const entriesCollection = db.collection(Collections.ENTRIES);
 
-  await entriesCollection.deleteOne({ collection, slug });
+  const result = await entriesCollection.deleteOne({ collection, slug });
+  
+  if (result.deletedCount === 0) {
+    return { success: false, error: `Entry "${slug}" not found` };
+  }
+
+  return { success: true };
 }
 
 /**

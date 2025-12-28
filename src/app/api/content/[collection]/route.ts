@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listEntries } from "@/lib/cms/entries";
+import { listEntries } from "@/lib/db/entries";
 import { getCollection } from "@/lib/cms/schema";
 
 // GET /api/content/[collection] - List published entries

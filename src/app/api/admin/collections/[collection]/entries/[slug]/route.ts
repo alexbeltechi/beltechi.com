@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { getEntry, updateEntry, deleteEntry } from "@/lib/cms/entries";
+import { getEntry, updateEntry, deleteEntry } from "@/lib/db/entries";
 import { getCollection } from "@/lib/cms/schema";
 
 // GET /api/admin/collections/[collection]/entries/[slug] - Get single entry (any status)
@@ -47,23 +47,19 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    
-    // publish: true means push changes to live site
-    // publish: false (or undefined) means save as working copy for published entries
-    const shouldPublish = body.publish === true;
 
     const result = await updateEntry(collection, slug, {
       slug: body.slug,
       status: body.status,
       data: body.data,
-    }, shouldPublish);
+    });
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    // Revalidate public pages only when actually publishing
-    if (shouldPublish && result.entry?.status === "published") {
+    // Revalidate public pages when publishing
+    if (result.entry?.status === "published") {
       revalidatePath("/", "layout");
       revalidatePath(`/post/${result.entry?.slug || slug}`, "page");
     }

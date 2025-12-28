@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listEntries } from "@/lib/cms/entries";
+import { listEntries } from "@/lib/db/entries";
 import { loadSchemas } from "@/lib/cms/schema";
 
 // GET /api/admin/media/used - Get all media IDs that are in use

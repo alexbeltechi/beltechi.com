@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FileText, Image, Clock } from "lucide-react";
-import { listEntries } from "@/lib/cms/entries";
+import { listEntries } from "@/lib/db/entries";
 import { listMedia } from "@/lib/cms/media";
 import { formatRelativeTime } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
