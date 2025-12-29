@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { getEntry, getPublishedEntries } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/cms/media";
-import { listCategories } from "@/lib/cms/categories";
+import { listCategories } from "@/lib/db/categories";
 import { PostCarousel } from "@/components/site/post-carousel";
 import { PostGrid } from "@/components/site/post-grid";
 import { Button } from "@/components/ui/button";

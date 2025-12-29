@@ -3,7 +3,7 @@ import {
   getCategory,
   updateCategory,
   deleteCategory,
-} from "@/lib/cms/categories";
+} from "@/lib/db/categories";
 import { handleDatabaseError, isDatabaseError } from "@/lib/api/error-handler";
 
 interface RouteContext {

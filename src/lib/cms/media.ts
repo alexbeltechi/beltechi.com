@@ -21,7 +21,7 @@ import {
   DEFAULT_SETTINGS,
 } from "./image-processing";
 import { extractVideoThumbnail, getVideoMetadata } from "./video-processing";
-import { listEntries, updateEntry } from "./entries";
+import { listEntries, updateEntry } from "@/lib/db/entries";
 import { 
   shouldUseBlob, 
   uploadToBlob, 
@@ -125,15 +125,13 @@ export async function listMedia(options: {
   offset?: number;
   mime?: string;
 } = {}): Promise<{ items: MediaItem[]; total: number }> {
-  const result = await mediaDb.listMedia({
+  return mediaDb.listMedia({
     limit: options.limit,
     offset: options.offset,
     mime: options.mime,
     sortBy: "createdAt",
     sortDir: "desc",
   });
-
-  return result;
 }
 
 /**

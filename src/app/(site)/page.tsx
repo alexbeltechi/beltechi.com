@@ -4,7 +4,7 @@ import { HeroSection } from "@/components/site/hero-section";
 import { ServicesSection } from "@/components/site/services-section";
 import { getPublishedEntries } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/cms/media";
-import { listCategories } from "@/lib/cms/categories";
+import { listCategories } from "@/lib/db/categories";
 import type { MediaItem } from "@/lib/cms/types";
 
 // Force dynamic rendering to avoid MongoDB connection during build

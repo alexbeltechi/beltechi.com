@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { reorderCategories } from "@/lib/cms/categories";
+import { reorderCategories } from "@/lib/db/categories";
 import { handleDatabaseError, isDatabaseError } from "@/lib/api/error-handler";
 
 export async function POST(request: Request) {

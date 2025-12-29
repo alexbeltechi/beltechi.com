@@ -1,16 +1,30 @@
 /**
  * MongoDB Categories Storage
+ * 
+ * Direct MongoDB operations for categories.
+ * Each category is stored as an individual document (WordPress-style).
  */
 
 import { getDb, Collections } from "@/lib/db/mongodb";
-import { ObjectId } from "mongodb";
+import { v4 as uuidv4 } from "uuid";
 
 export interface Category {
   id: string;
-  label: string;
   slug: string;
-  order: number;
-  showOnHomepage?: boolean;
+  name: string;
+  label: string; // For backward compatibility
+  color: string;
+  description?: string;
+  parentId?: string; // For hierarchical categories (future)
+  image?: string;
+  order?: number;
+  showOnHomepage?: boolean; // Whether to show in homepage category tabs
+  seo?: {
+    title?: string;
+    description?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -18,15 +32,16 @@ export interface Category {
  */
 export async function listCategories(): Promise<Category[]> {
   const db = await getDb();
-  const categoriesCollection = db.collection(Collections.CATEGORIES);
+  const collection = db.collection(Collections.CATEGORIES);
 
-  const rawCategories = await categoriesCollection
-    .find({})
-    .sort({ order: 1 })
+  // Exclude old storage adapter documents
+  const docs = await collection
+    .find({ id: { $exists: true } })
+    .sort({ order: 1, name: 1 })
     .toArray();
 
-  // Clean MongoDB documents for React serialization
-  return rawCategories.map((doc) => {
+  // Clean MongoDB _id from results
+  return docs.map((doc) => {
     const { _id, ...rest } = doc;
     return rest as Category;
   });
@@ -35,54 +50,120 @@ export async function listCategories(): Promise<Category[]> {
 /**
  * Get category by ID
  */
-export async function getCategoryById(id: string): Promise<Category | null> {
+export async function getCategory(id: string): Promise<Category | null> {
   const db = await getDb();
-  const categoriesCollection = db.collection(Collections.CATEGORIES);
+  const collection = db.collection(Collections.CATEGORIES);
 
-  const doc = await categoriesCollection.findOne({ id });
+  const doc = await collection.findOne({ id });
   if (!doc) return null;
-  
+
   const { _id, ...category } = doc;
   return category as Category;
 }
 
 /**
- * Create category
+ * Get category by slug
  */
-export async function createCategory(
-  data: Omit<Category, "id">
-): Promise<Category> {
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const db = await getDb();
-  const categoriesCollection = db.collection(Collections.CATEGORIES);
+  const collection = db.collection(Collections.CATEGORIES);
 
-  const category = {
-    ...data,
-    id: new ObjectId().toString(),
-  };
+  const doc = await collection.findOne({ 
+    $or: [{ slug }, { id: slug }] // Fall back to id for backward compatibility
+  });
+  if (!doc) return null;
 
-  await categoriesCollection.insertOne(category as unknown as Record<string, unknown>);
-
+  const { _id, ...category } = doc;
   return category as Category;
 }
 
 /**
- * Update category
+ * Create a new category
+ */
+export async function createCategory(
+  data: Omit<Category, "id" | "slug" | "createdAt" | "updatedAt"> & {
+    id?: string;
+    slug?: string;
+  }
+): Promise<Category> {
+  const db = await getDb();
+  const collection = db.collection(Collections.CATEGORIES);
+
+  const now = new Date().toISOString();
+
+  // Generate ID/slug from label/name if not provided
+  const baseName = data.name || data.label;
+  const id = data.id || uuidv4();
+  const slug = data.slug || baseName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  // Check for duplicate
+  const existing = await collection.findOne({ 
+    $or: [{ id }, { slug }] 
+  });
+  if (existing) {
+    throw new Error(`Category with id "${id}" or slug "${slug}" already exists`);
+  }
+
+  // Get max order for new category
+  const maxOrder = await collection
+    .find({})
+    .sort({ order: -1 })
+    .limit(1)
+    .toArray();
+  const nextOrder = maxOrder.length > 0 ? (maxOrder[0].order || 0) + 1 : 0;
+
+  const category: Category = {
+    id,
+    slug,
+    name: data.name || data.label,
+    label: data.label || data.name || baseName,
+    color: data.color,
+    description: data.description,
+    parentId: data.parentId,
+    image: data.image,
+    order: data.order ?? nextOrder,
+    showOnHomepage: data.showOnHomepage ?? true,
+    seo: data.seo,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await collection.insertOne(category as unknown as Record<string, unknown>);
+
+  return category;
+}
+
+/**
+ * Update an existing category
  */
 export async function updateCategory(
   id: string,
-  updates: Partial<Category>
+  updates: Partial<Omit<Category, "id" | "createdAt">>
 ): Promise<Category> {
   const db = await getDb();
-  const categoriesCollection = db.collection(Collections.CATEGORIES);
+  const collection = db.collection(Collections.CATEGORIES);
 
-  await categoriesCollection.updateOne(
-    { id },
-    { $set: updates }
-  );
+  const existing = await collection.findOne({ id });
+  if (!existing) {
+    throw new Error(`Category "${id}" not found`);
+  }
 
-  const doc = await categoriesCollection.findOne({ id });
+  const updatedData = {
+    ...updates,
+    // Keep name and label in sync
+    name: updates.name || updates.label || existing.name,
+    label: updates.label || updates.name || existing.label,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await collection.updateOne({ id }, { $set: updatedData });
+
+  const doc = await collection.findOne({ id });
   if (!doc) {
-    throw new Error(`Category not found: ${id}`);
+    throw new Error(`Category "${id}" not found after update`);
   }
 
   const { _id, ...category } = doc;
@@ -90,34 +171,57 @@ export async function updateCategory(
 }
 
 /**
- * Delete category
+ * Delete a category
  */
 export async function deleteCategory(id: string): Promise<void> {
   const db = await getDb();
-  const categoriesCollection = db.collection(Collections.CATEGORIES);
+  const collection = db.collection(Collections.CATEGORIES);
 
-  await categoriesCollection.deleteOne({ id });
+  const result = await collection.deleteOne({ id });
+  if (result.deletedCount === 0) {
+    throw new Error(`Category "${id}" not found`);
+  }
 }
 
 /**
  * Reorder categories
  */
-export async function reorderCategories(
-  categoryIds: string[]
-): Promise<void> {
+export async function reorderCategories(ids: string[]): Promise<Category[]> {
   const db = await getDb();
-  const categoriesCollection = db.collection(Collections.CATEGORIES);
+  const collection = db.collection(Collections.CATEGORIES);
+
+  const now = new Date().toISOString();
 
   // Update order for each category
-  const updates = categoryIds.map((id, index) => ({
+  const updates = ids.map((id, index) => ({
     updateOne: {
       filter: { id },
-      update: { $set: { order: index } },
+      update: { $set: { order: index, updatedAt: now } },
     },
   }));
 
   if (updates.length > 0) {
-    await categoriesCollection.bulkWrite(updates);
+    await collection.bulkWrite(updates);
   }
+
+  // Return updated categories
+  return listCategories();
 }
 
+/**
+ * Get categories by parent (for hierarchical support)
+ */
+export async function getCategoriesByParent(parentId?: string): Promise<Category[]> {
+  const categories = await listCategories();
+  return categories.filter((c) => c.parentId === parentId);
+}
+
+/**
+ * Count total categories
+ */
+export async function countCategories(): Promise<number> {
+  const db = await getDb();
+  const collection = db.collection(Collections.CATEGORIES);
+
+  return collection.countDocuments({ id: { $exists: true } });
+}

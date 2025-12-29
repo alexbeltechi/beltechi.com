@@ -3,7 +3,7 @@ import {
   listCategories,
   createCategory,
   reorderCategories,
-} from "@/lib/cms/categories";
+} from "@/lib/db/categories";
 import { handleDatabaseError, isDatabaseError } from "@/lib/api/error-handler";
 
 // GET /api/admin/categories - List all categories
