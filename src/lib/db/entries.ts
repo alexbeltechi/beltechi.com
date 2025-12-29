@@ -63,7 +63,13 @@ export async function listEntries(
     .skip(offset)
     .limit(limit);
 
-  const entries = (await cursor.toArray()) as unknown as Entry[];
+  const rawEntries = await cursor.toArray();
+  
+  // Clean MongoDB documents for React serialization
+  const entries = rawEntries.map((doc) => {
+    const { _id, ...rest } = doc;
+    return rest as Entry;
+  });
 
   return { entries, total };
 }
@@ -78,8 +84,12 @@ export async function getEntry(
   const db = await getDb();
   const entriesCollection = db.collection(Collections.ENTRIES);
 
-  const entry = await entriesCollection.findOne({ collection, slug });
-  return entry as unknown as Entry | null;
+  const doc = await entriesCollection.findOne({ collection, slug });
+  if (!doc) return null;
+  
+  // Clean MongoDB document for React serialization
+  const { _id, ...entry } = doc;
+  return entry as Entry;
 }
 
 /**
@@ -244,11 +254,15 @@ export async function getPublishedEntries(
     filter.collection = collection;
   }
 
-  const entries = await entriesCollection
+  const rawEntries = await entriesCollection
     .find(filter)
     .sort({ publishedAt: -1, createdAt: -1 })
     .toArray();
 
-  return entries as unknown as Entry[];
+  // Clean MongoDB documents for React serialization
+  return rawEntries.map((doc) => {
+    const { _id, ...rest } = doc;
+    return rest as Entry;
+  });
 }
 

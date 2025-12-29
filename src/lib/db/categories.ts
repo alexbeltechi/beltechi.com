@@ -20,12 +20,16 @@ export async function listCategories(): Promise<Category[]> {
   const db = await getDb();
   const categoriesCollection = db.collection(Collections.CATEGORIES);
 
-  const categories = await categoriesCollection
+  const rawCategories = await categoriesCollection
     .find({})
     .sort({ order: 1 })
     .toArray();
 
-  return categories as unknown as Category[];
+  // Clean MongoDB documents for React serialization
+  return rawCategories.map((doc) => {
+    const { _id, ...rest } = doc;
+    return rest as Category;
+  });
 }
 
 /**
@@ -35,8 +39,11 @@ export async function getCategoryById(id: string): Promise<Category | null> {
   const db = await getDb();
   const categoriesCollection = db.collection(Collections.CATEGORIES);
 
-  const category = await categoriesCollection.findOne({ id });
-  return category as unknown as Category | null;
+  const doc = await categoriesCollection.findOne({ id });
+  if (!doc) return null;
+  
+  const { _id, ...category } = doc;
+  return category as Category;
 }
 
 /**
@@ -73,12 +80,13 @@ export async function updateCategory(
     { $set: updates }
   );
 
-  const category = await categoriesCollection.findOne({ id });
-  if (!category) {
+  const doc = await categoriesCollection.findOne({ id });
+  if (!doc) {
     throw new Error(`Category not found: ${id}`);
   }
 
-  return category as unknown as Category;
+  const { _id, ...category } = doc;
+  return category as Category;
 }
 
 /**
