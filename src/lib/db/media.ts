@@ -40,7 +40,6 @@ export async function listMedia(options: {
 
   // Get total count
   const total = await collection.countDocuments(filter);
-  console.log("[DB/Media] Total documents matching filter:", total);
 
   // Build sort
   const sortField = options.sortBy || "createdAt";

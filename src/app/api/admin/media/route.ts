@@ -8,9 +8,7 @@ export async function GET(request: Request) {
   const offset = parseInt(searchParams.get("offset") || "0");
   const mime = searchParams.get("mime") || undefined;
 
-  console.log("[API/Media] GET request, limit:", limit, "offset:", offset);
   const { items, total } = await listMedia({ limit, offset, mime });
-  console.log("[API/Media] Returning", items.length, "items to client");
 
   return NextResponse.json({
     data: items,
