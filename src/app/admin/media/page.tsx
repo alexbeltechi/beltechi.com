@@ -1289,8 +1289,8 @@ export default function MediaLibraryPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <Film className="w-8 h-8 text-muted-foreground" />
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+                      <Film className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
                     </div>
                   )}
 

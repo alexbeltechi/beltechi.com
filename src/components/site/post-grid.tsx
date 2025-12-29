@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Film } from "lucide-react";
 import type { Entry, MediaItem } from "@/lib/cms/types";
 
 interface PostCardProps {
@@ -37,8 +38,11 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
     });
   };
 
-  // Use thumbnail variant if available
-  const imageUrl = media.variants?.thumb?.url || media.url;
+  // Handle video thumbnails - use poster if available
+  const isVideo = media.mime.startsWith("video/");
+  const imageUrl = isVideo 
+    ? (media.poster?.url || null)
+    : (media.variants?.thumb?.url || media.url);
 
   return (
     <Link href={`/post/${post.slug}`} className="block group">
@@ -47,19 +51,28 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
         className="relative w-full overflow-hidden bg-zinc-50 dark:bg-zinc-900"
         style={{ aspectRatio }}
       >
-        <Image
-          src={imageUrl}
-          alt={(post.data.title as string) || post.slug}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-          className={`object-cover transition-opacity duration-500 ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          loading="lazy"
-          onLoad={() => setIsLoaded(true)}
-        />
-        {/* Hover brighten overlay */}
-        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-[0.05] transition-opacity duration-200 pointer-events-none" />
+        {imageUrl ? (
+          <>
+            <Image
+              src={imageUrl}
+              alt={(post.data.title as string) || post.slug}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+              className={`object-cover transition-opacity duration-500 ${
+                isLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              loading="lazy"
+              onLoad={() => setIsLoaded(true)}
+            />
+            {/* Hover brighten overlay */}
+            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-[0.05] transition-opacity duration-200 pointer-events-none" />
+          </>
+        ) : (
+          /* Video without poster - show icon */
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Film className="w-6 h-6 text-zinc-400 dark:text-zinc-600" />
+          </div>
+        )}
       </div>
 
       {/* Title */}

@@ -7,6 +7,7 @@ import {
   Plus,
   FileText,
   Image,
+  Film,
   MoreVertical,
   Pencil,
   Copy,
@@ -285,26 +286,43 @@ function ContentListPageContent() {
     router.push(newUrl, { scroll: false });
   };
 
-  // Get thumbnail URL for an entry
-  const getThumbnail = (entry: Entry): string | null => {
+  // Get thumbnail data for an entry (returns URL and whether it's a video without poster)
+  const getThumbnailData = (entry: Entry): { url: string | null; isVideoWithoutPoster: boolean } => {
+    let mediaItem: MediaItem | undefined;
+    
     if (entry.collection === "posts") {
       const media = entry.data.media as string[];
       if (media && media.length > 0) {
-        const firstMedia = mediaMap[media[0]];
-        if (firstMedia) {
-          return firstMedia.variants?.thumb?.url || firstMedia.url;
-        }
+        mediaItem = mediaMap[media[0]];
       }
     } else if (entry.collection === "articles") {
       const featuredImage = entry.data.featuredImage as string | undefined;
       if (featuredImage) {
-        const mediaItem = mediaMap[featuredImage];
-        if (mediaItem) {
-          return mediaItem.variants?.thumb?.url || mediaItem.url;
-        }
+        mediaItem = mediaMap[featuredImage];
       }
     }
-    return null;
+
+    if (!mediaItem) {
+      return { url: null, isVideoWithoutPoster: false };
+    }
+
+    // Check if it's a video
+    const isVideo = mediaItem.mime.startsWith("video/");
+    
+    if (isVideo) {
+      // Use poster if available
+      if (mediaItem.poster?.url) {
+        return { url: mediaItem.poster.url, isVideoWithoutPoster: false };
+      }
+      // Video without poster
+      return { url: null, isVideoWithoutPoster: true };
+    }
+
+    // Regular image
+    return { 
+      url: mediaItem.variants?.thumb?.url || mediaItem.url, 
+      isVideoWithoutPoster: false 
+    };
   };
 
   // Selection handlers
@@ -791,7 +809,7 @@ function ContentListPageContent() {
         ) : (
           <div>
             {paginatedEntries.map((entry, index) => {
-              const thumbnail = getThumbnail(entry);
+              const { url: thumbnail, isVideoWithoutPoster } = getThumbnailData(entry);
               const isPost = entry.collection === "posts";
               const isSelected = selectedIds.has(entry.id);
               const isLast = index === paginatedEntries.length - 1;
@@ -822,6 +840,10 @@ function ContentListPageContent() {
                         alt=""
                         className="w-12 h-12 rounded-lg object-cover"
                       />
+                    ) : isVideoWithoutPoster ? (
+                      <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                        <Film className="w-5 h-5 text-zinc-400 dark:text-zinc-600" />
+                      </div>
                     ) : (
                       <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
                         {isPost ? (

@@ -695,9 +695,15 @@ export function MediaPicker({
                           alt={item.alt || item.originalName}
                           className="w-full h-full object-cover"
                         />
+                      ) : item.poster?.url ? (
+                        <img
+                          src={item.poster.url}
+                          alt={item.alt || item.originalName}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                          <Film className="w-6 h-6 text-muted-foreground" />
+                        <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+                          <Film className="w-6 h-6 text-zinc-400 dark:text-zinc-600" />
                         </div>
                       )}
 
