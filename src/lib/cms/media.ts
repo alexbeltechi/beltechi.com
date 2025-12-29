@@ -2,14 +2,14 @@
  * Media Management
  * 
  * Handles media uploads and management.
- * - Development: Local filesystem (public/uploads/)
- * - Production: Vercel Blob + GitHub API for index
+ * - Files: Vercel Blob (production) or local filesystem (development)
+ * - Metadata: Direct MongoDB storage (WordPress-style - one document per media item)
  */
 
 import fs from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import type { MediaItem, MediaIndex, ImageVariant } from "./types";
+import type { MediaItem, ImageVariant } from "./types";
 import {
   sanitizeFilename,
   generateShortId,
@@ -21,7 +21,6 @@ import {
   DEFAULT_SETTINGS,
 } from "./image-processing";
 import { extractVideoThumbnail, getVideoMetadata } from "./video-processing";
-import { getStorage } from "./storage";
 import { listEntries, updateEntry } from "./entries";
 import { 
   shouldUseBlob, 
@@ -30,8 +29,8 @@ import {
   deleteMultipleFromBlob 
 } from "./blob-storage";
 
-// Storage paths
-const MEDIA_INDEX_PATH = "content/media/index.json";
+// Direct MongoDB media operations (WordPress-style)
+import * as mediaDb from "@/lib/db/media";
 
 // Local directories (for development)
 const PUBLIC_DIR = path.join(process.cwd(), "public");
@@ -46,40 +45,6 @@ async function ensureLocalDirs(): Promise<void> {
   if (!shouldUseBlob()) {
     await fs.mkdir(ORIGINALS_DIR, { recursive: true });
     await fs.mkdir(VARIANTS_DIR, { recursive: true });
-  }
-}
-
-/**
- * Load media index from storage
- */
-async function loadIndex(): Promise<MediaIndex> {
-  const storage = getStorage();
-  
-  try {
-    const content = await storage.read(MEDIA_INDEX_PATH);
-    return JSON.parse(content) as MediaIndex;
-  } catch {
-    return { items: [] };
-  }
-}
-
-/**
- * Save media index to storage
- */
-async function saveIndex(index: MediaIndex, message?: string): Promise<void> {
-  const storage = getStorage();
-  try {
-    console.log(`[Media] Saving index to: ${MEDIA_INDEX_PATH}`);
-    console.log(`[Media] Index has ${index.items.length} items`);
-    await storage.write(
-      MEDIA_INDEX_PATH,
-      JSON.stringify(index, null, 2),
-      message || "Update media index"
-    );
-    console.log(`[Media] Index saved successfully`);
-  } catch (error) {
-    console.error(`[Media] Failed to save index:`, error);
-    throw error;
   }
 }
 
@@ -153,54 +118,36 @@ async function deleteFile(urlOrPath: string): Promise<void> {
 }
 
 /**
- * List all media items
+ * List all media items (direct MongoDB query)
  */
 export async function listMedia(options: {
   limit?: number;
   offset?: number;
   mime?: string;
 } = {}): Promise<{ items: MediaItem[]; total: number }> {
-  const index = await loadIndex();
-  let items = index.items;
+  const result = await mediaDb.listMedia({
+    limit: options.limit,
+    offset: options.offset,
+    mime: options.mime,
+    sortBy: "createdAt",
+    sortDir: "desc",
+  });
 
-  // Filter by mime type
-  if (options.mime) {
-    items = items.filter((item) => item.mime.startsWith(options.mime!));
-  }
-
-  // Sort by createdAt descending
-  items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-  const total = items.length;
-
-  // Pagination
-  if (options.offset !== undefined || options.limit !== undefined) {
-    const offset = options.offset || 0;
-    const limit = options.limit || 50;
-    items = items.slice(offset, offset + limit);
-  }
-
-  return { items, total };
+  return result;
 }
 
 /**
- * Get a single media item by ID
+ * Get a single media item by ID (direct MongoDB query)
  */
 export async function getMedia(id: string): Promise<MediaItem | null> {
-  const index = await loadIndex();
-  return index.items.find((item) => item.id === id) || null;
+  return mediaDb.getMediaById(id);
 }
 
 /**
- * Get multiple media items by IDs
+ * Get multiple media items by IDs (direct MongoDB query)
  */
 export async function getMediaByIds(ids: string[]): Promise<MediaItem[]> {
-  const index = await loadIndex();
-  const itemMap = new Map(index.items.map((item) => [item.id, item]));
-
-  return ids
-    .map((id) => itemMap.get(id))
-    .filter((item): item is MediaItem => item !== undefined);
+  return mediaDb.getMediaByIds(ids);
 }
 
 /**
@@ -306,10 +253,8 @@ export async function uploadMedia(
         hash: processed.hash,
       };
 
-      // Add to index
-      const index = await loadIndex();
-      index.items.push(item);
-      await saveIndex(index, `Upload media: ${item.title}`);
+      // Save to MongoDB (direct document insertion)
+      await mediaDb.createMedia(item);
 
       return { item };
     } catch (error) {
@@ -390,16 +335,14 @@ export async function uploadMedia(
     hash: generateFileHash(file),
   };
 
-  // Add to index
-  const index = await loadIndex();
-  index.items.push(item);
-  await saveIndex(index, `Upload media: ${item.title}`);
+  // Save to MongoDB (direct document insertion)
+  await mediaDb.createMedia(item);
 
   return { item };
 }
 
 /**
- * Update media metadata
+ * Update media metadata (direct MongoDB update)
  */
 export async function updateMedia(
   id: string,
@@ -412,23 +355,22 @@ export async function updateMedia(
     tags?: string[];
   }
 ): Promise<{ item?: MediaItem; error?: string }> {
-  const index = await loadIndex();
-  const itemIndex = index.items.findIndex((item) => item.id === id);
-
-  if (itemIndex === -1) {
+  // Get existing item
+  const item = await mediaDb.getMediaById(id);
+  if (!item) {
     return { error: "Media not found" };
   }
 
-  const item = index.items[itemIndex];
+  // Prepare updates
+  const mediaUpdates: Partial<MediaItem> = {};
 
-  // Update fields
-  if (updates.alt !== undefined) item.alt = updates.alt;
-  if (updates.title !== undefined) item.title = updates.title;
-  if (updates.caption !== undefined) item.caption = updates.caption;
-  if (updates.description !== undefined) item.description = updates.description;
-  if (updates.tags !== undefined) item.tags = updates.tags;
+  if (updates.alt !== undefined) mediaUpdates.alt = updates.alt;
+  if (updates.title !== undefined) mediaUpdates.title = updates.title;
+  if (updates.caption !== undefined) mediaUpdates.caption = updates.caption;
+  if (updates.description !== undefined) mediaUpdates.description = updates.description;
+  if (updates.tags !== undefined) mediaUpdates.tags = updates.tags;
 
-  // Update active variant and primary URL
+  // Handle active variant change
   if (updates.activeVariant !== undefined && updates.activeVariant !== item.activeVariant) {
     // IMPORTANT: Before changing activeVariant, preserve current display values
     // if variants.display doesn't exist yet (for old uploads)
@@ -442,35 +384,38 @@ export async function updateMedia(
         height: item.height,
         size: item.size,
       };
+      mediaUpdates.variants = item.variants;
     }
 
-    item.activeVariant = updates.activeVariant;
+    mediaUpdates.activeVariant = updates.activeVariant;
 
     if (updates.activeVariant === "original" && item.original) {
-      item.url = item.original.url;
-      item.path = item.original.path;
-      if (item.original.width !== undefined) item.width = item.original.width;
-      if (item.original.height !== undefined) item.height = item.original.height;
-      if (item.original.size !== undefined) item.size = item.original.size;
+      mediaUpdates.url = item.original.url;
+      mediaUpdates.path = item.original.path;
+      if (item.original.width !== undefined) mediaUpdates.width = item.original.width;
+      if (item.original.height !== undefined) mediaUpdates.height = item.original.height;
+      if (item.original.size !== undefined) mediaUpdates.size = item.original.size;
     } else if (updates.activeVariant !== "original") {
       const variantKey = updates.activeVariant as "display" | "large" | "medium" | "thumb";
       const variant = item.variants?.[variantKey];
       if (variant) {
-        item.url = variant.url;
-        item.path = variant.path;
-        item.width = variant.width;
-        item.height = variant.height;
-        item.size = variant.size;
+        mediaUpdates.url = variant.url;
+        mediaUpdates.path = variant.path;
+        mediaUpdates.width = variant.width;
+        mediaUpdates.height = variant.height;
+        mediaUpdates.size = variant.size;
       }
     }
   }
 
-  item.updatedAt = new Date().toISOString();
-  index.items[itemIndex] = item;
+  // Update in MongoDB
+  const updatedItem = await mediaDb.updateMedia(id, mediaUpdates);
+  
+  if (!updatedItem) {
+    return { error: "Failed to update media" };
+  }
 
-  await saveIndex(index, `Update media: ${item.title}`);
-
-  return { item: index.items[itemIndex] };
+  return { item: updatedItem };
 }
 
 /**
@@ -479,8 +424,7 @@ export async function updateMedia(
 export async function deleteMedia(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
-  const index = await loadIndex();
-  const item = index.items.find((item) => item.id === id);
+  const item = await mediaDb.getMediaById(id);
 
   if (!item) {
     return { success: false, error: "Media not found" };
@@ -531,9 +475,8 @@ export async function deleteMedia(
     }
   }
 
-  // Remove from index
-  index.items = index.items.filter((i) => i.id !== id);
-  await saveIndex(index, `Delete media: ${item.title}`);
+  // Remove from MongoDB
+  await mediaDb.deleteMedia(id);
 
   return { success: true };
 }
