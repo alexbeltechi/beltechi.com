@@ -180,7 +180,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
       {/* More to explore section */}
       {displayPosts.length > 0 && (
-        <div className="mt-16 pb-10">
+        <div className="mt-4 lg:mt-16 pb-10">
           <h2 className="text-[15px] font-normal font-[family-name:var(--font-syne)] text-zinc-500 px-4 mb-4 text-center">
             More to explore
           </h2>

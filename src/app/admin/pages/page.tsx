@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,7 +11,11 @@ import {
   Loader2,
   File,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
+const ITEMS_PER_PAGE = 20;
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,6 +31,14 @@ export default function PagesListPage() {
   const [pages, setPages] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Pagination
+  const totalPages = Math.ceil(pages.length / ITEMS_PER_PAGE);
+  const paginatedPages = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return pages.slice(start, start + ITEMS_PER_PAGE);
+  }, [pages, currentPage]);
 
   // Fetch pages
   useEffect(() => {
@@ -100,7 +112,7 @@ export default function PagesListPage() {
           </div>
         ) : (
           <div className="divide-y">
-            {pages.map((page) => (
+            {paginatedPages.map((page) => (
               <div
                 key={page.id}
                 className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors"
@@ -174,6 +186,35 @@ export default function PagesListPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="py-3 flex items-center justify-between px-4">
+          <Button
+            variant="ghost"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <Button
+            variant="ghost"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="gap-2"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

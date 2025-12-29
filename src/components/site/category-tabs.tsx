@@ -16,7 +16,7 @@ export function CategoryTabs({ categories }: CategoryTabsProps) {
   return (
     <div className="bg-white dark:bg-zinc-950 relative">
       <div className="flex items-center justify-between h-[56px] px-4">
-        <span className="font-[family-name:var(--font-syne)] font-normal text-[26px] text-black dark:text-white">
+        <span className="font-normal text-[15px] text-black dark:text-white">
           Recent
         </span>
 

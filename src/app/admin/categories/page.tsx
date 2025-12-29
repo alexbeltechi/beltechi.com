@@ -16,7 +16,11 @@ import {
   EyeOff,
   RotateCcw,
   SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
+const ITEMS_PER_PAGE = 25;
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -97,6 +101,9 @@ export default function CategoriesPage() {
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Mobile filter modal
   const [showFilterModal, setShowFilterModal] = useState(false);
 
@@ -150,6 +157,18 @@ export default function CategoriesPage() {
 
     return result;
   }, [categories, searchQuery, visibilityFilter, sortOption]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCategories.length / ITEMS_PER_PAGE);
+  const paginatedCategories = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCategories.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredCategories, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, visibilityFilter, sortOption]);
 
   // Check if filters are active
   const hasActiveFilters = visibilityFilter !== "all" || searchQuery.trim() !== "";
@@ -368,10 +387,10 @@ export default function CategoriesPage() {
     }
   }
 
-  // Checkbox states
-  const allOnPageIds = filteredCategories.map((c) => c.id);
+  // Checkbox states (for current page)
+  const allOnPageIds = paginatedCategories.map((c) => c.id);
   const selectedOnPage = allOnPageIds.filter((id) => selectedIds.has(id));
-  const isAllSelected = filteredCategories.length > 0 && selectedOnPage.length === filteredCategories.length;
+  const isAllSelected = paginatedCategories.length > 0 && selectedOnPage.length === paginatedCategories.length;
   const isSomeSelected = selectedOnPage.length > 0 && selectedOnPage.length < filteredCategories.length;
   const hasSelection = selectedIds.size > 0;
 
@@ -406,7 +425,7 @@ export default function CategoriesPage() {
             if (isAllSelected) {
               setSelectedIds(new Set());
             } else {
-              setSelectedIds(new Set(filteredCategories.map((c) => c.id)));
+              setSelectedIds(new Set(paginatedCategories.map((c) => c.id)));
             }
           }}
         >
@@ -624,7 +643,7 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <div className={cn("transition-opacity", reordering && "opacity-70")}>
-            {filteredCategories.map((category, index) => {
+            {paginatedCategories.map((category, index) => {
               const isSelected = selectedIds.has(category.id);
               const isEditing = editingId === category.id;
               const isLast = index === filteredCategories.length - 1;
@@ -810,6 +829,41 @@ export default function CategoriesPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="py-3 flex items-center justify-between px-4">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setCurrentPage((p) => Math.max(1, p - 1));
+              setSelectedIds(new Set());
+            }}
+            disabled={currentPage === 1}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setCurrentPage((p) => Math.min(totalPages, p + 1));
+              setSelectedIds(new Set());
+            }}
+            disabled={currentPage === totalPages}
+            className="gap-2"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Mobile Filter Modal */}
       <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>

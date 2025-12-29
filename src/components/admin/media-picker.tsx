@@ -72,7 +72,7 @@ export function MediaPicker({
   const fetchMedia = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/media");
+      const res = await fetch("/api/admin/media?limit=1000");
       const data = await res.json();
       setMedia(data.data || []);
     } catch (error) {

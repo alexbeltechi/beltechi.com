@@ -122,7 +122,7 @@ function ContentListPageContent() {
       const [postsRes, articlesRes, mediaRes] = await Promise.all([
         fetch("/api/admin/collections/posts/entries"),
         fetch("/api/admin/collections/articles/entries"),
-        fetch("/api/admin/media"),
+        fetch("/api/admin/media?limit=1000"), // Fetch all media for thumbnail lookup
       ]);
 
       const postsData = await postsRes.json();

@@ -272,7 +272,7 @@ export function PostEditorForm({
         const mediaIds = (displayData.media as string[]) || [];
 
         if (mediaIds.length > 0) {
-          const mediaRes = await fetch("/api/admin/media");
+          const mediaRes = await fetch("/api/admin/media?limit=1000");
           const mediaData = await mediaRes.json();
           const allMedia = mediaData.data || [];
 
@@ -314,7 +314,7 @@ export function PostEditorForm({
 
     async function loadInitialMedia() {
       try {
-        const mediaRes = await fetch("/api/admin/media");
+        const mediaRes = await fetch("/api/admin/media?limit=1000");
         const mediaData = await mediaRes.json();
         const allMedia = mediaData.data || [];
 

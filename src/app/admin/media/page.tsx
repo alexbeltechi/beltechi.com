@@ -20,6 +20,8 @@ import {
   SlidersHorizontal,
   RotateCcw,
   Pencil,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { MediaItem } from "@/lib/cms/types";
 import { formatRelativeTime } from "@/lib/utils";
@@ -74,6 +76,9 @@ import { toast } from "sonner";
 type FilterType = "all" | "images" | "video" | "unattached";
 type SortOption = "newest" | "oldest" | "largest" | "smallest" | "name-asc" | "name-desc";
 
+// Pagination constant
+const ITEMS_PER_PAGE = 50;
+
 interface UsedMediaResponse {
   usedMediaIds: string[];
 }
@@ -111,6 +116,9 @@ export default function MediaLibraryPage() {
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Mobile filter modal
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -151,7 +159,7 @@ export default function MediaLibraryPage() {
   const fetchMedia = useCallback(async () => {
     try {
       const [mediaRes, usedRes] = await Promise.all([
-        fetch("/api/admin/media"),
+        fetch("/api/admin/media?limit=1000"), // Load all for client-side filtering/pagination
         fetch("/api/admin/media/used"),
       ]);
       const mediaData = await mediaRes.json();
@@ -263,16 +271,29 @@ export default function MediaLibraryPage() {
     });
   }, [media, searchQuery, typeFilter, dateFilter, usedMediaIds, sortBy]);
 
-  // Navigation for modal
-  const currentIndex = selectedMediaId ? filteredMedia.findIndex((m) => m.id === selectedMediaId) : -1;
+  // Pagination
+  const totalPages = Math.ceil(filteredMedia.length / ITEMS_PER_PAGE);
+  
+  const paginatedMedia = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredMedia.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredMedia, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter, dateFilter, sortBy]);
+
+  // Navigation for modal (within current page)
+  const currentIndex = selectedMediaId ? paginatedMedia.findIndex((m) => m.id === selectedMediaId) : -1;
   const canGoPrev = currentIndex > 0;
-  const canGoNext = currentIndex < filteredMedia.length - 1;
+  const canGoNext = currentIndex < paginatedMedia.length - 1;
 
   const handleNavigate = (direction: "prev" | "next") => {
     if (direction === "prev" && canGoPrev) {
-      setSelectedMediaId(filteredMedia[currentIndex - 1].id);
+      setSelectedMediaId(paginatedMedia[currentIndex - 1].id);
     } else if (direction === "next" && canGoNext) {
-      setSelectedMediaId(filteredMedia[currentIndex + 1].id);
+      setSelectedMediaId(paginatedMedia[currentIndex + 1].id);
     }
   };
 
@@ -498,15 +519,15 @@ export default function MediaLibraryPage() {
   };
 
   const selectAll = () => {
-    if (selectedIds.size === filteredMedia.length) {
+    if (selectedIds.size === paginatedMedia.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredMedia.map((m) => m.id)));
+      setSelectedIds(new Set(paginatedMedia.map((m) => m.id)));
     }
   };
 
   const selectAllUnused = () => {
-    const unusedIds = filteredMedia
+    const unusedIds = paginatedMedia
       .filter((m) => !usedMediaIds.has(m.id))
       .map((m) => m.id);
     setSelectedIds(new Set(unusedIds));
@@ -954,7 +975,7 @@ export default function MediaLibraryPage() {
         {/* Select All Checkbox - matching posts page */}
         <div className="flex items-center justify-center w-8 shrink-0">
           <Checkbox
-            checked={selectedIds.size > 0 && selectedIds.size === filteredMedia.length}
+            checked={selectedIds.size > 0 && selectedIds.size === paginatedMedia.length}
             onCheckedChange={selectAll}
             aria-label="Select all"
           />
@@ -1056,7 +1077,7 @@ export default function MediaLibraryPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={selectAll}>
-              {selectedIds.size === filteredMedia.length ? "Deselect all" : "Select all"}
+              {selectedIds.size === paginatedMedia.length ? "Deselect all" : "Select all"}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={selectAllUnused}>
               Select unused
@@ -1262,7 +1283,7 @@ export default function MediaLibraryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 lg:gap-4">
-            {filteredMedia.map((item) => (
+            {paginatedMedia.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setSelectedMediaId(item.id)}
@@ -1360,6 +1381,41 @@ export default function MediaLibraryPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="py-3 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setCurrentPage((p) => Math.max(1, p - 1));
+              setSelectedIds(new Set());
+            }}
+            disabled={currentPage === 1}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setCurrentPage((p) => Math.min(totalPages, p + 1));
+              setSelectedIds(new Set());
+            }}
+            disabled={currentPage === totalPages}
+            className="gap-2"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
       </div>
 
       {/* Media Detail Modal - shared component */}
