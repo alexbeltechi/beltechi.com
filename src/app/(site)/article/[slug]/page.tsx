@@ -31,6 +31,23 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     .map((id) => allCategories.find((c) => c.id === id))
     .filter((cat): cat is NonNullable<typeof cat> => cat !== undefined);
 
+  // Build category display with separators
+  const categoryElements: React.ReactNode[] = [];
+  articleCategories.forEach((cat, idx) => {
+    categoryElements.push(
+      <Link
+        key={cat.id}
+        href={`/${cat.slug}`}
+        className="hover:text-foreground transition-colors"
+      >
+        {cat.label}
+      </Link>
+    );
+    if (idx < articleCategories.length - 1) {
+      categoryElements.push(<span key={`sep-${cat.id}`}>•</span>);
+    }
+  });
+
   // Format date
   const articleDate = article.data.date as string | undefined;
   const formattedDate = articleDate
@@ -91,19 +108,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
             {/* Categories and Date */}
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              {articleCategories.map((cat, idx) => (
-                <React.Fragment key={cat.id}>
-                  <Link
-                    href={`/${cat.slug}`}
-                    className="hover:text-foreground transition-colors"
-                  >
-                    {cat.label}
-                  </Link>
-                  {idx < articleCategories.length - 1 && (
-                    <span>•</span>
-                  )}
-                </React.Fragment>
-              ))}
+              {categoryElements}
               {formattedDate && (
                 <>
                   <span>•</span>
