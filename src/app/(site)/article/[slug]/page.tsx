@@ -1,3 +1,4 @@
+import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, X } from "lucide-react";
@@ -91,7 +92,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             {/* Categories and Date */}
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               {articleCategories.map((cat, idx) => (
-                <span key={cat.id}>
+                <React.Fragment key={cat.id}>
                   <Link
                     href={`/${cat.slug}`}
                     className="hover:text-foreground transition-colors"
@@ -99,9 +100,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                     {cat.label}
                   </Link>
                   {idx < articleCategories.length - 1 && (
-                    <span className="mx-2">•</span>
+                    <span>•</span>
                   )}
-                </span>
+                </React.Fragment>
               ))}
               {formattedDate && (
                 <>
