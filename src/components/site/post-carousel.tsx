@@ -220,7 +220,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
         className="relative w-full select-none overflow-hidden"
         style={{
           ...(isDesktop 
-            ? { maxHeight: "90vh" } 
+            ? { height: "90vh" } 
             : { aspectRatio: `${mobileAspectRatio}` }
           ),
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",
@@ -258,7 +258,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                   width={item.width || 1200}
                   height={item.height || 800}
                   sizes="(max-width: 1024px) 100vw, 80vw"
-                  className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:h-full lg:object-contain pointer-events-none"
+                  className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none"
                   priority={index === currentIndex}
                   draggable={false}
                 />

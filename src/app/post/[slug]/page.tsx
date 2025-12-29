@@ -7,6 +7,7 @@ import { listCategories } from "@/lib/cms/categories";
 import { PostCarousel } from "@/components/site/post-carousel";
 import { PostGrid } from "@/components/site/post-grid";
 import { Button } from "@/components/ui/button";
+import { PostPageWrapper } from "@/components/site/post-page-wrapper";
 import type { PostEntry, MediaItem } from "@/lib/cms/types";
 
 // Force dynamic rendering to avoid MongoDB connection during build
@@ -108,7 +109,8 @@ export default async function PostPage({ params }: PostPageProps) {
     .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
   return (
-    <main className="min-h-screen bg-white dark:bg-zinc-950">
+    <PostPageWrapper>
+      <main className="min-h-screen bg-white dark:bg-zinc-950">
       {/* Back button - fixed 16px from top and left on all breakpoints */}
       <div className="fixed top-4 left-4 z-50">
         {/* Mobile: Back chevron */}
@@ -190,5 +192,6 @@ export default async function PostPage({ params }: PostPageProps) {
         </div>
       )}
     </main>
+    </PostPageWrapper>
   );
 }
