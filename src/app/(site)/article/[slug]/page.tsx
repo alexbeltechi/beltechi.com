@@ -28,7 +28,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const allCategories = await listCategories();
   const articleCategories = categoryIds
     .map((id) => allCategories.find((c) => c.id === id))
-    .filter(Boolean);
+    .filter((cat): cat is NonNullable<typeof cat> => cat !== undefined);
 
   // Format date
   const articleDate = article.data.date as string | undefined;
