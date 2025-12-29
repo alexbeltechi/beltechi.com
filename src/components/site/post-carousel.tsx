@@ -219,7 +219,10 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
         ref={containerRef}
         className="relative w-full select-none overflow-hidden"
         style={{
-          aspectRatio: isDesktop ? "16/9" : `${mobileAspectRatio}`,
+          ...(isDesktop 
+            ? { maxHeight: "90vh" } 
+            : { aspectRatio: `${mobileAspectRatio}` }
+          ),
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",
         }}
         onMouseDown={onMouseDown}
