@@ -14,6 +14,7 @@ interface ImageOptionsMenuProps {
   isCover?: boolean;
   showCoverOption?: boolean;
   className?: string;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ImageOptionsMenu({
@@ -26,12 +27,19 @@ export function ImageOptionsMenu({
   isCover = false,
   showCoverOption = false,
   className = "",
+  onOpenChange,
 }: ImageOptionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Wrapper to call onOpenChange when open state changes
+  const setOpenWithCallback = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChange?.(newOpen);
+  };
 
   // Calculate position when opening
   useEffect(() => {
@@ -62,12 +70,12 @@ export function ImageOptionsMenu({
         buttonRef.current &&
         !buttonRef.current.contains(e.target as Node)
       ) {
-        setOpen(false);
+        setOpenWithCallback(false);
       }
     };
 
     const handleScroll = () => {
-      setOpen(false);
+      setOpenWithCallback(false);
     };
 
     if (open) {
@@ -105,7 +113,7 @@ export function ImageOptionsMenu({
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
-            setOpen(false);
+            setOpenWithCallback(false);
           }}
           className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2.5"
         >
@@ -119,7 +127,7 @@ export function ImageOptionsMenu({
           onClick={(e) => {
             e.stopPropagation();
             onCreatePost();
-            setOpen(false);
+            setOpenWithCallback(false);
           }}
           className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2.5"
         >
@@ -156,7 +164,7 @@ export function ImageOptionsMenu({
             e.stopPropagation();
             e.preventDefault();
             if (!isCover) {
-              setOpen(false);
+              setOpenWithCallback(false);
               onSetCover();
             }
           }}
@@ -179,7 +187,7 @@ export function ImageOptionsMenu({
           onClick={(e) => {
             e.stopPropagation();
             onReplace();
-            setOpen(false);
+            setOpenWithCallback(false);
           }}
           className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2.5"
         >
@@ -194,7 +202,7 @@ export function ImageOptionsMenu({
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
-          setOpen(false);
+          setOpenWithCallback(false);
         }}
         className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5"
       >
@@ -211,7 +219,7 @@ export function ImageOptionsMenu({
         onClick={(e) => {
           e.stopPropagation();
           e.preventDefault();
-          setOpen(!open);
+          setOpenWithCallback(!open);
         }}
         className="p-1.5 bg-black/60 hover:bg-black/80 rounded-full transition-colors"
       >

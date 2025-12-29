@@ -145,7 +145,7 @@ export default async function PostPage({ params }: PostPageProps) {
         </div>
 
         {/* Post Info - centered with exact Figma spacing */}
-        <div className="w-full flex flex-col items-center gap-2 px-4">
+        <div className="w-full flex flex-col items-center gap-2 px-4 py-4">
           {/* Title */}
           {post.data.title && (
             <h1 className="text-h1-bold text-black dark:text-white text-center w-full">

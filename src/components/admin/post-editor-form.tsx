@@ -726,9 +726,11 @@ export function PostEditorForm({
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
                       onClick={(e) => {
-                        // Don't open modal if clicking on menu button
+                        // Only open modal if clicking directly on the image or video element
                         const target = e.target as HTMLElement;
-                        if (target.closest('button')) {
+                        const isImageOrVideo = target.tagName === 'IMG' || target.tagName === 'VIDEO';
+                        
+                        if (!isImageOrVideo) {
                           return;
                         }
                         
@@ -746,12 +748,12 @@ export function PostEditorForm({
                         <img
                           src={item.url}
                           alt=""
-                          className="w-full h-full object-cover pointer-events-none"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <video
                           src={item.url}
-                          className="w-full h-full object-cover pointer-events-none"
+                          className="w-full h-full object-cover"
                         />
                       )}
 
@@ -762,8 +764,11 @@ export function PostEditorForm({
                       </div>
 
                       <div 
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
                       >
                         <ImageOptionsMenu
                           onEdit={
