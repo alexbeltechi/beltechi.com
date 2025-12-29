@@ -155,8 +155,10 @@ export function ImageOptionsMenu({
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            onSetCover();
-            setOpen(false);
+            if (!isCover) {
+              setOpen(false);
+              onSetCover();
+            }
           }}
           disabled={isCover}
           className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2.5 ${

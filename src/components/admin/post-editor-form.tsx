@@ -84,7 +84,6 @@ export function PostEditorForm({
   const [tags, setTags] = useState("");
   const [publishDate, setPublishDate] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaPreview[]>([]);
-  const [coverIndex, setCoverIndex] = useState<number>(0);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
@@ -107,7 +106,6 @@ export function PostEditorForm({
   const [initialTags, setInitialTags] = useState("");
   const [initialPublishDate, setInitialPublishDate] = useState<string | null>(null);
   const [initialMediaIds, setInitialMediaIds] = useState<string[]>([]);
-  const [initialCoverIndex, setInitialCoverIndex] = useState<number>(0);
 
   // Check if form has been modified
   const currentMediaIds = media.map((m) => m.mediaId || m.id);
@@ -119,8 +117,7 @@ export function PostEditorForm({
       location !== initialLocation ||
       tags !== initialTags ||
       publishDate !== initialPublishDate ||
-      JSON.stringify(currentMediaIds) !== JSON.stringify(initialMediaIds) ||
-      coverIndex !== initialCoverIndex
+      JSON.stringify(currentMediaIds) !== JSON.stringify(initialMediaIds)
     : title.trim() !== "" ||
       description.trim() !== "" ||
       categories.length > 0 ||
@@ -273,7 +270,6 @@ export function PostEditorForm({
         setInitialPublishDate(dateVal);
 
         const mediaIds = (displayData.media as string[]) || [];
-        const coverMediaId = displayData.coverMediaId as string | undefined;
 
         if (mediaIds.length > 0) {
           const mediaRes = await fetch("/api/admin/media");
@@ -298,13 +294,6 @@ export function PostEditorForm({
 
           setMedia(existingMedia);
           setInitialMediaIds(mediaIds);
-
-          const foundCoverIndex = coverMediaId
-            ? mediaIds.findIndex((id: string) => id === coverMediaId)
-            : 0;
-          const coverIdx = foundCoverIndex >= 0 ? foundCoverIndex : 0;
-          setCoverIndex(coverIdx);
-          setInitialCoverIndex(coverIdx);
         }
       } catch (error) {
         console.error("Failed to fetch entry:", error);
@@ -375,24 +364,7 @@ export function PostEditorForm({
   };
 
   const removeMedia = (id: string) => {
-    const removedIndex = media.findIndex((m) => m.id === id);
     setMedia(media.filter((m) => m.id !== id));
-
-    if (removedIndex !== -1) {
-      if (removedIndex === coverIndex) {
-        setCoverIndex(0);
-      } else if (removedIndex < coverIndex) {
-        setCoverIndex(coverIndex - 1);
-      }
-    }
-  };
-
-  const [preventModalOpen, setPreventModalOpen] = useState(false);
-
-  const setAsCover = (index: number) => {
-    setPreventModalOpen(true);
-    setCoverIndex(index);
-    setTimeout(() => setPreventModalOpen(false), 100);
   };
 
   const handleFileDragOver = (e: React.DragEvent) => {
@@ -437,15 +409,6 @@ export function PostEditorForm({
     newMedia.splice(draggedIndex, 1);
     newMedia.splice(index, 0, draggedItem);
     setMedia(newMedia);
-
-    if (draggedIndex === coverIndex) {
-      setCoverIndex(index);
-    } else if (draggedIndex < coverIndex && index >= coverIndex) {
-      setCoverIndex(coverIndex - 1);
-    } else if (draggedIndex > coverIndex && index <= coverIndex) {
-      setCoverIndex(coverIndex + 1);
-    }
-
     setDraggedIndex(index);
   };
 
@@ -495,7 +458,7 @@ export function PostEditorForm({
         }
       }
 
-      const coverMediaId = mediaIds[coverIndex] || mediaIds[0];
+      const coverMediaId = mediaIds[0]; // First image is always the cover
 
       const endpoint = isEditMode
         ? `/api/admin/collections/posts/entries/${slug}`
@@ -536,7 +499,6 @@ export function PostEditorForm({
         setInitialTags(tags);
         setInitialPublishDate(publishDate);
         setInitialMediaIds(mediaIds);
-        setInitialCoverIndex(coverIndex);
       }
 
       if (onSaved) {
@@ -764,10 +726,12 @@ export function PostEditorForm({
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
                       onClick={(e) => {
-                        // Don't open modal if a menu action was just triggered
-                        if (preventModalOpen) {
+                        // Don't open modal if clicking on menu button
+                        const target = e.target as HTMLElement;
+                        if (target.closest('button')) {
                           return;
                         }
+                        
                         // Open modal when clicking on the image
                         if (item.isExisting && item.mediaId) {
                           setMediaDetailId(item.mediaId);
@@ -797,35 +761,29 @@ export function PostEditorForm({
                         </div>
                       </div>
 
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div 
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <ImageOptionsMenu
                           onEdit={
                             item.isExisting && item.mediaId
                               ? () => {
-                                  setPreventModalOpen(true);
                                   setMediaDetailId(item.mediaId!);
-                                  setTimeout(() => setPreventModalOpen(false), 100);
                                 }
                               : undefined
                           }
                           onCopyUrl={() => {
-                            setPreventModalOpen(true);
                             navigator.clipboard.writeText(item.url);
-                            setTimeout(() => setPreventModalOpen(false), 100);
                           }}
-                          onSetCover={() => setAsCover(index)}
                           onReplace={() => {
-                            setPreventModalOpen(true);
                             handleReplaceMedia(index);
-                            setTimeout(() => setPreventModalOpen(false), 100);
                           }}
                           onDelete={() => {
-                            setPreventModalOpen(true);
                             removeMedia(item.id);
-                            setTimeout(() => setPreventModalOpen(false), 100);
                           }}
-                          isCover={index === coverIndex}
-                          showCoverOption={true}
+                          isCover={false}
+                          showCoverOption={false}
                         />
                       </div>
 
@@ -834,7 +792,7 @@ export function PostEditorForm({
                         className="absolute top-2 left-2"
                       />
 
-                      {index === coverIndex && (
+                      {index === 0 && (
                         <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-500 rounded-full text-[10px] text-white font-medium">
                           <Star className="h-3 w-3 fill-white" />
                           Cover
