@@ -18,6 +18,9 @@ import {
   Quote,
   Minus,
   Upload,
+  MoreVertical,
+  Edit,
+  Replace,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
@@ -27,6 +30,19 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,19 +74,22 @@ export function ArticleEditorForm({
   isSheet = false,
 }: ArticleEditorFormProps) {
   const router = useRouter();
-  const isEditMode = !!slug;
+  const [currentSlug, setCurrentSlug] = useState<string | undefined>(slug);
+  const isEditMode = !!slug || !!currentSlug;
 
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [entry, setEntry] = useState<Entry | null>(null);
-  const [currentSlug, setCurrentSlug] = useState<string | undefined>(slug);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoSaved = useRef(false);
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
+  const [coverImageId, setCoverImageId] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<MediaItem | null>(null);
+  const [showCoverImagePicker, setShowCoverImagePicker] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState("");
   const [publishDate, setPublishDate] = useState<string | null>(null);
@@ -88,6 +107,7 @@ export function ArticleEditorForm({
   // Track initial values for dirty state
   const [initialTitle, setInitialTitle] = useState("");
   const [initialExcerpt, setInitialExcerpt] = useState("");
+  const [initialCoverImageId, setInitialCoverImageId] = useState<string | null>(null);
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [initialTags, setInitialTags] = useState("");
   const [initialPublishDate, setInitialPublishDate] = useState<string | null>(null);
@@ -97,12 +117,14 @@ export function ArticleEditorForm({
   const isDirty = isEditMode
     ? title !== initialTitle ||
       excerpt !== initialExcerpt ||
+      coverImageId !== initialCoverImageId ||
       JSON.stringify(categories.sort()) !== JSON.stringify(initialCategories.sort()) ||
       tags !== initialTags ||
       publishDate !== initialPublishDate ||
       JSON.stringify(blocks) !== initialBlocks
     : title.trim() !== "" ||
       excerpt.trim() !== "" ||
+      coverImageId !== null ||
       categories.length > 0 ||
       tags.trim() !== "" ||
       publishDate !== null ||
@@ -181,6 +203,7 @@ export function ArticleEditorForm({
 
         const titleVal = (entry.data.title as string) || "";
         const excerptVal = (entry.data.excerpt as string) || "";
+        const coverImageIdVal = (entry.data.coverImage as string) || null;
         const catsVal = (entry.data.categories as string[]) || [];
         const rawTags = entry.data.tags;
         const tagsVal = Array.isArray(rawTags)
@@ -191,6 +214,7 @@ export function ArticleEditorForm({
 
         setTitle(titleVal);
         setExcerpt(excerptVal);
+        setCoverImageId(coverImageIdVal);
         setCategories(catsVal);
         setTags(tagsVal);
         setPublishDate(dateVal);
@@ -198,10 +222,46 @@ export function ArticleEditorForm({
 
         setInitialTitle(titleVal);
         setInitialExcerpt(excerptVal);
+        setInitialCoverImageId(coverImageIdVal);
         setInitialCategories(catsVal);
         setInitialTags(tagsVal);
         setInitialPublishDate(dateVal);
         setInitialBlocks(JSON.stringify(blocksVal));
+
+        // Load cover image if exists
+        if (coverImageIdVal) {
+          try {
+            const mediaRes = await fetch(`/api/admin/media/${coverImageIdVal}`);
+            if (mediaRes.ok) {
+              const mediaData = await mediaRes.json();
+              setCoverImage(mediaData.data);
+            }
+          } catch (err) {
+            console.error('Failed to load cover image:', err);
+          }
+        }
+
+        // Load gallery media for all gallery blocks
+        const galleryBlocks = blocksVal.filter((b) => b.type === "gallery") as Array<{ id: string; mediaIds: string[] }>;
+        if (galleryBlocks.length > 0) {
+          const galleryMediaMap: Record<string, MediaItem[]> = {};
+          
+          for (const block of galleryBlocks) {
+            if (block.mediaIds && block.mediaIds.length > 0) {
+              try {
+                const mediaRes = await fetch(`/api/admin/media/bulk?ids=${block.mediaIds.join(',')}`);
+                if (mediaRes.ok) {
+                  const mediaData = await mediaRes.json();
+                  galleryMediaMap[block.id] = mediaData.data || [];
+                }
+              } catch (err) {
+                console.error(`Failed to load media for gallery ${block.id}:`, err);
+              }
+            }
+          }
+          
+          setGalleryMedia(galleryMediaMap);
+        }
       } catch (error) {
         console.error("Failed to fetch entry:", error);
         if (!isSheet) {
@@ -224,7 +284,7 @@ export function ArticleEditorForm({
         newBlock = { type: "text", id, html: "" };
         break;
       case "gallery":
-        newBlock = { type: "gallery", id, mediaIds: [], columns: 2 };
+        newBlock = { type: "gallery", id, mediaIds: [], layout: "classic", gap: 16 };
         break;
       case "video":
         newBlock = { type: "video", id, mediaId: "", caption: "" };
@@ -276,6 +336,11 @@ export function ArticleEditorForm({
         return;
       }
 
+      if (!coverImageId) {
+        alert("Please select a cover image to publish");
+        return;
+      }
+
       if (categories.length === 0) {
         alert("Please select at least one category to publish");
         return;
@@ -290,18 +355,20 @@ export function ArticleEditorForm({
     setSaving(true);
 
     try {
-      const endpoint = isEditMode
-        ? `/api/admin/collections/articles/entries/${slug}`
+      const effectiveSlug = currentSlug || slug;
+      const endpoint = effectiveSlug
+        ? `/api/admin/collections/articles/entries/${effectiveSlug}`
         : "/api/admin/collections/articles/entries";
 
       const res = await fetch(endpoint, {
-        method: isEditMode ? "PATCH" : "POST",
+        method: effectiveSlug ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
           data: {
             title,
             excerpt: excerpt || "",
+            coverImage: coverImageId,
             content: blocks,
             categories,
             tags: tags || "",
@@ -317,14 +384,19 @@ export function ArticleEditorForm({
 
       const data = await res.json();
 
-      if (isEditMode) {
-        setEntry(data.data);
-        setInitialTitle(title);
-        setInitialExcerpt(excerpt);
-        setInitialCategories([...categories]);
-        setInitialTags(tags);
-        setInitialPublishDate(publishDate);
-        setInitialBlocks(JSON.stringify(blocks));
+      // Update state with saved entry
+      setEntry(data.data);
+      setInitialTitle(title);
+      setInitialExcerpt(excerpt);
+      setInitialCoverImageId(coverImageId);
+      setInitialCategories([...categories]);
+      setInitialTags(tags);
+      setInitialPublishDate(publishDate);
+      setInitialBlocks(JSON.stringify(blocks));
+      
+      // Update currentSlug if it changed
+      if (data.data.slug) {
+        setCurrentSlug(data.data.slug);
       }
 
       if (onSaved) {
@@ -335,10 +407,11 @@ export function ArticleEditorForm({
       // Only update URL if not in sheet mode and slug changed
       if (!isSheet) {
         setAllowNavigation(true);
-        if (isEditMode && data.data.slug !== slug) {
-          router.push(`/admin/content/articles/${data.data.slug}`);
-        } else if (!isEditMode) {
-          router.push(`/admin/content/articles/${data.data.slug}`);
+        const savedSlug = data.data.slug;
+        if (effectiveSlug && savedSlug !== effectiveSlug) {
+          router.push(`/admin/content/articles/${savedSlug}`);
+        } else if (!effectiveSlug) {
+          router.push(`/admin/content/articles/${savedSlug}`);
         }
         router.refresh();
       }
@@ -605,6 +678,70 @@ export function ArticleEditorForm({
             />
           </div>
 
+          {/* Cover Image */}
+          <div className="space-y-2">
+            <Label>
+              Cover Image <span className="text-destructive">*</span>
+            </Label>
+            {coverImage ? (
+              <div className="flex items-center gap-3 p-3 border border-border rounded-lg bg-background">
+                {/* Thumbnail */}
+                <div className="relative w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
+                  <img
+                    src={coverImage.variants?.thumb?.url || coverImage.url}
+                    alt={coverImage.alt || "Cover image"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                {/* File info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {coverImage.originalName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {(coverImage.size / 1024 / 1024).toFixed(1)} MB
+                  </p>
+                </div>
+                
+                {/* Three-dot menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowCoverImagePicker(true)}>
+                      <Replace className="mr-2 h-4 w-4" />
+                      Replace
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setCoverImageId(null);
+                        setCoverImage(null);
+                      }}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Remove
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowCoverImagePicker(true)}
+                className="w-full justify-start"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Add Image
+              </Button>
+            )}
+          </div>
+
           {/* Categories & Date */}
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
@@ -805,6 +942,22 @@ export function ArticleEditorForm({
           setGalleryPickerBlockId(null);
         }}
         multiple={true}
+        accept={["image/*"]}
+      />
+
+      {/* Cover Image Picker */}
+      <MediaPicker
+        isOpen={showCoverImagePicker}
+        onClose={() => setShowCoverImagePicker(false)}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            const selectedItem = items[0];
+            setCoverImageId(selectedItem.id);
+            setCoverImage(selectedItem);
+          }
+          setShowCoverImagePicker(false);
+        }}
+        multiple={false}
         accept={["image/*"]}
       />
 
@@ -1039,6 +1192,44 @@ function BlockEditor({
                     </div>
                   ))}
                 </div>
+                
+                {/* Layout selector */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Layout</Label>
+                  <Select
+                    value={block.layout || "classic"}
+                    onValueChange={(value) => onUpdate({ layout: value as "classic" | "grid" })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="classic">Classic (Auto)</SelectItem>
+                      <SelectItem value="grid">Grid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Show columns only for grid layout */}
+                {block.layout === "grid" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Columns</Label>
+                    <Select
+                      value={String(block.columns || 3)}
+                      onValueChange={(value) => onUpdate({ columns: Number(value) })}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2">2 Columns</SelectItem>
+                        <SelectItem value="3">3 Columns</SelectItem>
+                        <SelectItem value="4">4 Columns</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <button
                   type="button"
                   onClick={onOpenGalleryPicker}

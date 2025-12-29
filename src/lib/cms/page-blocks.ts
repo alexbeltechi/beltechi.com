@@ -94,7 +94,8 @@ export interface PageGalleryBlock extends BasePageBlock {
   type: 'gallery';
   data: {
     mediaIds: string[];
-    columns: ColumnCount;
+    layout?: 'classic' | 'grid' | 'masonry' | 'carousel';
+    columns?: ColumnCount;
     gap: SpacingKey;
     aspectRatio?: AspectRatioKey;
   };
@@ -227,6 +228,7 @@ export const blockDefaults: Record<PageBlockType, Omit<PageBlock, 'id'>> = {
     marginBottom: 'md',
     data: {
       mediaIds: [],
+      layout: 'classic',
       columns: 3,
       gap: 'sm',
       aspectRatio: 'auto',

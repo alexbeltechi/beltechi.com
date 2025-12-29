@@ -69,13 +69,13 @@ export function PostEditorForm({
   preSelectedMediaIds = [],
 }: PostEditorFormProps) {
   const router = useRouter();
-  const isEditMode = !!slug;
+  const [currentSlug, setCurrentSlug] = useState<string | undefined>(slug);
+  const isEditMode = !!slug || !!currentSlug;
 
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [entry, setEntry] = useState<Entry | null>(null);
-  const [currentSlug, setCurrentSlug] = useState<string | undefined>(slug);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -460,12 +460,13 @@ export function PostEditorForm({
 
       const coverMediaId = mediaIds[0]; // First image is always the cover
 
-      const endpoint = isEditMode
-        ? `/api/admin/collections/posts/entries/${slug}`
+      const effectiveSlug = currentSlug || slug;
+      const endpoint = effectiveSlug
+        ? `/api/admin/collections/posts/entries/${effectiveSlug}`
         : "/api/admin/collections/posts/entries";
 
       const res = await fetch(endpoint, {
-        method: isEditMode ? "PATCH" : "POST",
+        method: effectiveSlug ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
@@ -490,15 +491,19 @@ export function PostEditorForm({
 
       const data = await res.json();
 
-      if (isEditMode) {
-        setEntry(data.data);
-        setInitialTitle(title);
-        setInitialDescription(description);
-        setInitialCategories([...categories]);
-        setInitialLocation(location);
-        setInitialTags(tags);
-        setInitialPublishDate(publishDate);
-        setInitialMediaIds(mediaIds);
+      // Update state with saved entry
+      setEntry(data.data);
+      setInitialTitle(title);
+      setInitialDescription(description);
+      setInitialCategories([...categories]);
+      setInitialLocation(location);
+      setInitialTags(tags);
+      setInitialPublishDate(publishDate);
+      setInitialMediaIds(mediaIds);
+      
+      // Update currentSlug if it changed
+      if (data.data.slug) {
+        setCurrentSlug(data.data.slug);
       }
 
       if (onSaved) {
@@ -509,10 +514,11 @@ export function PostEditorForm({
       // Only update URL if not in sheet mode and slug changed
       if (!isSheet) {
         setAllowNavigation(true);
-        if (isEditMode && data.data.slug !== slug) {
-          router.push(`/admin/content/posts/${data.data.slug}`);
-        } else if (!isEditMode) {
-          router.push(`/admin/content/posts/${data.data.slug}`);
+        const savedSlug = data.data.slug;
+        if (effectiveSlug && savedSlug !== effectiveSlug) {
+          router.push(`/admin/content/posts/${savedSlug}`);
+        } else if (!effectiveSlug) {
+          router.push(`/admin/content/posts/${savedSlug}`);
         }
         router.refresh();
       }

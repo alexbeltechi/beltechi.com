@@ -11,18 +11,36 @@ import type { MediaItem } from "@/lib/cms/types";
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  // Fetch published posts and categories in parallel
-  const [posts, allCategories] = await Promise.all([
+  // Fetch published posts, articles, and categories in parallel
+  const [posts, articles, allCategories] = await Promise.all([
     getPublishedEntries("posts"),
+    getPublishedEntries("articles"),
     listCategories(),
   ]);
 
-  // Get all unique media IDs
+  // Combine posts and articles, sort by date (newest first)
+  const allEntries = [...posts, ...articles].sort((a, b) => {
+    const dateA = new Date(a.data.date as string || a.createdAt).getTime();
+    const dateB = new Date(b.data.date as string || b.createdAt).getTime();
+    return dateB - dateA;
+  });
+
+  // Get all unique media IDs from posts
   const allMediaIds = new Set<string>();
+  
+  // From posts - use media array
   posts.forEach((post) => {
     const mediaIds = post.data.media as string[] | undefined;
     if (mediaIds) {
       mediaIds.forEach((id) => allMediaIds.add(id));
+    }
+  });
+  
+  // From articles - use coverImage
+  articles.forEach((article) => {
+    const coverImageId = article.data.coverImage as string | undefined;
+    if (coverImageId) {
+      allMediaIds.add(coverImageId);
     }
   });
 
@@ -32,22 +50,22 @@ export default async function HomePage() {
     mediaItems.map((item) => [item.id, item])
   );
 
-  // Get unique category IDs from posts
-  const postCategoryIds = new Set(
-    posts.flatMap((p) => {
-      const cats = p.data.categories as string[] | undefined;
+  // Get unique category IDs from all entries
+  const entryCategoryIds = new Set(
+    allEntries.flatMap((entry) => {
+      const cats = entry.data.categories as string[] | undefined;
       return cats || [];
     })
   );
 
   // Categories for tabs (only those shown on homepage)
   const tabCategories = allCategories
-    .filter((cat) => postCategoryIds.has(cat.id) && cat.showOnHomepage !== false)
+    .filter((cat) => entryCategoryIds.has(cat.id) && cat.showOnHomepage !== false)
     .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
-  // All categories used in posts (for label lookup in grid)
-  const allPostCategories = allCategories
-    .filter((cat) => postCategoryIds.has(cat.id))
+  // All categories used in entries (for label lookup in grid)
+  const allEntryCategories = allCategories
+    .filter((cat) => entryCategoryIds.has(cat.id))
     .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
   return (
@@ -57,7 +75,7 @@ export default async function HomePage() {
       
       {/* Category Tabs + Masonry Grid */}
       <CategoryTabs categories={tabCategories} />
-      <PostGrid posts={posts} mediaMap={mediaMap} categories={allPostCategories} />
+      <PostGrid posts={allEntries} mediaMap={mediaMap} categories={allEntryCategories} />
       
       {/* Services/About Section */}
       <ServicesSection />

@@ -16,9 +16,10 @@ interface CategoryPageProps {
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { category: categorySlug } = await params;
 
-  // Fetch all published posts and categories in parallel
-  const [allPosts, allCategoriesData] = await Promise.all([
+  // Fetch all published posts, articles, and categories in parallel
+  const [allPosts, allArticles, allCategoriesData] = await Promise.all([
     getPublishedEntries("posts"),
+    getPublishedEntries("articles"),
     listCategories(),
   ]);
 
@@ -31,36 +32,56 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
 
-  // Filter posts that have this category in their categories array
-  const posts = allPosts.filter((p) => {
-    const postCategories = p.data.categories as string[] | undefined;
-    return postCategories?.includes(matchedCategory.id);
+  // Combine posts and articles
+  const allEntries = [...allPosts, ...allArticles];
+
+  // Filter entries that have this category
+  const filteredEntries = allEntries.filter((entry) => {
+    const entryCategories = entry.data.categories as string[] | undefined;
+    return entryCategories?.includes(matchedCategory.id);
   });
 
-  // Get unique category IDs from all posts
-  const postCategoryIds = new Set(
-    allPosts.flatMap((p) => {
-      const cats = p.data.categories as string[] | undefined;
+  // Sort by date (newest first)
+  filteredEntries.sort((a, b) => {
+    const dateA = new Date(a.data.date as string || a.createdAt).getTime();
+    const dateB = new Date(b.data.date as string || b.createdAt).getTime();
+    return dateB - dateA;
+  });
+
+  // Get unique category IDs from all entries
+  const entryCategoryIds = new Set(
+    allEntries.flatMap((entry) => {
+      const cats = entry.data.categories as string[] | undefined;
       return cats || [];
     })
   );
 
   // Categories for tabs (only those shown on homepage)
   const tabCategories = allCategoriesData
-    .filter((cat) => postCategoryIds.has(cat.id) && cat.showOnHomepage !== false)
+    .filter((cat) => entryCategoryIds.has(cat.id) && cat.showOnHomepage !== false)
     .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
-  // All categories used in posts (for label lookup in grid)
-  const allPostCategories = allCategoriesData
-    .filter((cat) => postCategoryIds.has(cat.id))
+  // All categories used in entries (for label lookup in grid)
+  const allEntryCategories = allCategoriesData
+    .filter((cat) => entryCategoryIds.has(cat.id))
     .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
-  // Get media for filtered posts
+  // Get media for filtered entries
   const allMediaIds = new Set<string>();
-  posts.forEach((post) => {
-    const mediaIds = post.data.media as string[] | undefined;
-    if (mediaIds) {
-      mediaIds.forEach((id) => allMediaIds.add(id));
+  
+  // From posts - use media array
+  filteredEntries.forEach((entry) => {
+    if (entry.collection === "posts") {
+      const mediaIds = entry.data.media as string[] | undefined;
+      if (mediaIds) {
+        mediaIds.forEach((id) => allMediaIds.add(id));
+      }
+    } else if (entry.collection === "articles") {
+      // From articles - use coverImage
+      const coverImageId = entry.data.coverImage as string | undefined;
+      if (coverImageId) {
+        allMediaIds.add(coverImageId);
+      }
     }
   });
 
@@ -72,7 +93,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <main>
       <CategoryTabs categories={tabCategories} />
-      <PostGrid posts={posts} mediaMap={mediaMap} categories={allPostCategories} />
+      <PostGrid posts={filteredEntries} mediaMap={mediaMap} categories={allEntryCategories} />
     </main>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import type { PageGalleryBlock } from "@/lib/cms/page-blocks";
-import { spacingScale, aspectRatios } from "@/lib/design-tokens";
 import type { MediaItem } from "@/lib/cms/types";
+import { Gallery } from "@/components/shared/gallery";
+import { spacingScale } from "@/lib/design-tokens";
 
 interface GalleryBlockComponentProps {
   block: PageGalleryBlock;
@@ -17,14 +17,14 @@ export function GalleryBlockComponent({
   isMobile,
   mediaItems = [],
 }: GalleryBlockComponentProps) {
-  const { columns, gap, aspectRatio = 'auto' } = block.data;
+  const { layout = 'classic', columns = 3, gap, aspectRatio = 'auto' } = block.data;
   
   // Get mobile overrides if applicable
   const mobileColumns = block.mobile?.columns;
   const mobileGap = block.mobile?.gap;
   
   const effectiveColumns = isMobile && mobileColumns ? mobileColumns : columns;
-  const effectiveGap = isMobile && mobileGap ? mobileGap : gap;
+  const effectiveGap = isMobile && mobileGap ? spacingScale[mobileGap] : spacingScale[gap];
 
   if (mediaItems.length === 0) {
     return (
@@ -34,34 +34,18 @@ export function GalleryBlockComponent({
     );
   }
 
-  const aspectStyle = aspectRatio !== 'auto' 
-    ? { aspectRatio: aspectRatios[aspectRatio] }
-    : { aspectRatio: '1 / 1' };
+  // Convert gap from spacing scale to pixels
+  const gapInPixels = parseInt(effectiveGap.replace('px', ''));
 
   return (
-    <div 
-      className="grid"
-      style={{
-        gridTemplateColumns: `repeat(${effectiveColumns}, 1fr)`,
-        gap: spacingScale[effectiveGap],
-      }}
-    >
-      {mediaItems.map((item) => (
-        <div 
-          key={item.id}
-          className="relative overflow-hidden rounded-lg bg-muted"
-          style={aspectStyle}
-        >
-          <Image
-            src={item.variants?.thumb?.url || item.url}
-            alt={item.alt || item.originalName}
-            fill
-            className="object-cover"
-            sizes={`(max-width: 768px) ${100 / (mobileColumns || 1)}vw, ${100 / columns}vw`}
-          />
-        </div>
-      ))}
-    </div>
+    <Gallery
+      mediaItems={mediaItems}
+      layout={layout}
+      columns={effectiveColumns}
+      gap={gapInPixels}
+      aspectRatio={aspectRatio === 'auto' ? '3/2' : aspectRatio}
+      isMobile={isMobile}
+    />
   );
 }
 

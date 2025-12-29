@@ -321,24 +321,46 @@ export function BlockEditor({ block, onChange, isMobile }: BlockEditorProps) {
               </div>
             )}
           </div>
+          
+          {/* Layout selector */}
           <div className="space-y-2">
-            <Label>Columns (Desktop)</Label>
+            <Label>Layout</Label>
             <Select
-              value={String(block.data.columns)}
-              onValueChange={(v) => updateData("columns", Number(v))}
+              value={block.data.layout || "classic"}
+              onValueChange={(v) => updateData("layout", v)}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {columnOptions.map((col) => (
-                  <SelectItem key={col} value={String(col)}>
-                    {col} {col === 1 ? "Column" : "Columns"}
-                  </SelectItem>
-                ))}
+                <SelectItem value="classic">Classic (Auto)</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Show columns only for grid layout */}
+          {block.data.layout === "grid" && (
+            <div className="space-y-2">
+              <Label>Columns (Desktop)</Label>
+              <Select
+                value={String(block.data.columns || 3)}
+                onValueChange={(v) => updateData("columns", Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {columnOptions.map((col) => (
+                    <SelectItem key={col} value={String(col)}>
+                      {col} {col === 1 ? "Column" : "Columns"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
           <div className="space-y-2">
             <Label>Gap</Label>
             <Select

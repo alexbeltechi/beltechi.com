@@ -38,6 +38,9 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
     });
   };
 
+  // Determine the correct URL based on collection
+  const postUrl = post.collection === "articles" ? `/article/${post.slug}` : `/post/${post.slug}`;
+
   // Handle video thumbnails - use poster if available
   const isVideo = media.mime.startsWith("video/");
   const imageUrl = isVideo 
@@ -45,7 +48,7 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
     : (media.variants?.thumb?.url || media.url);
 
   return (
-    <Link href={`/post/${post.slug}`} className="block group">
+    <Link href={postUrl} className="block group">
       {/* Image */}
       <div
         className="relative w-full overflow-hidden bg-zinc-50 dark:bg-zinc-900"
@@ -126,6 +129,16 @@ export function PostGrid({ posts, mediaMap, categories }: PostGridProps) {
 
   // Get cover media item for each post (uses coverMediaId, falls back to first)
   const getPostThumbnail = (post: Entry): MediaItem | null => {
+    // For articles, use coverImage field
+    if (post.collection === "articles") {
+      const coverImageId = post.data.coverImage as string | undefined;
+      if (coverImageId && mediaMap.has(coverImageId)) {
+        return mediaMap.get(coverImageId) || null;
+      }
+      return null;
+    }
+    
+    // For posts, use media array
     const mediaIds = post.data.media as string[];
     if (!mediaIds || mediaIds.length === 0) return null;
     

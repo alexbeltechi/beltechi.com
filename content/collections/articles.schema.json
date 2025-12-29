@@ -18,10 +18,10 @@
       "placeholder": "Brief summary for previews..."
     },
     {
-      "key": "featuredImage",
+      "key": "coverImage",
       "type": "media",
-      "required": false,
-      "label": "Featured Image",
+      "required": true,
+      "label": "Cover Image",
       "accept": ["image/*"]
     },
     {
@@ -82,7 +82,7 @@
   "admin": {
     "titleField": "title",
     "subtitleField": "excerpt",
-    "thumbnailField": "featuredImage",
+    "thumbnailField": "coverImage",
     "defaultSort": {
       "field": "date",
       "direction": "desc"

@@ -175,8 +175,9 @@ export interface GalleryBlock {
   type: "gallery";
   id: string;
   mediaIds: string[];
+  layout?: "classic" | "grid" | "masonry" | "carousel";
   columns?: number;
-  layout?: "grid" | "masonry" | "carousel";
+  gap?: number;
 }
 
 export interface VideoBlock {
