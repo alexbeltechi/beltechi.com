@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
-import { getEntry } from "@/lib/db/entries";
+import { ChevronLeft, X } from "lucide-react";
+import { getEntry, getPublishedEntries } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/cms/media";
 import { listCategories } from "@/lib/cms/categories";
 import { PostCarousel } from "@/components/site/post-carousel";
+import { PostGrid } from "@/components/site/post-grid";
 import { Button } from "@/components/ui/button";
-import type { PostEntry } from "@/lib/cms/types";
+import type { PostEntry, MediaItem } from "@/lib/cms/types";
 
 // Force dynamic rendering to avoid MongoDB connection during build
 export const dynamic = 'force-dynamic';
@@ -58,33 +59,84 @@ export default async function PostPage({ params }: PostPageProps) {
       })
     : null;
 
+  // --- Related Posts Logic ---
+  const MAX_RELATED_POSTS = 12;
+  
+  // Get all published posts except current one
+  const allPosts = await getPublishedEntries("posts");
+  const otherPosts = allPosts.filter((p) => p.id !== post.id);
+
+  // Separate posts into related (same category) and others
+  const relatedPosts = otherPosts.filter((p) => {
+    const pCategories = (p.data.categories as string[]) || [];
+    return pCategories.some((catId) => categoryIds.includes(catId));
+  });
+
+  const unrelatedPosts = otherPosts.filter((p) => {
+    const pCategories = (p.data.categories as string[]) || [];
+    return !pCategories.some((catId) => categoryIds.includes(catId));
+  });
+
+  // Shuffle unrelated posts for randomness
+  const shuffledUnrelated = unrelatedPosts.sort(() => Math.random() - 0.5);
+
+  // Combine: related first, then random others, up to MAX_RELATED_POSTS
+  const displayPosts = [...relatedPosts, ...shuffledUnrelated].slice(0, MAX_RELATED_POSTS);
+
+  // Get all media for related posts
+  const relatedMediaIds = new Set<string>();
+  displayPosts.forEach((p) => {
+    const pMediaIds = (p.data.media as string[]) || [];
+    pMediaIds.forEach((id) => relatedMediaIds.add(id));
+  });
+
+  const relatedMediaItems = await getMediaByIds(Array.from(relatedMediaIds));
+  const relatedMediaMap = new Map<string, MediaItem>(
+    relatedMediaItems.map((item) => [item.id, item])
+  );
+
+  // Get unique category IDs from all posts for category labels
+  const relatedCategoryIds = new Set(
+    displayPosts.flatMap((p) => {
+      const cats = p.data.categories as string[] | undefined;
+      return cats || [];
+    })
+  );
+
+  const relatedCategories = allCategories
+    .filter((cat) => relatedCategoryIds.has(cat.id))
+    .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
+
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950">
       {/* Back button - fixed 16px from top and left on all breakpoints */}
       <div className="fixed top-4 left-4 z-50">
-        {/* Mobile: larger icon-only button (48px with 28px icon) */}
+        {/* Mobile: Back chevron */}
         <Button
           asChild
-          className="sm:hidden h-12 w-12 p-0 bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0"
+          variant="secondary"
+          size="icon-lg"
+          className="lg:hidden"
         >
           <Link href="/">
-            <ChevronLeft className="w-7 h-7" />
+            <ChevronLeft />
           </Link>
         </Button>
-        {/* Larger breakpoints: icon + label */}
+        {/* Desktop: Close X */}
         <Button
           asChild
-          className="hidden sm:inline-flex bg-white text-black hover:bg-gray-100 dark:bg-black dark:text-white dark:hover:bg-zinc-900 border-0 gap-1 pl-2 pr-4"
+          variant="secondary"
+          size="icon-lg"
+          className="hidden lg:inline-flex"
         >
           <Link href="/">
-            <ChevronLeft className="w-6 h-6" />
-            Back
+            <X />
           </Link>
         </Button>
       </div>
 
-      {/* Main content - 16px top margin on desktop only */}
-      <div className="flex flex-col items-center gap-4 lg:pt-4">
+      {/* Main content */}
+      <div className="flex flex-col items-center">
         {/* Carousel Section - full width to edge */}
         <div className="w-full">
           <PostCarousel media={orderedMedia} initialIndex={initialCarouselIndex} />
@@ -124,10 +176,19 @@ export default async function PostPage({ params }: PostPageProps) {
         </div>
       </div>
 
-      {/* More to explore section placeholder */}
-      <div className="mt-16 pb-10">
-        {/* TODO: Add masonry grid of related posts */}
-      </div>
+      {/* More to explore section */}
+      {displayPosts.length > 0 && (
+        <div className="mt-16 pb-10">
+          <h2 className="text-[15px] font-normal font-[family-name:var(--font-syne)] text-zinc-500 px-4 mb-4 text-center">
+            More to explore
+          </h2>
+          <PostGrid 
+            posts={displayPosts} 
+            mediaMap={relatedMediaMap} 
+            categories={relatedCategories} 
+          />
+        </div>
+      )}
     </main>
   );
 }

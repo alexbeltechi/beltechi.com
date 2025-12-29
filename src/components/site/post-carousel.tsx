@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { MediaItem } from "@/lib/cms/types";
 
 interface PostCarouselProps {
@@ -213,7 +214,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   };
 
   return (
-    <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden lg:px-4">
+    <div className="relative w-full bg-white dark:bg-zinc-950 overflow-hidden">
       <div
         ref={containerRef}
         className="relative w-full select-none overflow-hidden"
@@ -237,7 +238,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
           {validMedia.map((item, index) => (
             <div
               key={item.id}
-              className="relative h-full flex items-center justify-center overflow-hidden"
+              className="relative h-full flex items-center justify-center overflow-hidden p-0 lg:p-10"
               style={{ width: `${100 / validMedia.length}%` }}
             >
               {item.mime.startsWith("video/") ? (
@@ -254,7 +255,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                   width={item.width || 1200}
                   height={item.height || 800}
                   sizes="(max-width: 1024px) 100vw, 80vw"
-                  className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:h-auto lg:object-contain pointer-events-none"
+                  className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:h-full lg:object-contain pointer-events-none"
                   priority={index === currentIndex}
                   draggable={false}
                 />
@@ -265,37 +266,33 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
 
         {hasMultiple && (
           <>
-            <button
+            <Button
               onClick={goToPrevious}
               disabled={!canGoPrevious}
-              className={`absolute left-4 top-1/2 -translate-y-1/2 hidden lg:flex items-center justify-center w-9 h-9 rounded-md bg-white text-black dark:bg-black dark:text-white transition-all ${
-                canGoPrevious
-                  ? "hover:bg-gray-100 dark:hover:bg-zinc-900 opacity-100"
-                  : "opacity-30 cursor-not-allowed"
-              }`}
+              variant="secondary"
+              size="icon-lg"
+              className="absolute left-4 top-1/2 -translate-y-1/2 hidden lg:flex"
               aria-label="Previous"
             >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button
+              <ChevronLeft />
+            </Button>
+            <Button
               onClick={goToNext}
               disabled={!canGoNext}
-              className={`absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex items-center justify-center w-9 h-9 rounded-md bg-white text-black dark:bg-black dark:text-white transition-all ${
-                canGoNext
-                  ? "hover:bg-gray-100 dark:hover:bg-zinc-900 opacity-100"
-                  : "opacity-30 cursor-not-allowed"
-              }`}
+              variant="secondary"
+              size="icon-lg"
+              className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex"
               aria-label="Next"
             >
-              <ChevronRight className="w-6 h-6" />
-            </button>
+              <ChevronRight />
+            </Button>
           </>
         )}
       </div>
 
       {hasMultiple && (
         <div
-          className="w-full flex items-center justify-center bg-white dark:bg-zinc-950 pt-4"
+          className="w-full flex items-center justify-center bg-white dark:bg-zinc-950 pt-4 pb-4"
           style={{ gap: "6px" }}
         >
           {validMedia.map((_, index) => (
