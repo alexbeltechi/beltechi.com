@@ -83,12 +83,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <div className="flex flex-col items-center">
         {/* Article Header - centered with padding */}
         <div className="w-full max-w-4xl px-4 pt-20 pb-8">
-          <div className="space-y-4">
+          <div className="flex flex-col items-center text-center gap-6">
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">
               {String(article.data.title)}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
               {articleCategories.map((category) => (
                 <Link
                   key={category!.id}
@@ -98,11 +98,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   {category!.label}
                 </Link>
               ))}
-              {formattedDate ? <span>• {formattedDate}</span> : null}
+              {formattedDate ? <span>{formattedDate}</span> : null}
             </div>
 
             {article.data.excerpt ? (
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
                 {String(article.data.excerpt)}
               </p>
             ) : null}
@@ -110,7 +110,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </div>
 
         {/* Article Content Blocks */}
-        <div className="w-full max-w-4xl px-4 pb-16 space-y-8">
+        <div className="w-full max-w-4xl px-4 pb-16 space-y-6">
           {blocks.map((block) => {
             switch (block.type) {
               case "text":

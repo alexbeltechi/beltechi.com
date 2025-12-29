@@ -88,9 +88,37 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 mt-8">
-      {/* Language Selector */}
-      <div className="flex items-center justify-start w-full sm:w-[300px]">
+    <footer className="px-4 py-6 mt-6">
+      {/* Mobile Layout */}
+      <div className="flex flex-col items-center gap-4 sm:hidden">
+        {/* Copyright - centered */}
+        <span className="font-[family-name:var(--font-syne)] font-medium text-[15px] text-black dark:text-white">
+          © Beltechi {new Date().getFullYear()}
+        </span>
+
+        {/* Social Links - centered */}
+        <div className="flex items-center justify-center gap-2">
+          {socialLinks.map((social) => (
+            <Button
+              key={social.name}
+              variant="outline"
+              size="icon"
+              className="rounded-full size-10 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              asChild
+            >
+              <Link
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={social.name}
+              >
+                <social.icon className="size-4" />
+              </Link>
+            </Button>
+          ))}
+        </div>
+
+        {/* Language Selector - centered */}
         <Button
           variant="outline"
           className="rounded-full h-10 pl-3 pr-4 gap-2 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
@@ -99,37 +127,56 @@ export function Footer() {
           <span className="font-[family-name:var(--font-syne)] font-medium text-[15px] text-black dark:text-white">
             English
           </span>
-          <ChevronDown className="size-4 opacity-50" />
+          <span className="text-zinc-400 dark:text-zinc-500 text-[15px]">
+            United States
+          </span>
         </Button>
       </div>
 
-      {/* Copyright */}
-      <div className="flex items-center justify-center order-last sm:order-none">
+      {/* Desktop Layout */}
+      <div className="hidden sm:flex items-center justify-between">
+        {/* Language Selector - left */}
+        <div className="w-[300px]">
+          <Button
+            variant="outline"
+            className="rounded-full h-10 pl-3 pr-4 gap-2 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+          >
+            <Globe className="size-5" />
+            <span className="font-[family-name:var(--font-syne)] font-medium text-[15px] text-black dark:text-white">
+              English
+            </span>
+            <span className="text-zinc-400 dark:text-zinc-500 text-[15px]">
+              United States
+            </span>
+          </Button>
+        </div>
+
+        {/* Copyright - center */}
         <span className="font-[family-name:var(--font-syne)] font-medium text-[15px] text-black dark:text-white">
           © Beltechi {new Date().getFullYear()}
         </span>
-      </div>
 
-      {/* Social Links */}
-      <div className="flex items-center justify-end gap-2 w-full sm:w-[300px]">
-        {socialLinks.map((social) => (
-          <Button
-            key={social.name}
-            variant="outline"
-            size="icon"
-            className="rounded-full size-10 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-            asChild
-          >
-            <Link
-              href={social.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={social.name}
+        {/* Social Links - right */}
+        <div className="flex items-center justify-end gap-2 w-[300px]">
+          {socialLinks.map((social) => (
+            <Button
+              key={social.name}
+              variant="outline"
+              size="icon"
+              className="rounded-full size-10 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              asChild
             >
-              <social.icon className="size-4" />
-            </Link>
-          </Button>
-        ))}
+              <Link
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={social.name}
+              >
+                <social.icon className="size-4" />
+              </Link>
+            </Button>
+          ))}
+        </div>
       </div>
     </footer>
   );
