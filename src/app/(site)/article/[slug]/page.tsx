@@ -55,40 +55,35 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950">
-      {/* Back button - fixed position */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button
-          asChild
-          variant="secondary"
-          size="icon-lg"
-          className="lg:hidden"
-        >
-          <Link href="/">
-            <ChevronLeft />
-          </Link>
-        </Button>
-        <Button
-          asChild
-          variant="secondary"
-          size="icon-lg"
-          className="hidden lg:inline-flex"
-        >
-          <Link href="/">
-            <X />
-          </Link>
-        </Button>
+      {/* Spacer to position back button 16px below header */}
+      <div className="h-4" aria-hidden="true" />
+      
+      {/* Back button container - sticky at top 16px, initially 16px below header */}
+      <div className="sticky top-4 z-40 h-0">
+        <div className="absolute left-4 top-0">
+          <Button
+            asChild
+            variant="secondary"
+            size="icon-lg"
+          >
+            <Link href="/">
+              <ChevronLeft className="lg:hidden" />
+              <X className="hidden lg:block" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Main content */}
       <div className="flex flex-col items-center">
         {/* Article Header - centered with padding */}
-        <div className="w-full max-w-4xl px-4 pt-20 pb-8">
-          <div className="flex flex-col items-center text-center gap-6">
-            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">
+        <div className="w-full max-w-4xl px-8 pt-[80px] lg:pt-[120px] pb-[80px]">
+          <div className="flex flex-col items-center text-center gap-4">
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-center">
               {String(article.data.title)}
             </h1>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground text-center">
               {articleCategories.map((category) => (
                 <Link
                   key={category!.id}
@@ -110,7 +105,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </div>
 
         {/* Article Content Blocks */}
-        <div className="w-full max-w-4xl px-4 pb-16 space-y-6">
+        <div className="w-full max-w-[1024px] px-4 pb-16 space-y-6">
           {blocks.map((block) => {
             switch (block.type) {
               case "text":

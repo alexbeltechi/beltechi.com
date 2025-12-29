@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GalleryLightbox } from "@/components/shared/gallery-lightbox";
 import type { MediaItem } from "@/lib/cms/types";
 
 interface PostCarouselProps {
@@ -16,8 +17,10 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const dragStartX = useRef<number | null>(null);
   const dragStartY = useRef<number | null>(null);
+  const dragDistance = useRef<number>(0);
   const directionLock = useRef<"horizontal" | "vertical" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +77,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
       setIsDragging(false);
       setDragOffset(0);
       directionLock.current = null;
+      dragDistance.current = 0;
       return;
     }
 
@@ -93,6 +97,15 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     dragStartY.current = null;
     directionLock.current = null;
   }, [dragOffset, canGoNext, canGoPrevious, goToNext, goToPrevious]);
+
+  // Handle click to open lightbox (only if it wasn't a drag)
+  const handleImageClick = useCallback(() => {
+    // Only open lightbox if drag distance was minimal (not a swipe)
+    if (dragDistance.current < 10) {
+      setLightboxOpen(true);
+    }
+    dragDistance.current = 0;
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -118,6 +131,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
       dragStartX.current = e.touches[0].clientX;
       dragStartY.current = e.touches[0].clientY;
       directionLock.current = null;
+      dragDistance.current = 0;
       setIsDragging(true);
     };
 
@@ -128,6 +142,9 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
       const currentY = e.touches[0].clientY;
       const deltaX = currentX - dragStartX.current;
       const deltaY = currentY - dragStartY.current;
+      
+      // Track total drag distance
+      dragDistance.current = Math.max(dragDistance.current, Math.abs(deltaX), Math.abs(deltaY));
 
       // Determine direction lock if not yet set
       if (directionLock.current === null) {
@@ -182,6 +199,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     e.preventDefault();
     dragStartX.current = e.clientX;
     directionLock.current = "horizontal"; // Mouse drag is always horizontal
+    dragDistance.current = 0;
     setIsDragging(true);
   };
 
@@ -189,6 +207,9 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     if (!isDragging || dragStartX.current === null) return;
     const currentX = e.clientX;
     let offset = currentX - dragStartX.current;
+    
+    // Track total drag distance
+    dragDistance.current = Math.max(dragDistance.current, Math.abs(offset));
 
     if (
       (currentIndex === 0 && offset > 0) ||
@@ -241,8 +262,9 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
           {validMedia.map((item, index) => (
             <div
               key={item.id}
-              className="relative h-full flex items-center justify-center overflow-hidden p-0 lg:p-10"
+              className="relative h-full flex items-center justify-center overflow-hidden p-0 lg:p-10 cursor-pointer"
               style={{ width: `${100 / validMedia.length}%` }}
+              onClick={handleImageClick}
             >
               {item.mime.startsWith("video/") ? (
                 <video
@@ -250,6 +272,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                   poster={item.poster?.url}
                   controls
                   className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain"
+                  onClick={(e) => e.stopPropagation()} // Don't open lightbox when clicking video controls
                 />
               ) : (
                 <Image
@@ -312,6 +335,14 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
           ))}
         </div>
       )}
+
+      {/* Lightbox */}
+      <GalleryLightbox
+        mediaItems={validMedia}
+        initialIndex={currentIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 }

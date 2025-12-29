@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import type { MediaItem } from "@/lib/cms/types";
 import { cn } from "@/lib/utils";
+import { GalleryLightbox } from "../../gallery-lightbox";
 
 interface ClassicLayoutProps {
   mediaItems: MediaItem[];
@@ -11,20 +13,26 @@ interface ClassicLayoutProps {
 }
 
 /**
- * Classic Gallery Layout (WordPress-inspired)
+ * Classic Gallery Layout
  * 
  * Smart auto-layout rules:
  * - 1 image: Full width
- * - 2 images: Side-by-side (50/50)
- * - 3 images: First row 50/50, second row full width
- * - 4 images: 2x2 grid
- * - 5+ images: Repeat pattern, last odd image full width
+ * - 2 images: Each image full width (stacked)
+ * - 3+ images: Alternating pattern - 1 full width, then 2 side-by-side, repeat
  */
 export function ClassicLayout({ 
   mediaItems, 
   gap = 16,
   className 
 }: ClassicLayoutProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const handleImageClick = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
   if (mediaItems.length === 0) {
     return (
       <div className="bg-muted rounded-lg p-8 text-center text-muted-foreground">
@@ -38,54 +46,42 @@ export function ClassicLayout({
   // Single image: full width
   if (count === 1) {
     return (
-      <div className={cn("w-full", className)}>
-        <GalleryImage item={mediaItems[0]} />
-      </div>
+      <>
+        <div className={cn("w-full", className)}>
+          <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} />
+        </div>
+        <GalleryLightbox
+          mediaItems={mediaItems}
+          initialIndex={lightboxIndex}
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
+      </>
     );
   }
 
-  // Two images: side by side
+  // Two images: each full width (stacked)
   if (count === 2) {
     return (
-      <div 
-        className={cn("grid grid-cols-2", className)}
-        style={{ gap: `${gap}px` }}
-      >
-        {mediaItems.map((item) => (
-          <GalleryImage key={item.id} item={item} />
-        ))}
-      </div>
-    );
-  }
-
-  // Three images: 2 on first row, 1 full width on second
-  if (count === 3) {
-    return (
-      <div className={cn("space-y-0", className)} style={{ gap: `${gap}px` }}>
-        <div className="grid grid-cols-2 mb-0" style={{ gap: `${gap}px`, marginBottom: `${gap}px` }}>
-          <GalleryImage item={mediaItems[0]} />
-          <GalleryImage item={mediaItems[1]} />
+      <>
+        <div 
+          className={cn("flex flex-col", className)}
+          style={{ gap: `${gap}px` }}
+        >
+          <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} />
+          <GalleryImage item={mediaItems[1]} index={1} onClick={handleImageClick} />
         </div>
-        <GalleryImage item={mediaItems[2]} />
-      </div>
+        <GalleryLightbox
+          mediaItems={mediaItems}
+          initialIndex={lightboxIndex}
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
+      </>
     );
   }
 
-  // Four images: 2x2 grid
-  if (count === 4) {
-    return (
-      <div 
-        className={cn("grid grid-cols-2", className)}
-        style={{ gap: `${gap}px` }}
-      >
-        {mediaItems.map((item) => (
-          <GalleryImage key={item.id} item={item} />
-        ))}
-      </div>
-    );
-  }
-
-  // 5+ images: Process in groups of 4, last odd image full width
+  // 3+ images: Alternating pattern (1 full width, then 2 side-by-side, repeat)
   const rows: MediaItem[][] = [];
   let i = 0;
   
@@ -97,53 +93,84 @@ export function ClassicLayout({
       rows.push([mediaItems[i]]);
       i++;
     } else if (remaining === 2) {
-      // Last two images: side by side
-      rows.push([mediaItems[i], mediaItems[i + 1]]);
+      // Last two images: both full width (stacked)
+      rows.push([mediaItems[i]]);
+      rows.push([mediaItems[i + 1]]);
       i += 2;
-    } else if (remaining === 3) {
-      // Last three images: 2 + 1
-      rows.push([mediaItems[i], mediaItems[i + 1]]);
-      rows.push([mediaItems[i + 2]]);
-      i += 3;
     } else {
-      // 4 or more: take 4 in 2x2 grid
-      rows.push([mediaItems[i], mediaItems[i + 1]]);
-      rows.push([mediaItems[i + 2], mediaItems[i + 3]]);
-      i += 4;
+      // 3 or more: 1 full width, then 2 side-by-side
+      rows.push([mediaItems[i]]);
+      if (i + 2 < count) {
+        rows.push([mediaItems[i + 1], mediaItems[i + 2]]);
+        i += 3;
+      } else {
+        // Only 2 remaining
+        rows.push([mediaItems[i + 1]]);
+        rows.push([mediaItems[i + 2]]);
+        i += 3;
+      }
     }
   }
 
   return (
-    <div className={cn("flex flex-col", className)} style={{ gap: `${gap}px` }}>
-      {rows.map((row, rowIndex) => (
-        <div
-          key={rowIndex}
-          className={cn(
-            "grid",
-            row.length === 1 ? "grid-cols-1" : "grid-cols-2"
-          )}
-          style={{ gap: `${gap}px` }}
-        >
-          {row.map((item) => (
-            <GalleryImage key={item.id} item={item} />
-          ))}
-        </div>
-      ))}
-    </div>
+    <>
+      <div className={cn("flex flex-col", className)} style={{ gap: `${gap}px` }}>
+        {rows.map((row, rowIndex) => (
+          <div
+            key={rowIndex}
+            className={cn(
+              "grid items-start",
+              row.length === 1 ? "grid-cols-1" : "grid-cols-2"
+            )}
+            style={{ gap: `${gap}px` }}
+          >
+            {row.map((item) => {
+              const itemIndex = mediaItems.findIndex((m) => m.id === item.id);
+              return (
+                <GalleryImage 
+                  key={item.id} 
+                  item={item} 
+                  index={itemIndex}
+                  onClick={handleImageClick}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <GalleryLightbox
+        mediaItems={mediaItems}
+        initialIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
+    </>
   );
 }
 
 /**
- * Gallery image component with responsive sizing
+ * Gallery image component with original aspect ratio preserved
  */
-function GalleryImage({ item }: { item: MediaItem }) {
+function GalleryImage({ 
+  item, 
+  index,
+  onClick 
+}: { 
+  item: MediaItem;
+  index: number;
+  onClick: (index: number) => void;
+}) {
   return (
-    <div className="relative w-full aspect-[3/2] rounded-lg overflow-hidden bg-muted">
+    <div 
+      className="w-full overflow-hidden bg-muted cursor-pointer"
+      onClick={() => onClick(index)}
+    >
       <Image
         src={item.url}
         alt={item.alt || item.originalName}
-        fill
-        className="object-cover"
+        width={item.width || 1200}
+        height={item.height || 800}
+        className="w-full h-auto"
         sizes="(max-width: 768px) 100vw, 50vw"
       />
     </div>

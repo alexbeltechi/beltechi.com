@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  
+  // Check if we're on an article page
+  const isArticlePage = pathname?.startsWith("/article/");
 
   useEffect(() => {
     if (menuOpen) {
@@ -24,7 +29,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white dark:bg-zinc-950">
+      <header className={isArticlePage ? "bg-white dark:bg-zinc-950" : "sticky top-0 z-50 bg-white dark:bg-zinc-950"}>
         <nav className="flex items-center justify-between px-4 py-3 h-[56px]">
           {/* Logo - Left */}
           <Link href="/" className="text-h1-extrabold text-black dark:text-white shrink-0" onClick={closeMenu}>

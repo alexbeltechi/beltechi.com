@@ -125,8 +125,17 @@ export function TypePill({
   // Capitalize first letter
   const label = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
   
+  // Use light blue background for articles
+  const isArticle = type.toLowerCase() === "article";
+  
   return (
-    <Pill variant="neutral" className={className}>
+    <Pill 
+      variant="neutral" 
+      className={cn(
+        isArticle && "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+        className
+      )}
+    >
       {label}
     </Pill>
   );

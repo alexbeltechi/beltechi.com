@@ -421,12 +421,15 @@ export async function updateMedia(
  */
 export async function deleteMedia(
   id: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; updatedEntries?: number }> {
   const item = await mediaDb.getMediaById(id);
 
   if (!item) {
     return { success: false, error: "Media not found" };
   }
+
+  // First, clean up all references to this media in posts/articles
+  const { updatedCount } = await removeMediaReferences(id);
 
   // Collect all URLs/paths to delete
   const filesToDelete: string[] = [];
@@ -476,7 +479,7 @@ export async function deleteMedia(
   // Remove from MongoDB
   await mediaDb.deleteMedia(id);
 
-  return { success: true };
+  return { success: true, updatedEntries: updatedCount };
 }
 
 /**
@@ -551,12 +554,93 @@ export async function replaceMediaReferences(
   const { entries: articles } = await listEntries("articles");
   for (const article of articles) {
     let needsUpdate = false;
-    const articleData = article.data as { featuredImage?: string };
+    const articleData = article.data as { coverImage?: string };
 
-    // Check featuredImage
-    if (articleData.featuredImage === oldMediaId) {
-      articleData.featuredImage = newMediaId;
+    // Check coverImage
+    if (articleData.coverImage === oldMediaId) {
+      articleData.coverImage = newMediaId;
       needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      await updateEntry("articles", article.slug, { data: articleData });
+      updatedCount++;
+    }
+  }
+
+  return { updatedCount };
+}
+
+/**
+ * Remove media references from all entries (posts/articles)
+ * Used when deleting media to clean up references and prevent broken links
+ */
+export async function removeMediaReferences(
+  mediaId: string
+): Promise<{ updatedCount: number }> {
+  let updatedCount = 0;
+
+  // Update posts
+  const { entries: posts } = await listEntries("posts");
+  for (const post of posts) {
+    let needsUpdate = false;
+    const postData = post.data as { media?: string[]; coverMediaId?: string };
+
+    // Remove from media array
+    if (postData.media && Array.isArray(postData.media)) {
+      const originalLength = postData.media.length;
+      postData.media = postData.media.filter((id: string) => id !== mediaId);
+      if (postData.media.length !== originalLength) {
+        needsUpdate = true;
+      }
+    }
+
+    // Update coverMediaId if it was the deleted media
+    if (postData.coverMediaId === mediaId) {
+      // Set to first remaining media, or undefined if none left
+      postData.coverMediaId = postData.media?.[0] || undefined;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      await updateEntry("posts", post.slug, { data: postData });
+      updatedCount++;
+    }
+  }
+
+  // Update articles
+  const { entries: articles } = await listEntries("articles");
+  for (const article of articles) {
+    let needsUpdate = false;
+    const articleData = article.data as { 
+      coverImage?: string;
+      blocks?: Array<{ type: string; id: string; mediaIds?: string[]; mediaId?: string }>;
+    };
+
+    // Check coverImage
+    if (articleData.coverImage === mediaId) {
+      articleData.coverImage = undefined;
+      needsUpdate = true;
+    }
+
+    // Check blocks for gallery and image blocks
+    if (articleData.blocks && Array.isArray(articleData.blocks)) {
+      for (const block of articleData.blocks) {
+        // Gallery blocks have mediaIds array
+        if (block.type === "gallery" && block.mediaIds && Array.isArray(block.mediaIds)) {
+          const originalLength = block.mediaIds.length;
+          block.mediaIds = block.mediaIds.filter((id: string) => id !== mediaId);
+          if (block.mediaIds.length !== originalLength) {
+            needsUpdate = true;
+          }
+        }
+        
+        // Image blocks have a single mediaId
+        if (block.type === "image" && block.mediaId === mediaId) {
+          block.mediaId = undefined;
+          needsUpdate = true;
+        }
+      }
     }
 
     if (needsUpdate) {

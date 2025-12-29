@@ -57,8 +57,9 @@ import { CategoryInput } from "@/components/admin/category-input";
 import { DatePicker } from "@/components/admin/date-picker";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
 import { MediaPicker } from "@/components/admin/media-picker";
+import { GalleryBlockEditor } from "@/components/admin/gallery-block-editor";
 import { cn } from "@/lib/utils";
-import type { Block, Entry, MediaItem } from "@/lib/cms/types";
+import type { Block, Entry, GalleryBlock, MediaItem } from "@/lib/cms/types";
 
 interface ArticleEditorFormProps {
   slug?: string; // If provided, edit mode. If not, create mode.
@@ -103,6 +104,7 @@ export function ArticleEditorForm({
   const [updatePublishDialog, setUpdatePublishDialog] = useState(false);
   const [galleryPickerBlockId, setGalleryPickerBlockId] = useState<string | null>(null);
   const [galleryMedia, setGalleryMedia] = useState<Record<string, MediaItem[]>>({});
+  const [galleryReplaceIndex, setGalleryReplaceIndex] = useState<number | null>(null);
 
   // Track initial values for dirty state
   const [initialTitle, setInitialTitle] = useState("");
@@ -796,10 +798,30 @@ export function ArticleEditorForm({
                   block={block}
                   index={index}
                   total={blocks.length}
-                  onUpdate={(updates) => updateBlock(block.id, updates)}
+                  onUpdate={(updates) => {
+                    // Update block state
+                    updateBlock(block.id, updates);
+                    
+                    // If this is a gallery block and mediaIds changed, sync galleryMedia state
+                    if (block.type === "gallery" && 'mediaIds' in updates && updates.mediaIds) {
+                      const newMediaIds = updates.mediaIds as string[];
+                      setGalleryMedia((prev) => {
+                        const currentMedia = prev[block.id] || [];
+                        // Filter and reorder to match new mediaIds order
+                        const newMedia = newMediaIds
+                          .map(id => currentMedia.find(m => m.id === id))
+                          .filter((m): m is MediaItem => m !== undefined);
+                        return { ...prev, [block.id]: newMedia };
+                      });
+                    }
+                  }}
                   onRemove={() => removeBlock(block.id)}
                   onMove={(dir) => moveBlock(index, dir)}
                   onOpenGalleryPicker={() => setGalleryPickerBlockId(block.id)}
+                  onReplaceGalleryImage={(imageIndex) => {
+                    setGalleryPickerBlockId(block.id);
+                    setGalleryReplaceIndex(imageIndex);
+                  }}
                   galleryMedia={galleryMedia[block.id] || []}
                 />
               ))}
@@ -923,25 +945,44 @@ export function ArticleEditorForm({
       {/* Gallery Media Picker */}
       <MediaPicker
         isOpen={!!galleryPickerBlockId}
-        onClose={() => setGalleryPickerBlockId(null)}
+        onClose={() => {
+          setGalleryPickerBlockId(null);
+          setGalleryReplaceIndex(null);
+        }}
         onSelect={(items) => {
-          if (galleryPickerBlockId) {
-            // Update the gallery media state
-            setGalleryMedia((prev) => ({
-              ...prev,
-              [galleryPickerBlockId]: [...(prev[galleryPickerBlockId] || []), ...items],
-            }));
-            // Update the block's mediaIds
+          if (galleryPickerBlockId && items.length > 0) {
             const block = blocks.find((b) => b.id === galleryPickerBlockId);
             if (block && block.type === "gallery") {
-              const existingIds = block.mediaIds || [];
-              const newIds = items.map((item) => item.id);
-              updateBlock(galleryPickerBlockId, { mediaIds: [...existingIds, ...newIds] });
+              if (galleryReplaceIndex !== null) {
+                // Replace mode - replace the item at the specific index
+                const newMediaIds = [...(block.mediaIds || [])];
+                newMediaIds[galleryReplaceIndex] = items[0].id;
+                updateBlock(galleryPickerBlockId, { mediaIds: newMediaIds });
+                
+                // Update gallery media state
+                setGalleryMedia((prev) => {
+                  const existingMedia = [...(prev[galleryPickerBlockId] || [])];
+                  existingMedia[galleryReplaceIndex] = items[0];
+                  return { ...prev, [galleryPickerBlockId]: existingMedia };
+                });
+              } else {
+                // Add mode - append new items
+                const existingIds = block.mediaIds || [];
+                const newIds = items.map((item) => item.id);
+                updateBlock(galleryPickerBlockId, { mediaIds: [...existingIds, ...newIds] });
+                
+                // Update gallery media state
+                setGalleryMedia((prev) => ({
+                  ...prev,
+                  [galleryPickerBlockId]: [...(prev[galleryPickerBlockId] || []), ...items],
+                }));
+              }
             }
           }
           setGalleryPickerBlockId(null);
+          setGalleryReplaceIndex(null);
         }}
-        multiple={true}
+        multiple={galleryReplaceIndex === null}
         accept={["image/*"]}
       />
 
@@ -1076,6 +1117,7 @@ function BlockEditor({
   onRemove,
   onMove,
   onOpenGalleryPicker,
+  onReplaceGalleryImage,
   galleryMedia,
 }: {
   block: Block;
@@ -1085,6 +1127,7 @@ function BlockEditor({
   onRemove: () => void;
   onMove: (direction: "up" | "down") => void;
   onOpenGalleryPicker?: () => void;
+  onReplaceGalleryImage?: (imageIndex: number) => void;
   galleryMedia?: MediaItem[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1178,78 +1221,13 @@ function BlockEditor({
         )}
 
         {block.type === "gallery" && (
-          <div className="space-y-3">
-            {galleryMedia && galleryMedia.length > 0 ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  {galleryMedia.map((item) => (
-                    <div key={item.id} className="relative aspect-square rounded-md overflow-hidden bg-muted">
-                      <img
-                        src={item.variants?.thumb?.url || item.url}
-                        alt={item.alt || ""}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Layout selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs">Layout</Label>
-                  <Select
-                    value={block.layout || "classic"}
-                    onValueChange={(value) => onUpdate({ layout: value as "classic" | "grid" })}
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="classic">Classic (Auto)</SelectItem>
-                      <SelectItem value="grid">Grid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Show columns only for grid layout */}
-                {block.layout === "grid" && (
-                  <div className="space-y-2">
-                    <Label className="text-xs">Columns</Label>
-                    <Select
-                      value={String(block.columns || 3)}
-                      onValueChange={(value) => onUpdate({ columns: Number(value) })}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2">2 Columns</SelectItem>
-                        <SelectItem value="3">3 Columns</SelectItem>
-                        <SelectItem value="4">4 Columns</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                
-                <button
-                  type="button"
-                  onClick={onOpenGalleryPicker}
-                  className="w-full py-2 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md hover:border-muted-foreground transition-colors"
-                >
-                  + Add more images
-                </button>
-              </div>
-            ) : (
-              <div
-                className="text-center py-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
-                onClick={onOpenGalleryPicker}
-              >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-muted-foreground text-sm">
-                  Click to add images from library
-                </p>
-              </div>
-            )}
-          </div>
+          <GalleryBlockEditor
+            block={block as GalleryBlock}
+            galleryMedia={galleryMedia || []}
+            onUpdate={(updates) => onUpdate(updates)}
+            onOpenGalleryPicker={onOpenGalleryPicker}
+            onReplaceImage={onReplaceGalleryImage}
+          />
         )}
 
         {block.type === "video" && (

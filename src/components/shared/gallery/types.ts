@@ -47,7 +47,7 @@ export interface GalleryLayoutMeta {
 export const galleryLayoutMeta: Record<GalleryLayout, GalleryLayoutMeta> = {
   classic: {
     label: 'Classic',
-    description: 'Smart auto-layout (WordPress-style): adapts based on image count',
+    description: 'Alternating layout: 1 full width, then 2 side-by-side, repeat',
     supportsColumns: false,
   },
   grid: {

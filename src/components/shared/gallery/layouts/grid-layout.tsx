@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import type { MediaItem } from "@/lib/cms/types";
 import { cn } from "@/lib/utils";
+import { GalleryLightbox } from "../../gallery-lightbox";
 
 interface GridLayoutProps {
   mediaItems: MediaItem[];
@@ -24,6 +26,14 @@ export function GridLayout({
   aspectRatio = "3/2",
   className 
 }: GridLayoutProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const handleImageClick = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
   if (mediaItems.length === 0) {
     return (
       <div className="bg-muted rounded-lg p-8 text-center text-muted-foreground">
@@ -33,29 +43,38 @@ export function GridLayout({
   }
 
   return (
-    <div 
-      className={cn("grid", className)}
-      style={{
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        gap: `${gap}px`,
-      }}
-    >
-      {mediaItems.map((item) => (
-        <div
-          key={item.id}
-          className="relative w-full rounded-lg overflow-hidden bg-muted"
-          style={{ aspectRatio }}
-        >
-          <Image
-            src={item.url}
-            alt={item.alt || item.originalName}
-            fill
-            className="object-cover"
-            sizes={`(max-width: 768px) ${100 / columns}vw, ${100 / columns}vw`}
-          />
-        </div>
-      ))}
-    </div>
+    <>
+      <div 
+        className={cn("grid items-start", className)}
+        style={{
+          gridTemplateColumns: `repeat(${columns}, 1fr)`,
+          gap: `${gap}px`,
+        }}
+      >
+        {mediaItems.map((item, index) => (
+          <div
+            key={item.id}
+            className="w-full overflow-hidden bg-muted cursor-pointer"
+            onClick={() => handleImageClick(index)}
+          >
+            <Image
+              src={item.url}
+              alt={item.alt || item.originalName}
+              width={item.width || 1200}
+              height={item.height || 800}
+              className="w-full h-auto"
+              sizes={`(max-width: 768px) ${100 / columns}vw, ${100 / columns}vw`}
+            />
+          </div>
+        ))}
+      </div>
+      <GalleryLightbox
+        mediaItems={mediaItems}
+        initialIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
+    </>
   );
 }
 

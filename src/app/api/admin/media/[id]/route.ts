@@ -63,6 +63,9 @@ export async function DELETE(
     return NextResponse.json({ error: result.error }, { status: 404 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ 
+    success: true,
+    updatedEntries: result.updatedEntries || 0
+  });
 }
 

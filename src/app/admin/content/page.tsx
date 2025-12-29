@@ -47,6 +47,7 @@ import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import {
   PageHeader,
@@ -296,9 +297,10 @@ function ContentListPageContent() {
         mediaItem = mediaMap[media[0]];
       }
     } else if (entry.collection === "articles") {
-      const featuredImage = entry.data.featuredImage as string | undefined;
-      if (featuredImage) {
-        mediaItem = mediaMap[featuredImage];
+      // Articles use coverImage field
+      const coverImage = entry.data.coverImage as string | undefined;
+      if (coverImage) {
+        mediaItem = mediaMap[coverImage];
       }
     }
 
@@ -1080,6 +1082,9 @@ function ContentListPageContent() {
           hideCloseButton
           noOverlay
         >
+          <SheetTitle className="sr-only">
+            {editingEntry ? `Edit ${editingEntry.collection}` : `New ${isCreatingNew}`}
+          </SheetTitle>
           {editingEntry?.collection === "posts" && (
             <PostEditorForm
               slug={editingEntry.slug}

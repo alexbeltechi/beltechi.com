@@ -469,9 +469,15 @@ export default function MediaLibraryPage() {
       if (!res.ok) {
         throw new Error("Failed to delete");
       }
+      const data = await res.json();
       setMedia(media.filter((m) => m.id !== id));
       if (selectedMediaId === id) setSelectedMediaId(null);
-      toast.success("File deleted successfully");
+      
+      if (data.updatedEntries && data.updatedEntries > 0) {
+        toast.success(`File deleted. References removed from ${data.updatedEntries} post(s)/article(s).`);
+      } else {
+        toast.success("File deleted successfully");
+      }
     } catch (error) {
       console.error("Delete failed:", error);
       toast.error("Failed to delete the file. Please try again.");
@@ -492,14 +498,24 @@ export default function MediaLibraryPage() {
     setDeleting(true);
 
     try {
+      let totalUpdatedEntries = 0;
       for (const id of selectedIds) {
-        await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          const data = await res.json();
+          totalUpdatedEntries += data.updatedEntries || 0;
+        }
       }
 
       setMedia(media.filter((m) => !selectedIds.has(m.id)));
       setSelectedIds(new Set());
       setSelectedMediaId(null);
-      toast.success(`Successfully deleted ${selectedIds.size} file(s)`);
+      
+      if (totalUpdatedEntries > 0) {
+        toast.success(`Deleted ${selectedIds.size} file(s). References removed from ${totalUpdatedEntries} post(s)/article(s).`);
+      } else {
+        toast.success(`Successfully deleted ${selectedIds.size} file(s)`);
+      }
     } catch (error) {
       console.error("Bulk delete failed:", error);
       toast.error("Failed to delete some files");

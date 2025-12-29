@@ -85,6 +85,7 @@ export function PostEditorForm({
   const [publishDate, setPublishDate] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaPreview[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [mediaDetailId, setMediaDetailId] = useState<string | null>(null);
@@ -364,7 +365,7 @@ export function PostEditorForm({
   };
 
   const removeMedia = (id: string) => {
-    setMedia(media.filter((m) => m.id !== id));
+    setMedia((prev) => prev.filter((m) => m.id !== id));
   };
 
   const handleFileDragOver = (e: React.DragEvent) => {
@@ -404,11 +405,13 @@ export function PostEditorForm({
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === index) return;
 
-    const newMedia = [...media];
-    const draggedItem = newMedia[draggedIndex];
-    newMedia.splice(draggedIndex, 1);
-    newMedia.splice(index, 0, draggedItem);
-    setMedia(newMedia);
+    setMedia((prev) => {
+      const newMedia = [...prev];
+      const draggedItem = newMedia[draggedIndex];
+      newMedia.splice(draggedIndex, 1);
+      newMedia.splice(index, 0, draggedItem);
+      return newMedia;
+    });
     setDraggedIndex(index);
   };
 
@@ -727,11 +730,17 @@ export function PostEditorForm({
                   {media.map((item, index) => (
                     <div
                       key={item.id}
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
+                      draggable={menuOpenIndex === null}
+                      onDragStart={() => {
+                        if (menuOpenIndex !== null) return;
+                        handleDragStart(index);
+                      }}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
                       onClick={(e) => {
+                        // Don't open modal if menu is open
+                        if (menuOpenIndex !== null) return;
+                        
                         // Only open modal if clicking directly on the image or video element
                         const target = e.target as HTMLElement;
                         const isImageOrVideo = target.tagName === 'IMG' || target.tagName === 'VIDEO';
@@ -771,6 +780,9 @@ export function PostEditorForm({
 
                       <div 
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -795,6 +807,9 @@ export function PostEditorForm({
                           }}
                           isCover={false}
                           showCoverOption={false}
+                          onOpenChange={(open) => {
+                            setMenuOpenIndex(open ? index : null);
+                          }}
                         />
                       </div>
 

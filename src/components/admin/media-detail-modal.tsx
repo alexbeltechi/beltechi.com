@@ -150,7 +150,13 @@ export function MediaDetailModal({
     if (!confirm("Are you sure you want to delete this file permanently?")) return;
 
     try {
-      await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/media/${item.id}`, { method: "DELETE" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.updatedEntries && data.updatedEntries > 0) {
+          alert(`File deleted. References removed from ${data.updatedEntries} post(s)/article(s).`);
+        }
+      }
       onDelete?.(item.id);
       onClose();
     } catch (error) {

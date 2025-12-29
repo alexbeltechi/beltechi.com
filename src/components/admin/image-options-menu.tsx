@@ -216,6 +216,9 @@ export function ImageOptionsMenu({
     <div className={`relative ${className}`}>
       <button
         ref={buttonRef}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
         onClick={(e) => {
           e.stopPropagation();
           e.preventDefault();
