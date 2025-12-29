@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, X } from "lucide-react";
 import { getEntry } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/db/media";
-import { listCategories } from "@/lib/db/categories";
+import { listCategories, type Category } from "@/lib/db/categories";
 import { Button } from "@/components/ui/button";
 import { Gallery } from "@/components/shared/gallery";
 import type { Entry, GalleryBlock, Block, MediaItem } from "@/lib/cms/types";
@@ -29,28 +29,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const allCategories = await listCategories();
   const articleCategories = categoryIds
     .map((id) => allCategories.find((c) => c.id === id))
-    .filter((cat): cat is NonNullable<typeof cat> => cat !== undefined);
-
-  // Build category display with separators
-  const categoryElements: React.ReactNode[] = [];
-  articleCategories.forEach((cat, idx) => {
-    categoryElements.push(
-      <Link
-        key={cat.id}
-        href={`/${cat.slug}`}
-        className="hover:text-foreground transition-colors"
-      >
-        {cat.label}
-      </Link>
-    );
-    if (idx < articleCategories.length - 1) {
-      categoryElements.push(<span key={`sep-${cat.id}`}>•</span>);
-    }
-  });
+    .filter(Boolean);
 
   // Format date
   const articleDate = article.data.date as string | undefined;
-  const formattedDate = articleDate
+  const formattedDate: string | null = articleDate
     ? new Date(articleDate).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -101,28 +84,28 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         {/* Article Header - centered with padding */}
         <div className="w-full max-w-4xl px-4 pt-20 pb-8">
           <div className="space-y-4">
-            {/* Title */}
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">
-              {article.data.title as string}
+              {String(article.data.title)}
             </h1>
 
-            {/* Categories and Date */}
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              {categoryElements}
-              {formattedDate && (
-                <>
-                  <span>•</span>
-                  <span>{formattedDate}</span>
-                </>
-              )}
+              {articleCategories.map((category) => (
+                <Link
+                  key={category!.id}
+                  href={`/${category!.slug}`}
+                  className="hover:text-foreground transition-colors"
+                >
+                  {category!.label}
+                </Link>
+              ))}
+              {formattedDate ? <span>• {formattedDate}</span> : null}
             </div>
 
-            {/* Excerpt if exists */}
-            {article.data.excerpt && (
+            {article.data.excerpt ? (
               <p className="text-lg text-muted-foreground leading-relaxed">
-                {article.data.excerpt as string}
+                {String(article.data.excerpt)}
               </p>
-            )}
+            ) : null}
           </div>
         </div>
 
