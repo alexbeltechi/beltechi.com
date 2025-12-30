@@ -59,10 +59,12 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
       >
         {imageUrl ? (
           <>
-            {/* Show blur background while loading */}
-            {blurDataURL && !isLoaded && (
+            {/* Blur placeholder - fades out as image fades in */}
+            {blurDataURL && (
               <div 
-                className="absolute inset-0 bg-zinc-50 dark:bg-zinc-900"
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  isLoaded ? 'opacity-0' : 'opacity-100'
+                }`}
                 style={{
                   backgroundImage: `url(${blurDataURL})`,
                   backgroundSize: 'cover',
@@ -73,8 +75,10 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
               />
             )}
             {/* Fallback grey for images without blur */}
-            {!blurDataURL && !isLoaded && (
-              <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-900" />
+            {!blurDataURL && (
+              <div className={`absolute inset-0 bg-zinc-50 dark:bg-zinc-900 transition-opacity duration-500 ${
+                isLoaded ? 'opacity-0' : 'opacity-100'
+              }`} />
             )}
             <Image
               src={imageUrl}
