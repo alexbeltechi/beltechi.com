@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Gallery } from "@/components/shared/gallery";
 import type { Entry, GalleryBlock, Block, MediaItem } from "@/lib/cms/types";
 
+// Use ISR - regenerate every 60 seconds for instant navigation
+export const revalidate = 60;
+
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
 }

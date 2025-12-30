@@ -6,8 +6,8 @@ import { listCategories } from "@/lib/db/categories";
 import type { MediaItem } from "@/lib/cms/types";
 import { notFound } from "next/navigation";
 
-// Force dynamic rendering to avoid MongoDB connection during build
-export const dynamic = 'force-dynamic';
+// Use ISR - regenerate every 60 seconds for instant navigation
+export const revalidate = 60;
 
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
