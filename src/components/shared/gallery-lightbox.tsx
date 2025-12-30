@@ -37,6 +37,7 @@ export function GalleryLightbox({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set([initialIndex]));
   const dragStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +46,22 @@ export function GalleryLightbox({
   // Sync initial index when it changes
   useEffect(() => {
     setCurrentIndex(initialIndex);
+    setLoadingImages((prev) => new Set(prev).add(initialIndex));
   }, [initialIndex]);
+
+  // Mark image as loading when index changes
+  useEffect(() => {
+    setLoadingImages((prev) => new Set(prev).add(currentIndex));
+  }, [currentIndex]);
+
+  // Handle image load complete
+  const handleImageLoad = (index: number) => {
+    setLoadingImages((prev) => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  };
 
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < mediaItems.length - 1;
@@ -187,17 +203,31 @@ export function GalleryLightbox({
             />
           ) : (
             <div className="relative w-full h-full flex items-center justify-center">
+              {/* Show blur background while loading */}
+              {currentItem.blurDataURL && loadingImages.has(currentIndex) && (
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${currentItem.blurDataURL})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'blur(20px)',
+                    transform: 'scale(1.1)',
+                  }}
+                />
+              )}
               <Image
                 key={currentItem.id}
                 src={currentItem.url}
                 alt={currentItem.alt || currentItem.originalName}
                 width={currentItem.width || 2000}
                 height={currentItem.height || 1500}
-                className="max-w-full max-h-full w-auto h-auto object-contain"
+                className="max-w-full max-h-full w-auto h-auto object-contain relative z-10"
                 style={{ maxHeight: "calc(100vh - 128px)" }}
                 sizes="100vw"
                 quality={85}
                 priority
+                onLoad={() => handleImageLoad(currentIndex)}
                 draggable={false}
               />
             </div>

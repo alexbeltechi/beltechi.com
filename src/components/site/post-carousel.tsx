@@ -18,6 +18,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set([initialIndex]));
   const dragStartX = useRef<number | null>(null);
   const dragStartY = useRef<number | null>(null);
   const dragDistance = useRef<number>(0);
@@ -36,6 +37,20 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     window.addEventListener("resize", checkDesktop);
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
+
+  // Mark image as loading when index changes
+  useEffect(() => {
+    setLoadingImages((prev) => new Set(prev).add(currentIndex));
+  }, [currentIndex]);
+
+  // Handle image load complete
+  const handleImageLoad = (index: number) => {
+    setLoadingImages((prev) => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  };
 
   // Calculate optimal aspect ratio for mobile container
   // Uses the tallest image's aspect ratio, capped at 3:4 (0.75)
@@ -275,19 +290,36 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                   onClick={(e) => e.stopPropagation()} // Don't open lightbox when clicking video controls
                 />
               ) : (
-                <Image
-                  src={item.url}
-                  alt={item.alt || item.originalName}
-                  width={item.width || 1200}
-                  height={item.height || 800}
-                  sizes="(max-width: 1024px) 100vw, 80vw"
-                  quality={80}
-                  placeholder={item.blurDataURL ? "blur" : "empty"}
-                  blurDataURL={item.blurDataURL}
-                  className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none"
-                  priority={index === currentIndex}
-                  draggable={false}
-                />
+                <>
+                  {/* Show blur background while loading */}
+                  {item.blurDataURL && loadingImages.has(index) && (
+                    <div 
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage: `url(${item.blurDataURL})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'blur(20px)',
+                        transform: 'scale(1.1)',
+                      }}
+                    />
+                  )}
+                  <Image
+                    src={item.url}
+                    alt={item.alt || item.originalName}
+                    width={item.width || 1200}
+                    height={item.height || 800}
+                    sizes="(max-width: 1024px) 100vw, 80vw"
+                    quality={80}
+                    placeholder={item.blurDataURL ? "blur" : "empty"}
+                    blurDataURL={item.blurDataURL}
+                    className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none relative z-10"
+                    priority={index === initialIndex}
+                    loading={index === initialIndex ? "eager" : "lazy"}
+                    onLoad={() => handleImageLoad(index)}
+                    draggable={false}
+                  />
+                </>
               )}
             </div>
           ))}
