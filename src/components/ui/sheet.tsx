@@ -50,17 +50,24 @@ function SheetContent({
   side = "right",
   hideCloseButton = false,
   noOverlay = false,
+  disableEscapeKey = false,
+  disableOutsideClick = false,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
   hideCloseButton?: boolean
   noOverlay?: boolean
+  disableEscapeKey?: boolean
+  disableOutsideClick?: boolean
 }) {
   return (
     <SheetPortal>
       {!noOverlay && <SheetOverlay />}
       <SheetPrimitive.Content
         data-slot="sheet-content"
+        onEscapeKeyDown={disableEscapeKey ? (e) => e.preventDefault() : undefined}
+        onInteractOutside={disableOutsideClick ? (e) => e.preventDefault() : undefined}
+        onPointerDownOutside={disableOutsideClick ? (e) => e.preventDefault() : undefined}
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
           side === "right" &&

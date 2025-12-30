@@ -85,11 +85,8 @@ export function ArticleEditorForm({
 
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
-  const [autoSaving, setAutoSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [entry, setEntry] = useState<Entry | null>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const hasAutoSaved = useRef(false);
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -510,123 +507,7 @@ export function ArticleEditorForm({
     }
   };
 
-  // Autosave function
-  const autosave = useCallback(async () => {
-    if (saving || autoSaving) return;
-    if (entry?.status === "published") return;
-
-    setAutoSaving(true);
-
-    try {
-      const effectiveSlug = currentSlug;
-      const isCreating = !effectiveSlug;
-
-      const endpoint = isCreating
-        ? "/api/admin/collections/articles/entries"
-        : `/api/admin/collections/articles/entries/${effectiveSlug}`;
-
-      const res = await fetch(endpoint, {
-        method: isCreating ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "draft",
-          data: {
-            title: title || "Untitled",
-            excerpt: excerpt || "",
-            content: blocks,
-            categories,
-            tags: tags || "",
-            date:
-              publishDate || initialPublishDate || new Date().toISOString(),
-          },
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        hasAutoSaved.current = true;
-
-        setEntry(data.data);
-        setInitialTitle(title || "Untitled");
-        setInitialExcerpt(excerpt);
-        setInitialCategories([...categories]);
-        setInitialTags(tags);
-        setInitialPublishDate(publishDate);
-        setInitialBlocks(JSON.stringify(blocks));
-
-        if (isCreating && data.data?.slug) {
-          setCurrentSlug(data.data.slug);
-        }
-      }
-    } catch (error) {
-      console.error("Autosave failed:", error);
-    } finally {
-      setAutoSaving(false);
-    }
-  }, [
-    saving,
-    autoSaving,
-    entry?.status,
-    currentSlug,
-    title,
-    excerpt,
-    blocks,
-    categories,
-    tags,
-    publishDate,
-    initialPublishDate,
-  ]);
-
-  // Debounced autosave effect
-  useEffect(() => {
-    if (loading) return;
-    if (entry?.status === "published") return;
-
-    if (
-      !currentSlug &&
-      !title.trim() &&
-      !excerpt.trim() &&
-      categories.length === 0 &&
-      blocks.length === 0
-    ) {
-      return;
-    }
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      autosave();
-    }, 1500);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [
-    title,
-    excerpt,
-    categories,
-    tags,
-    publishDate,
-    blocks,
-    loading,
-    entry?.status,
-    currentSlug,
-    autosave,
-  ]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
+  // Autosave disabled - only manual saves
 
   const handleDelete = async () => {
     if (!isEditMode) return;
@@ -663,12 +544,12 @@ export function ArticleEditorForm({
   };
 
   const handleClose = useCallback(() => {
-    if (entry?.status === "published" && isDirty && !allowNavigation) {
+    if (isDirty && !allowNavigation) {
       setShowUnsavedModal(true);
       return;
     }
     onClose?.();
-  }, [entry?.status, isDirty, allowNavigation, onClose]);
+  }, [isDirty, allowNavigation, onClose]);
 
   // Preview function
   const handlePreview = () => {
@@ -741,32 +622,19 @@ export function ArticleEditorForm({
             </Button>
           )}
 
-          {/* Save status */}
-          {entry?.status === "published" ? (
-            <Button
-              onClick={() => handleSave("published")}
-              disabled={saving || !isDirty}
-              variant="secondary"
-              size="sm"
-              className="h-9"
-            >
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              {isDirty ? "Save" : "Saved"}
-            </Button>
-          ) : (
-            <Button variant="secondary" size="sm" className="h-9" disabled>
-              {autoSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Saved"
-              )}
-            </Button>
-          )}
+          {/* Save button */}
+          <Button
+            onClick={() => handleSave(entry?.status === "published" ? "published" : "draft")}
+            disabled={saving || !isDirty}
+            variant="secondary"
+            size="sm"
+            className="h-9"
+          >
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {isDirty ? "Save" : "Saved"}
+          </Button>
 
           {/* Publish button */}
           <Button
@@ -1031,6 +899,47 @@ export function ArticleEditorForm({
                   setGalleryPickerBlockId(block.id);
                   setGalleryReplaceIndex(imageIndex);
                 }}
+                onUploadGalleryFiles={async (files) => {
+                  // Upload files to media API
+                  const uploadedMedia: MediaItem[] = [];
+                  for (const file of files) {
+                    try {
+                      const formData = new FormData();
+                      formData.append("file", file);
+
+                      const uploadRes = await fetch("/api/admin/media", {
+                        method: "POST",
+                        body: formData,
+                      });
+
+                      if (uploadRes.ok) {
+                        const uploadData = await uploadRes.json();
+                        uploadedMedia.push(uploadData.data);
+                      }
+                    } catch (err) {
+                      console.error("Failed to upload file:", err);
+                    }
+                  }
+
+                  if (uploadedMedia.length > 0) {
+                    // Update the block with new media IDs
+                    const existingIds =
+                      block.type === "gallery" ? block.mediaIds || [] : [];
+                    const newIds = uploadedMedia.map((m) => m.id);
+                    updateBlock(block.id, {
+                      mediaIds: [...existingIds, ...newIds],
+                    });
+
+                    // Update gallery media state
+                    setGalleryMedia((prev) => ({
+                      ...prev,
+                      [block.id]: [
+                        ...(prev[block.id] || []),
+                        ...uploadedMedia,
+                      ],
+                    }));
+                  }
+                }}
                 galleryMedia={galleryMedia[block.id] || []}
               />
             ))}
@@ -1253,6 +1162,7 @@ function BlockEditor({
   onMove,
   onOpenGalleryPicker,
   onReplaceGalleryImage,
+  onUploadGalleryFiles,
   galleryMedia,
 }: {
   block: Block;
@@ -1265,6 +1175,7 @@ function BlockEditor({
   onMove: (direction: "up" | "down") => void;
   onOpenGalleryPicker?: () => void;
   onReplaceGalleryImage?: (imageIndex: number) => void;
+  onUploadGalleryFiles?: (files: File[]) => Promise<void>;
   galleryMedia?: MediaItem[];
 }) {
   // Get icon for block type
@@ -1347,7 +1258,11 @@ function BlockEditor({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onRemove}
+            onClick={() => {
+              if (window.confirm("Delete this block? This cannot be undone.")) {
+                onRemove();
+              }
+            }}
           >
             <X className="h-4 w-4 text-zinc-400" />
           </Button>
@@ -1414,6 +1329,7 @@ function BlockEditor({
             onUpdate={(updates) => onUpdate(updates)}
             onOpenGalleryPicker={onOpenGalleryPicker}
             onReplaceImage={onReplaceGalleryImage}
+            onUploadFiles={onUploadGalleryFiles}
           />
         )}
       </div>

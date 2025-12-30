@@ -596,14 +596,13 @@ export function PostEditorForm({
   };
 
   const handleClose = useCallback(() => {
-    // For published entries, check for unsaved changes
-    // For drafts, changes are autosaved so just close
-    if (entry?.status === "published" && isDirty && !allowNavigation) {
+    // Check for unsaved changes before closing
+    if (isDirty && !allowNavigation) {
       setShowUnsavedModal(true);
       return;
     }
     onClose?.();
-  }, [entry?.status, isDirty, allowNavigation, onClose]);
+  }, [isDirty, allowNavigation, onClose]);
 
   if (loading) {
     return (

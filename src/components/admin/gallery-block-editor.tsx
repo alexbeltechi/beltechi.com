@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +9,7 @@ import {
   Plus,
   Upload,
   LayoutGrid,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { GalleryBlock, MediaItem } from "@/lib/cms/types";
 
 interface GalleryBlockEditorProps {
@@ -32,6 +34,7 @@ interface GalleryBlockEditorProps {
   onUpdate: (updates: Partial<GalleryBlock>) => void;
   onOpenGalleryPicker?: () => void;
   onReplaceImage?: (index: number) => void;
+  onUploadFiles?: (files: File[]) => Promise<void>;
 }
 
 export function GalleryBlockEditor({
@@ -40,7 +43,67 @@ export function GalleryBlockEditor({
   onUpdate,
   onOpenGalleryPicker,
   onReplaceImage,
+  onUploadFiles,
 }: GalleryBlockEditorProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0 && onUploadFiles) {
+      const validFiles = Array.from(files).filter(
+        (file) =>
+          file.type.startsWith("image/") || file.type.startsWith("video/")
+      );
+      if (validFiles.length > 0) {
+        setIsUploading(true);
+        try {
+          await onUploadFiles(validFiles);
+        } finally {
+          setIsUploading(false);
+        }
+      }
+    }
+  };
+
+  const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0 && onUploadFiles) {
+      const validFiles = Array.from(files).filter(
+        (file) =>
+          file.type.startsWith("image/") || file.type.startsWith("video/")
+      );
+      if (validFiles.length > 0) {
+        setIsUploading(true);
+        try {
+          await onUploadFiles(validFiles);
+        } finally {
+          setIsUploading(false);
+        }
+      }
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
   // Move image left (decrease index)
   const moveImageLeft = useCallback(
     (index: number) => {
@@ -187,8 +250,67 @@ export function GalleryBlockEditor({
           {/* Image grid with layout preview */}
           {renderLayoutPreview()}
 
+          {/* Add more images - same as empty state */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*"
+            onChange={handleFileInput}
+            className="hidden"
+          />
+          <div
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={cn(
+              "text-center py-8 border-2 border-dashed rounded-lg transition-colors bg-muted/50",
+              isDragging
+                ? "border-primary bg-primary/5"
+                : "border-border hover:border-muted-foreground"
+            )}
+          >
+            {isUploading ? (
+              <div className="py-4">
+                <Loader2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground animate-spin" />
+                <p className="text-muted-foreground">Uploading...</p>
+              </div>
+            ) : (
+              <>
+                <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-muted-foreground mb-1">
+                  {isDragging ? "Drop files here" : "Drag & drop files here"}
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Images and videos (up to 20)
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onOpenGalleryPicker}
+                  >
+                    <ImageIcon className="mr-2 h-4 w-4" />
+                    Library
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Layout selector */}
-          <div className="space-y-2">
+          <div>
             <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
               Layout
             </label>
@@ -198,7 +320,7 @@ export function GalleryBlockEditor({
                 onUpdate({ layout: value as "classic" | "grid" })
               }
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 mt-2">
                 <div className="flex items-center gap-2">
                   <LayoutGrid className="h-4 w-4 text-muted-foreground" />
                   <SelectValue />
@@ -213,7 +335,7 @@ export function GalleryBlockEditor({
 
           {/* Show columns only for grid layout */}
           {block.layout === "grid" && (
-            <div className="space-y-2">
+            <div>
               <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
                 Columns
               </label>
@@ -221,7 +343,7 @@ export function GalleryBlockEditor({
                 value={String(block.columns || 3)}
                 onValueChange={(value) => onUpdate({ columns: Number(value) })}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-9 mt-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -232,28 +354,64 @@ export function GalleryBlockEditor({
               </Select>
             </div>
           )}
-
-          {/* Add more images button */}
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            onClick={onOpenGalleryPicker}
-          >
-            <ImageIcon className="w-4 h-4 mr-2" />
-            Add more images
-          </Button>
         </div>
       ) : (
         <div
-          className="text-center py-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
-          onClick={onOpenGalleryPicker}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            "text-center py-8 border-2 border-dashed rounded-lg transition-colors bg-muted/50",
+            isDragging
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-muted-foreground"
+          )}
         >
-          <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-muted-foreground text-sm">
-            Click to add images from library
-          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*"
+            onChange={handleFileInput}
+            className="hidden"
+          />
+          {isUploading ? (
+            <div className="py-4">
+              <Loader2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground animate-spin" />
+              <p className="text-muted-foreground">Uploading...</p>
+            </div>
+          ) : (
+            <>
+              <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-muted-foreground mb-1">
+                {isDragging ? "Drop files here" : "Drag & drop files here"}
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Images and videos (up to 20)
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenGalleryPicker}
+                >
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  Library
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

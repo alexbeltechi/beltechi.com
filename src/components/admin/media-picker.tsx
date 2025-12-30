@@ -53,6 +53,7 @@ export function MediaPicker({
   maxSelect,
 }: MediaPickerProps) {
   const [media, setMedia] = useState<MediaItem[]>([]);
+  const [usedMediaIds, setUsedMediaIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -72,9 +73,14 @@ export function MediaPicker({
   const fetchMedia = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/media?limit=1000");
-      const data = await res.json();
-      setMedia(data.data || []);
+      const [mediaRes, usedRes] = await Promise.all([
+        fetch("/api/admin/media?limit=1000"),
+        fetch("/api/admin/media/used"),
+      ]);
+      const mediaData = await mediaRes.json();
+      const usedData = await usedRes.json();
+      setMedia(mediaData.data || []);
+      setUsedMediaIds(new Set(usedData.usedMediaIds || []));
     } catch (error) {
       console.error("Failed to fetch media:", error);
     } finally {
@@ -723,6 +729,13 @@ export function MediaPicker({
                           <Film className="w-4 h-4 text-white drop-shadow-md" />
                         )}
                       </div>
+
+                      {/* Unused indicator */}
+                      {!usedMediaIds.has(item.id) && (
+                        <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-amber-500 rounded text-[10px] text-white font-medium">
+                          Unused
+                        </div>
+                      )}
                     </div>
 
                     {/* File Info */}

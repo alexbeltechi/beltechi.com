@@ -1081,6 +1081,8 @@ function ContentListPageContent() {
           className="w-full sm:max-w-[600px] p-0"
           hideCloseButton
           noOverlay
+          disableEscapeKey
+          disableOutsideClick
         >
           <SheetTitle className="sr-only">
             {editingEntry ? `Edit ${editingEntry.collection}` : `New ${isCreatingNew}`}
