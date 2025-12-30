@@ -90,10 +90,17 @@ export async function getMediaByIds(ids: string[]): Promise<MediaItem[]> {
 
   const docs = await collection.find({ id: { $in: ids } }).toArray();
 
-  return docs.map((doc) => {
+  // Create a map for quick lookup
+  const mediaMap = new Map<string, MediaItem>();
+  docs.forEach((doc) => {
     const { _id, ...rest } = doc;
-    return rest as MediaItem;
+    mediaMap.set(rest.id as string, rest as MediaItem);
   });
+
+  // Return items in the same order as the input ids array
+  return ids
+    .map((id) => mediaMap.get(id))
+    .filter((item): item is MediaItem => item !== undefined);
 }
 
 /**

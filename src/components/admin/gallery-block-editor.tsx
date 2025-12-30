@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { GripVertical, MoreVertical, Plus, Upload } from "lucide-react";
+import { useCallback } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Image as ImageIcon,
+  Plus,
+  Upload,
+  LayoutGrid,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -34,48 +41,50 @@ export function GalleryBlockEditor({
   onOpenGalleryPicker,
   onReplaceImage,
 }: GalleryBlockEditorProps) {
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  // Track if we're interacting with dropdown to prevent drag
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Move image left (decrease index)
+  const moveImageLeft = useCallback(
+    (index: number) => {
+      if (index <= 0) return;
+      const newMediaIds = [...(block.mediaIds || [])];
+      [newMediaIds[index], newMediaIds[index - 1]] = [
+        newMediaIds[index - 1],
+        newMediaIds[index],
+      ];
+      onUpdate({ mediaIds: newMediaIds });
+    },
+    [block.mediaIds, onUpdate]
+  );
 
-  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
-    // Don't start drag if menu is open or we clicked on menu area
-    if (isMenuOpen) {
-      e.preventDefault();
-      return;
-    }
-    setDraggedIndex(index);
-  }, [isMenuOpen]);
+  // Move image right (increase index)
+  const moveImageRight = useCallback(
+    (index: number) => {
+      const mediaIds = block.mediaIds || [];
+      if (index >= mediaIds.length - 1) return;
+      const newMediaIds = [...mediaIds];
+      [newMediaIds[index], newMediaIds[index + 1]] = [
+        newMediaIds[index + 1],
+        newMediaIds[index],
+      ];
+      onUpdate({ mediaIds: newMediaIds });
+    },
+    [block.mediaIds, onUpdate]
+  );
 
-  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
+  const handleRemoveImage = useCallback(
+    (index: number) => {
+      const currentMediaIds = block.mediaIds || [];
+      const newMediaIds = currentMediaIds.filter((_, i) => i !== index);
+      onUpdate({ mediaIds: newMediaIds });
+    },
+    [block.mediaIds, onUpdate]
+  );
 
-    const newMediaIds = [...(block.mediaIds || [])];
-    const [removed] = newMediaIds.splice(draggedIndex, 1);
-    newMediaIds.splice(index, 0, removed);
-
-    onUpdate({ mediaIds: newMediaIds });
-    setDraggedIndex(index);
-  }, [draggedIndex, block.mediaIds, onUpdate]);
-
-  const handleDragEnd = useCallback(() => {
-    setDraggedIndex(null);
-  }, []);
-
-  const handleRemoveImage = useCallback((index: number) => {
-    console.log("Remove image at index:", index);
-    const currentMediaIds = block.mediaIds || [];
-    const newMediaIds = currentMediaIds.filter((_, i) => i !== index);
-    console.log("Old mediaIds:", currentMediaIds);
-    console.log("New mediaIds:", newMediaIds);
-    onUpdate({ mediaIds: newMediaIds });
-  }, [block.mediaIds, onUpdate]);
-
-  const handleReplaceImage = useCallback((index: number) => {
-    console.log("Replace image at index:", index);
-    onReplaceImage?.(index);
-  }, [onReplaceImage]);
+  const handleReplaceImage = useCallback(
+    (index: number) => {
+      onReplaceImage?.(index);
+    },
+    [onReplaceImage]
+  );
 
   // Render images in the selected layout pattern
   const renderLayoutPreview = () => {
@@ -95,20 +104,18 @@ export function GalleryBlockEditor({
               key={item.id}
               item={item}
               index={index}
-              draggedIndex={draggedIndex}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-              onRemove={handleRemoveImage}
-              onReplace={handleReplaceImage}
-              onMenuOpenChange={setIsMenuOpen}
+              total={galleryMedia.length}
+              onMoveLeft={() => moveImageLeft(index)}
+              onMoveRight={() => moveImageRight(index)}
+              onRemove={() => handleRemoveImage(index)}
+              onReplace={() => handleReplaceImage(index)}
             />
           ))}
         </div>
       );
     }
 
-    // Classic layout preview
+    // Classic layout preview - single images at full width, pairs side by side
     const rows: MediaItem[][] = [];
     let i = 0;
     const count = galleryMedia.length;
@@ -159,13 +166,11 @@ export function GalleryBlockEditor({
                   key={item.id}
                   item={item}
                   index={itemIndex}
-                  draggedIndex={draggedIndex}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  onRemove={handleRemoveImage}
-                  onReplace={handleReplaceImage}
-                  onMenuOpenChange={setIsMenuOpen}
+                  total={galleryMedia.length}
+                  onMoveLeft={() => moveImageLeft(itemIndex)}
+                  onMoveRight={() => moveImageRight(itemIndex)}
+                  onRemove={() => handleRemoveImage(itemIndex)}
+                  onReplace={() => handleReplaceImage(itemIndex)}
                 />
               );
             })}
@@ -176,26 +181,31 @@ export function GalleryBlockEditor({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {galleryMedia && galleryMedia.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Image grid with layout preview */}
           {renderLayoutPreview()}
 
           {/* Layout selector */}
           <div className="space-y-2">
-            <Label className="text-xs">Layout</Label>
+            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+              Layout
+            </label>
             <Select
               value={block.layout || "classic"}
               onValueChange={(value) =>
                 onUpdate({ layout: value as "classic" | "grid" })
               }
             >
-              <SelectTrigger className="h-8">
-                <SelectValue />
+              <SelectTrigger className="h-9">
+                <div className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue />
+                </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="classic">Classic (Auto)</SelectItem>
+                <SelectItem value="classic">Classic</SelectItem>
                 <SelectItem value="grid">Grid</SelectItem>
               </SelectContent>
             </Select>
@@ -204,12 +214,14 @@ export function GalleryBlockEditor({
           {/* Show columns only for grid layout */}
           {block.layout === "grid" && (
             <div className="space-y-2">
-              <Label className="text-xs">Columns</Label>
+              <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+                Columns
+              </label>
               <Select
                 value={String(block.columns || 3)}
                 onValueChange={(value) => onUpdate({ columns: Number(value) })}
               >
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -221,20 +233,17 @@ export function GalleryBlockEditor({
             </div>
           )}
 
+          {/* Add more images button */}
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             className="w-full"
             onClick={onOpenGalleryPicker}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add More Images
+            <ImageIcon className="w-4 h-4 mr-2" />
+            Add more images
           </Button>
-
-          <p className="text-xs text-muted-foreground text-center">
-            Drag to reorder · {galleryMedia.length} images
-          </p>
         </div>
       ) : (
         <div
@@ -251,98 +260,93 @@ export function GalleryBlockEditor({
   );
 }
 
-// Separate component for thumbnail to isolate dropdown state
+// Thumbnail item with arrow buttons for reordering
 function ThumbnailItem({
   item,
   index,
-  draggedIndex,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
+  total,
+  onMoveLeft,
+  onMoveRight,
   onRemove,
   onReplace,
-  onMenuOpenChange,
 }: {
   item: MediaItem;
   index: number;
-  draggedIndex: number | null;
-  onDragStart: (e: React.DragEvent, index: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
-  onDragEnd: () => void;
-  onRemove: (index: number) => void;
-  onReplace: (index: number) => void;
-  onMenuOpenChange: (open: boolean) => void;
+  total: number;
+  onMoveLeft: () => void;
+  onMoveRight: () => void;
+  onRemove: () => void;
+  onReplace: () => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const handleMenuOpenChange = (open: boolean) => {
-    setMenuOpen(open);
-    onMenuOpenChange(open);
-  };
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
 
   return (
-    <div
-      draggable={!menuOpen}
-      onDragStart={(e) => onDragStart(e, index)}
-      onDragOver={(e) => onDragOver(e, index)}
-      onDragEnd={onDragEnd}
-      className={`relative aspect-square rounded-md overflow-hidden bg-muted group transition-opacity ${
-        draggedIndex === index ? "opacity-50" : ""
-      } ${menuOpen ? "" : "cursor-move"}`}
-    >
+    <div className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={item.variants?.thumb?.url || item.url}
         alt={item.alt || ""}
-        className="w-full h-full object-cover pointer-events-none"
-        draggable={false}
+        className="w-full h-full object-cover"
       />
 
-      {/* Drag handle indicator */}
-      <div className="absolute bottom-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pointer-events-none">
-        <div className="p-1.5 bg-black/60 rounded-full">
-          <GripVertical className="h-4 w-4 text-white" />
-        </div>
+      {/* Position badge - top left */}
+      <div className="absolute top-2 left-2 bg-zinc-600 text-white text-xs px-2 py-0.5 rounded-full font-normal min-w-[20px] text-center">
+        {index + 1}
       </div>
 
-      {/* Three-dot menu */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpenChange}>
+      {/* Controls - top right */}
+      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Move left button */}
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMoveLeft();
+          }}
+          disabled={isFirst}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {/* Move right button */}
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMoveRight();
+          }}
+          disabled={isLast}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+
+        {/* More options menu */}
+        <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
+            <Button
               type="button"
-              className="p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
-              onMouseDown={(e) => e.stopPropagation()}
+              variant="secondary"
+              size="icon"
+              className="h-8 w-8"
               onClick={(e) => e.stopPropagation()}
             >
-              <MoreVertical className="h-4 w-4 text-white" />
-            </button>
+              <MoreVertical className="h-4 w-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" sideOffset={4}>
-            <DropdownMenuItem
-              onSelect={() => {
-                console.log("Replace selected for index:", index);
-                onReplace(index);
-              }}
-            >
-              Replace
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => {
-                console.log("Remove selected for index:", index);
-                onRemove(index);
-              }}
-            >
+            <DropdownMenuItem onSelect={onReplace}>Replace</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={onRemove}>
               Remove
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-
-      {/* Image number indicator */}
-      <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full font-medium pointer-events-none">
-        {index + 1}
       </div>
     </div>
   );

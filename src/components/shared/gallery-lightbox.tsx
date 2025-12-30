@@ -32,15 +32,26 @@ export function GalleryLightbox({
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
+  const [skipTransition, setSkipTransition] = useState(true);
   const dragStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const minSwipeDistance = 50;
 
-  // Sync initial index when it changes
+  // Handle lightbox open - skip animation on initial position
   useEffect(() => {
-    setCurrentIndex(initialIndex);
-  }, [initialIndex]);
+    if (isOpen) {
+      // Immediately set index without animation
+      setSkipTransition(true);
+      setCurrentIndex(initialIndex);
+      // After a frame, allow animations for navigation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setSkipTransition(false);
+        });
+      });
+    }
+  }, [isOpen, initialIndex]);
 
   // Handle image load complete
   const handleImageLoad = (index: number) => {
@@ -193,7 +204,7 @@ export function GalleryLightbox({
           className="flex h-full"
           style={{
             transform: getSlideTransform(),
-            transition: isDragging ? "none" : "transform 300ms ease-out",
+            transition: isDragging || skipTransition ? "none" : "transform 300ms ease-out",
             width: `${mediaItems.length * 100}%`,
           }}
         >

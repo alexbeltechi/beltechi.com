@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Plus,
   X,
-  GripVertical,
   Check,
   Eye,
   EyeOff,
@@ -13,30 +12,22 @@ import {
   Trash2,
   Type,
   Image,
-  Film,
   Youtube,
   Quote,
   Minus,
   Upload,
   MoreVertical,
-  Edit,
   Replace,
+  ChevronLeft,
+  Play,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CategoryInput } from "@/components/admin/category-input";
 import { DatePicker } from "@/components/admin/date-picker";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
@@ -60,6 +52,19 @@ import { MediaPicker } from "@/components/admin/media-picker";
 import { GalleryBlockEditor } from "@/components/admin/gallery-block-editor";
 import { cn } from "@/lib/utils";
 import type { Block, Entry, GalleryBlock, MediaItem } from "@/lib/cms/types";
+
+/**
+ * Slugify text for URLs (matching server-side logic)
+ */
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\-\-+/g, "-");
+}
 
 interface ArticleEditorFormProps {
   slug?: string; // If provided, edit mode. If not, create mode.
@@ -95,24 +100,38 @@ export function ArticleEditorForm({
   const [tags, setTags] = useState("");
   const [publishDate, setPublishDate] = useState<string | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [showBlockMenu, setShowBlockMenu] = useState(false);
+  // Removed showBlockMenu state - using DropdownMenu instead
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [publishDialog, setPublishDialog] = useState(false);
   const [unpublishDialog, setUnpublishDialog] = useState(false);
   const [updatePublishDialog, setUpdatePublishDialog] = useState(false);
-  const [galleryPickerBlockId, setGalleryPickerBlockId] = useState<string | null>(null);
-  const [galleryMedia, setGalleryMedia] = useState<Record<string, MediaItem[]>>({});
-  const [galleryReplaceIndex, setGalleryReplaceIndex] = useState<number | null>(null);
+  const [galleryPickerBlockId, setGalleryPickerBlockId] = useState<
+    string | null
+  >(null);
+  const [galleryMedia, setGalleryMedia] = useState<
+    Record<string, MediaItem[]>
+  >({});
+  const [galleryReplaceIndex, setGalleryReplaceIndex] = useState<number | null>(
+    null
+  );
+
+  // Block selection for multi-select delete
+  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
+
 
   // Track initial values for dirty state
   const [initialTitle, setInitialTitle] = useState("");
   const [initialExcerpt, setInitialExcerpt] = useState("");
-  const [initialCoverImageId, setInitialCoverImageId] = useState<string | null>(null);
+  const [initialCoverImageId, setInitialCoverImageId] = useState<string | null>(
+    null
+  );
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [initialTags, setInitialTags] = useState("");
-  const [initialPublishDate, setInitialPublishDate] = useState<string | null>(null);
+  const [initialPublishDate, setInitialPublishDate] = useState<string | null>(
+    null
+  );
   const [initialBlocks, setInitialBlocks] = useState<string>("");
 
   // Check if form has been modified
@@ -120,7 +139,8 @@ export function ArticleEditorForm({
     ? title !== initialTitle ||
       excerpt !== initialExcerpt ||
       coverImageId !== initialCoverImageId ||
-      JSON.stringify(categories.sort()) !== JSON.stringify(initialCategories.sort()) ||
+      JSON.stringify(categories.sort()) !==
+        JSON.stringify(initialCategories.sort()) ||
       tags !== initialTags ||
       publishDate !== initialPublishDate ||
       JSON.stringify(blocks) !== initialBlocks
@@ -192,7 +212,9 @@ export function ArticleEditorForm({
 
     async function fetchEntry() {
       try {
-        const res = await fetch(`/api/admin/collections/articles/entries/${slug}`);
+        const res = await fetch(
+          `/api/admin/collections/articles/entries/${slug}`
+        );
         if (!res.ok) {
           if (!isSheet) {
             router.push("/admin/content?collection=articles");
@@ -233,35 +255,54 @@ export function ArticleEditorForm({
         // Load cover image if exists
         if (coverImageIdVal) {
           try {
-            const mediaRes = await fetch(`/api/admin/media/${coverImageIdVal}`);
+            const mediaRes = await fetch(
+              `/api/admin/media/${coverImageIdVal}`
+            );
             if (mediaRes.ok) {
               const mediaData = await mediaRes.json();
               setCoverImage(mediaData.data);
             }
           } catch (err) {
-            console.error('Failed to load cover image:', err);
+            console.error("Failed to load cover image:", err);
           }
         }
 
         // Load gallery media for all gallery blocks
-        const galleryBlocks = blocksVal.filter((b) => b.type === "gallery") as Array<{ id: string; mediaIds: string[] }>;
+        const galleryBlocks = blocksVal.filter(
+          (b) => b.type === "gallery"
+        ) as Array<{ id: string; mediaIds: string[] }>;
         if (galleryBlocks.length > 0) {
           const galleryMediaMap: Record<string, MediaItem[]> = {};
-          
+
           for (const block of galleryBlocks) {
             if (block.mediaIds && block.mediaIds.length > 0) {
               try {
-                const mediaRes = await fetch(`/api/admin/media/bulk?ids=${block.mediaIds.join(',')}`);
+                const mediaRes = await fetch(
+                  `/api/admin/media/bulk?ids=${block.mediaIds.join(",")}`
+                );
                 if (mediaRes.ok) {
                   const mediaData = await mediaRes.json();
-                  galleryMediaMap[block.id] = mediaData.data || [];
+                  const fetchedMedia = mediaData.data || [];
+
+                  // Ensure media is ordered according to block.mediaIds
+                  const mediaMap = new Map(
+                    fetchedMedia.map((m: MediaItem) => [m.id, m])
+                  );
+                  const orderedMedia = block.mediaIds
+                    .map((id) => mediaMap.get(id))
+                    .filter((m): m is MediaItem => m !== undefined);
+
+                  galleryMediaMap[block.id] = orderedMedia;
                 }
               } catch (err) {
-                console.error(`Failed to load media for gallery ${block.id}:`, err);
+                console.error(
+                  `Failed to load media for gallery ${block.id}:`,
+                  err
+                );
               }
             }
           }
-          
+
           setGalleryMedia(galleryMediaMap);
         }
       } catch (error) {
@@ -286,7 +327,13 @@ export function ArticleEditorForm({
         newBlock = { type: "text", id, html: "" };
         break;
       case "gallery":
-        newBlock = { type: "gallery", id, mediaIds: [], layout: "classic", gap: 16 };
+        newBlock = {
+          type: "gallery",
+          id,
+          mediaIds: [],
+          layout: "classic",
+          gap: 16,
+        };
         break;
       case "video":
         newBlock = { type: "video", id, mediaId: "", caption: "" };
@@ -305,7 +352,6 @@ export function ArticleEditorForm({
     }
 
     setBlocks([...blocks, newBlock]);
-    setShowBlockMenu(false);
   };
 
   const updateBlock = (id: string, updates: Partial<Block>) => {
@@ -316,6 +362,11 @@ export function ArticleEditorForm({
 
   const removeBlock = (id: string) => {
     setBlocks(blocks.filter((b) => b.id !== id));
+    setSelectedBlocks((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   };
 
   const moveBlock = (index: number, direction: "up" | "down") => {
@@ -328,6 +379,25 @@ export function ArticleEditorForm({
       newBlocks[index],
     ];
     setBlocks(newBlocks);
+  };
+
+  // Delete selected blocks
+  const deleteSelectedBlocks = () => {
+    setBlocks(blocks.filter((b) => !selectedBlocks.has(b.id)));
+    setSelectedBlocks(new Set());
+  };
+
+  // Toggle block selection
+  const toggleBlockSelection = (id: string, checked: boolean) => {
+    setSelectedBlocks((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
   };
 
   const handleSave = async (status: "draft" | "published") => {
@@ -362,11 +432,21 @@ export function ArticleEditorForm({
         ? `/api/admin/collections/articles/entries/${effectiveSlug}`
         : "/api/admin/collections/articles/entries";
 
+      // Regenerate slug from title for drafts (not yet published)
+      let newSlug: string | undefined;
+      if (effectiveSlug && entry?.status !== "published" && title.trim()) {
+        const generatedSlug = slugify(title);
+        if (generatedSlug && generatedSlug !== effectiveSlug) {
+          newSlug = generatedSlug;
+        }
+      }
+
       const res = await fetch(endpoint, {
         method: effectiveSlug ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
+          ...(newSlug && { slug: newSlug }),
           data: {
             title,
             excerpt: excerpt || "",
@@ -374,7 +454,8 @@ export function ArticleEditorForm({
             content: blocks,
             categories,
             tags: tags || "",
-            date: publishDate || new Date().toISOString(),
+            date:
+              publishDate || initialPublishDate || new Date().toISOString(),
           },
         }),
       });
@@ -395,8 +476,7 @@ export function ArticleEditorForm({
       setInitialTags(tags);
       setInitialPublishDate(publishDate);
       setInitialBlocks(JSON.stringify(blocks));
-      
-      // Update currentSlug if it changed
+
       if (data.data.slug) {
         setCurrentSlug(data.data.slug);
       }
@@ -405,8 +485,6 @@ export function ArticleEditorForm({
         onSaved(data.data);
       }
 
-      // Don't close the dialog after save - user can continue editing
-      // Only update URL if not in sheet mode and slug changed
       if (!isSheet) {
         setAllowNavigation(true);
         const savedSlug = data.data.slug;
@@ -428,18 +506,17 @@ export function ArticleEditorForm({
     }
   };
 
-  // Autosave function - saves as draft without closing
+  // Autosave function
   const autosave = useCallback(async () => {
-    // Don't autosave if already saving or if it's a published entry
     if (saving || autoSaving) return;
     if (entry?.status === "published") return;
-    
+
     setAutoSaving(true);
 
     try {
       const effectiveSlug = currentSlug;
       const isCreating = !effectiveSlug;
-      
+
       const endpoint = isCreating
         ? "/api/admin/collections/articles/entries"
         : `/api/admin/collections/articles/entries/${effectiveSlug}`;
@@ -455,7 +532,8 @@ export function ArticleEditorForm({
             content: blocks,
             categories,
             tags: tags || "",
-            date: publishDate || new Date().toISOString(),
+            date:
+              publishDate || initialPublishDate || new Date().toISOString(),
           },
         }),
       });
@@ -463,8 +541,7 @@ export function ArticleEditorForm({
       if (res.ok) {
         const data = await res.json();
         hasAutoSaved.current = true;
-        
-        // Update entry and initial values
+
         setEntry(data.data);
         setInitialTitle(title || "Untitled");
         setInitialExcerpt(excerpt);
@@ -472,8 +549,7 @@ export function ArticleEditorForm({
         setInitialTags(tags);
         setInitialPublishDate(publishDate);
         setInitialBlocks(JSON.stringify(blocks));
-        
-        // If this was a new article, update the slug
+
         if (isCreating && data.data?.slug) {
           setCurrentSlug(data.data.slug);
         }
@@ -483,35 +559,60 @@ export function ArticleEditorForm({
     } finally {
       setAutoSaving(false);
     }
-  }, [saving, autoSaving, entry?.status, currentSlug, title, excerpt, blocks, categories, tags, publishDate]);
+  }, [
+    saving,
+    autoSaving,
+    entry?.status,
+    currentSlug,
+    title,
+    excerpt,
+    blocks,
+    categories,
+    tags,
+    publishDate,
+    initialPublishDate,
+  ]);
 
   // Debounced autosave effect
   useEffect(() => {
-    // Don't autosave during initial load or for published entries
     if (loading) return;
     if (entry?.status === "published") return;
-    
-    // For new articles, only start autosaving after user has entered something
-    if (!currentSlug && !title.trim() && !excerpt.trim() && categories.length === 0 && blocks.length === 0) {
+
+    if (
+      !currentSlug &&
+      !title.trim() &&
+      !excerpt.trim() &&
+      categories.length === 0 &&
+      blocks.length === 0
+    ) {
       return;
     }
-    
-    // Clear existing timeout
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
-    // Set new timeout for autosave (1.5 second delay)
+
     saveTimeoutRef.current = setTimeout(() => {
       autosave();
     }, 1500);
-    
+
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, excerpt, categories, tags, publishDate, blocks, loading, entry?.status, currentSlug, autosave]);
+  }, [
+    title,
+    excerpt,
+    categories,
+    tags,
+    publishDate,
+    blocks,
+    loading,
+    entry?.status,
+    currentSlug,
+    autosave,
+  ]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -522,15 +623,19 @@ export function ArticleEditorForm({
     };
   }, []);
 
+
   const handleDelete = async () => {
     if (!isEditMode) return;
 
     setDeleting(true);
 
     try {
-      const res = await fetch(`/api/admin/collections/articles/entries/${slug}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/admin/collections/articles/entries/${slug}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!res.ok) {
         throw new Error("Failed to delete article");
@@ -554,8 +659,6 @@ export function ArticleEditorForm({
   };
 
   const handleClose = useCallback(() => {
-    // For published entries, check for unsaved changes
-    // For drafts, changes are autosaved so just close
     if (entry?.status === "published" && isDirty && !allowNavigation) {
       setShowUnsavedModal(true);
       return;
@@ -563,11 +666,18 @@ export function ArticleEditorForm({
     onClose?.();
   }, [entry?.status, isDirty, allowNavigation, onClose]);
 
+  // Preview function
+  const handlePreview = () => {
+    if (currentSlug) {
+      window.open(`/article/${currentSlug}`, "_blank");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col h-full">
-        <div className="border-b px-4 h-14 flex items-center">
-          <Skeleton className="h-4 w-32" />
+        <div className="border-b px-2 h-14 flex items-center">
+          <Skeleton className="h-9 w-9 rounded-md" />
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 py-4 space-y-4">
@@ -581,131 +691,207 @@ export function ArticleEditorForm({
     );
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b px-4 h-14 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          {isSheet && onClose && (
-            <button
-              onClick={handleClose}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold tracking-tight">
-              {isEditMode ? "Edit Article" : "New Article"}
-            </h1>
-            {isEditMode && entry && (
-              <Badge
-                variant={entry.status === "published" ? "default" : "outline"}
-                className={cn(
-                  entry.status === "published" &&
-                    "bg-emerald-500 hover:bg-emerald-600"
-                )}
-              >
-                {entry.status}
-              </Badge>
-            )}
-            {!isEditMode && <Badge variant="outline">Draft</Badge>}
-          </div>
-        </div>
+  // Get status display
+  const getStatusPill = () => {
+    const status = entry?.status || "draft";
+    if (status === "published") {
+      return (
+        <span className="inline-flex items-center px-2 py-1 text-sm font-medium bg-emerald-100 text-black rounded-full">
+          Published
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-2 py-1 text-sm font-medium bg-zinc-100 text-zinc-600 rounded-full">
+        Draft
+      </span>
+    );
+  };
 
-        {/* For published entries, show manual save button (keeps status as published) */}
-        {entry?.status === "published" ? (
+  return (
+    <div className="flex flex-col h-full bg-white">
+      {/* Top Navigation Bar */}
+      <div className="border-b border-zinc-200 px-2 h-14 flex items-center justify-between shrink-0">
+        {/* Left: Close/Back button */}
+        <Button
+          variant="secondary"
+          size="icon"
+          className="h-9 w-9"
+          onClick={handleClose}
+        >
+          <ChevronLeft className="h-4 w-4 md:hidden" />
+          <X className="h-4 w-4 hidden md:block" />
+        </Button>
+
+        {/* Right: Action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Preview button */}
+          {currentSlug && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-9 w-9"
+              onClick={handlePreview}
+            >
+              <Play className="h-4 w-4" />
+            </Button>
+          )}
+
+          {/* Save status */}
+          {entry?.status === "published" ? (
+            <Button
+              onClick={() => handleSave("published")}
+              disabled={saving || !isDirty}
+              variant="secondary"
+              size="sm"
+              className="h-9"
+            >
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {isDirty ? "Save" : "Saved"}
+            </Button>
+          ) : (
+            <Button variant="secondary" size="sm" className="h-9" disabled>
+              {autoSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Saved"
+              )}
+            </Button>
+          )}
+
+          {/* Publish button */}
           <Button
-            onClick={() => handleSave("published")}
-            disabled={saving || !isDirty}
-            variant="outline"
+            onClick={() => {
+              if (isEditMode && entry?.status === "published") {
+                if (isDirty) {
+                  setUpdatePublishDialog(true);
+                }
+              } else {
+                setPublishDialog(true);
+              }
+            }}
+            disabled={
+              saving ||
+              (isEditMode && entry?.status === "published" && !isDirty)
+            }
             size="sm"
+            className="h-9"
           >
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="mr-2 h-4 w-4" />
-            )}
-            {isDirty ? "Save" : "Saved"}
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Publish
           </Button>
-        ) : (
-          /* For drafts and new entries, show autosave status */
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {autoSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                <span>Saved</span>
-              </>
-            )}
-          </div>
-        )}
+
+          {/* More options menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {entry?.status === "published" && (
+                <DropdownMenuItem onClick={() => setUnpublishDialog(true)}>
+                  <EyeOff className="mr-2 h-4 w-4" />
+                  Unpublish
+                </DropdownMenuItem>
+              )}
+              {selectedBlocks.size > 0 && (
+                <DropdownMenuItem
+                  onClick={deleteSelectedBlocks}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete selected ({selectedBlocks.size})
+                </DropdownMenuItem>
+              )}
+              {isEditMode && (
+                <DropdownMenuItem
+                  onClick={() => setDeleteDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete article
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-4 space-y-4">
-          {/* Title */}
+        {/* Title Row with Status */}
+        <div className="px-4 h-14 flex items-center gap-2">
+          <h1 className="text-xl font-bold font-[family-name:var(--font-syne)]">
+            {isEditMode ? "Edit article" : "New article"}
+          </h1>
+          {getStatusPill()}
+        </div>
+
+        {/* Details Section */}
+        <div className="px-4 space-y-3 pb-6">
+          {/* Title field */}
           <div className="space-y-2">
-            <Label htmlFor="title">
-              Title <span className="text-destructive">*</span>
-            </Label>
+            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+              Title<span className="text-destructive">*</span>
+            </label>
             <Input
-              id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Article title"
-              className="text-lg font-medium"
+              className="h-9"
             />
           </div>
 
-          {/* Excerpt */}
+          {/* Summary field */}
           <div className="space-y-2">
-            <Label htmlFor="excerpt">
-              Excerpt{" "}
-              <span className="text-muted-foreground font-normal">
-                (optional)
+            <div className="flex items-center gap-2">
+              <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+                Summary
+              </label>
+              <span className="text-sm text-zinc-500 font-[family-name:var(--font-syne)]">
+                Optional
               </span>
-            </Label>
-            <Textarea
-              id="excerpt"
+            </div>
+            <Input
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
-              placeholder="Brief summary for previews..."
-              rows={2}
+              placeholder="Brief summary for previews"
+              className="h-9"
             />
           </div>
 
           {/* Cover Image */}
           <div className="space-y-2">
-            <Label>
-              Cover Image <span className="text-destructive">*</span>
-            </Label>
+            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+              Cover image
+            </label>
             {coverImage ? (
-              <div className="flex items-center gap-3 p-3 border border-border rounded-lg bg-background">
+              <div className="flex items-center gap-3 p-3 border border-zinc-200 rounded-md bg-white">
                 {/* Thumbnail */}
-                <div className="relative w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
+                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                   <img
                     src={coverImage.variants?.thumb?.url || coverImage.url}
                     alt={coverImage.alt || "Cover image"}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                
+
                 {/* File info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
+                  <p className="text-[15px] font-medium font-[family-name:var(--font-syne)] text-zinc-700 truncate">
                     {coverImage.originalName}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-zinc-500 font-[family-name:var(--font-syne)]">
                     {(coverImage.size / 1024 / 1024).toFixed(1)} MB
                   </p>
                 </div>
-                
+
                 {/* Three-dot menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -714,11 +900,13 @@ export function ArticleEditorForm({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowCoverImagePicker(true)}>
+                    <DropdownMenuItem
+                      onClick={() => setShowCoverImagePicker(true)}
+                    >
                       <Replace className="mr-2 h-4 w-4" />
                       Replace
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => {
                         setCoverImageId(null);
                         setCoverImage(null);
@@ -736,7 +924,7 @@ export function ArticleEditorForm({
                 type="button"
                 variant="secondary"
                 onClick={() => setShowCoverImagePicker(true)}
-                className="w-full justify-start"
+                className="w-full justify-start h-9"
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Add Image
@@ -744,17 +932,20 @@ export function ArticleEditorForm({
             )}
           </div>
 
-          {/* Categories & Date */}
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
-              <Label>
-                Categories <span className="text-destructive">*</span>
-              </Label>
-              <CategoryInput value={categories} onChange={setCategories} />
-            </div>
+          {/* Categories */}
+          <div className="space-y-2">
+            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+              Categories
+            </label>
+            <CategoryInput value={categories} onChange={setCategories} />
+          </div>
 
+          {/* Date */}
+          <div className="space-y-2">
+            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+              Date
+            </label>
             <DatePicker
-              label="Date"
               value={publishDate}
               onChange={setPublishDate}
               placeholder="Select date"
@@ -763,167 +954,121 @@ export function ArticleEditorForm({
 
           {/* Tags */}
           <div className="space-y-2">
-            <Label htmlFor="tags">
-              Tags{" "}
-              <span className="text-muted-foreground font-normal">
-                (optional)
+            <div className="flex items-center gap-2">
+              <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+                Tags
+              </label>
+              <span className="text-sm text-zinc-500 font-[family-name:var(--font-syne)]">
+                Optional
               </span>
-            </Label>
+            </div>
             <Input
-              id="tags"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder="photography, editing, tutorial"
+              placeholder="design, photography, tutorial"
+              className="h-9"
             />
-            <p className="text-xs text-muted-foreground">Separate with commas</p>
+            <p className="text-sm text-zinc-500 font-[family-name:var(--font-syne)]">
+              Separate with commas
+            </p>
           </div>
+        </div>
 
-          <Separator />
+        {/* Section Divider */}
+        <div className="h-1 bg-zinc-200 my-0" />
+
+        {/* Content Section */}
+        <div className="px-4">
+          {/* Content Section Header */}
+          <div className="h-14 flex items-center justify-between">
+            <h2 className="text-xl font-bold font-[family-name:var(--font-syne)]">
+              Content
+            </h2>
+            <span className="text-sm text-zinc-500 font-[family-name:var(--font-syne)]">
+              {blocks.length} {blocks.length === 1 ? "block" : "blocks"}
+            </span>
+          </div>
 
           {/* Content Blocks */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>
-                Content <span className="text-destructive">*</span>
-              </Label>
-              <span className="text-xs text-muted-foreground">
-                {blocks.length} blocks
-              </span>
-            </div>
+          <div className="space-y-0">
+            {blocks.map((block, index) => (
+              <BlockEditor
+                key={block.id}
+                block={block}
+                index={index}
+                total={blocks.length}
+                selected={selectedBlocks.has(block.id)}
+                onToggleSelect={(checked) =>
+                  toggleBlockSelection(block.id, checked)
+                }
+                onUpdate={(updates) => {
+                  updateBlock(block.id, updates);
 
-            <div className="space-y-3">
-              {blocks.map((block, index) => (
-                <BlockEditor
-                  key={block.id}
-                  block={block}
-                  index={index}
-                  total={blocks.length}
-                  onUpdate={(updates) => {
-                    // Update block state
-                    updateBlock(block.id, updates);
-                    
-                    // If this is a gallery block and mediaIds changed, sync galleryMedia state
-                    if (block.type === "gallery" && 'mediaIds' in updates && updates.mediaIds) {
-                      const newMediaIds = updates.mediaIds as string[];
-                      setGalleryMedia((prev) => {
-                        const currentMedia = prev[block.id] || [];
-                        // Filter and reorder to match new mediaIds order
-                        const newMedia = newMediaIds
-                          .map(id => currentMedia.find(m => m.id === id))
-                          .filter((m): m is MediaItem => m !== undefined);
-                        return { ...prev, [block.id]: newMedia };
-                      });
-                    }
-                  }}
-                  onRemove={() => removeBlock(block.id)}
-                  onMove={(dir) => moveBlock(index, dir)}
-                  onOpenGalleryPicker={() => setGalleryPickerBlockId(block.id)}
-                  onReplaceGalleryImage={(imageIndex) => {
-                    setGalleryPickerBlockId(block.id);
-                    setGalleryReplaceIndex(imageIndex);
-                  }}
-                  galleryMedia={galleryMedia[block.id] || []}
-                />
-              ))}
-            </div>
-
-            <div className="relative">
-              <button
-                onClick={() => setShowBlockMenu(!showBlockMenu)}
-                className="w-full p-4 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2 bg-muted/50"
-              >
-                <Plus className="w-5 h-5" />
-                Add Block
-              </button>
-
-              {showBlockMenu && (
-                <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-background border border-border rounded-lg shadow-lg z-10 grid grid-cols-3 gap-2">
-                  <BlockTypeButton
-                    icon={Type}
-                    label="Text"
-                    onClick={() => addBlock("text")}
-                  />
-                  <BlockTypeButton
-                    icon={Image}
-                    label="Gallery"
-                    onClick={() => addBlock("gallery")}
-                  />
-                  <BlockTypeButton
-                    icon={Youtube}
-                    label="YouTube"
-                    onClick={() => addBlock("youtube")}
-                  />
-                  <BlockTypeButton
-                    icon={Quote}
-                    label="Quote"
-                    onClick={() => addBlock("quote")}
-                  />
-                  <BlockTypeButton
-                    icon={Minus}
-                    label="Divider"
-                    onClick={() => addBlock("divider")}
-                  />
-                </div>
-              )}
-            </div>
+                  // If this is a gallery block and mediaIds changed, sync galleryMedia state
+                  if (
+                    block.type === "gallery" &&
+                    "mediaIds" in updates &&
+                    updates.mediaIds
+                  ) {
+                    const newMediaIds = updates.mediaIds as string[];
+                    setGalleryMedia((prev) => {
+                      const currentMedia = prev[block.id] || [];
+                      const newMedia = newMediaIds
+                        .map((id) => currentMedia.find((m) => m.id === id))
+                        .filter((m): m is MediaItem => m !== undefined);
+                      return { ...prev, [block.id]: newMedia };
+                    });
+                  }
+                }}
+                onRemove={() => removeBlock(block.id)}
+                onMove={(dir) => moveBlock(index, dir)}
+                onOpenGalleryPicker={() => setGalleryPickerBlockId(block.id)}
+                onReplaceGalleryImage={(imageIndex) => {
+                  setGalleryPickerBlockId(block.id);
+                  setGalleryReplaceIndex(imageIndex);
+                }}
+                galleryMedia={galleryMedia[block.id] || []}
+              />
+            ))}
           </div>
 
-          <Separator />
-
-          {/* Publish Button */}
-          <Button
-            onClick={() => {
-              if (isEditMode && entry?.status === "published") {
-                setUpdatePublishDialog(true);
-              } else {
-                setPublishDialog(true);
-              }
-            }}
-            disabled={saving || (isEditMode && entry?.status === "published" && !isDirty)}
-            className="w-full"
-            size="lg"
-          >
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Eye className="mr-2 h-4 w-4" />
-            )}
-            {isEditMode
-              ? entry?.status === "published"
-                ? isDirty
-                  ? "Update & Publish"
-                  : "Published"
-                : "Publish Article"
-              : "Publish Article"}
-          </Button>
-
-          {/* Unpublish & Delete Buttons */}
-          {isEditMode && (
-            <div className="flex items-center justify-between pt-2">
-              {entry?.status === "published" && (
+          {/* Add Block Button */}
+          <div className="py-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
-                  onClick={() => setUnpublishDialog(true)}
-                  disabled={saving}
-                  variant="ghost"
-                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                  type="button"
+                  variant="secondary"
+                  className="w-full h-9"
                 >
-                  <EyeOff className="mr-2 h-4 w-4" />
-                  Unpublish
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add block
                 </Button>
-              )}
-              <div className={entry?.status !== "published" ? "ml-auto" : ""}>
-                <Button
-                  onClick={() => setDeleteDialog(true)}
-                  disabled={deleting}
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              </div>
-            </div>
-          )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-56">
+                <DropdownMenuItem onClick={() => addBlock("text")}>
+                  <Type className="mr-2 h-4 w-4" />
+                  Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addBlock("gallery")}>
+                  <Image className="mr-2 h-4 w-4" />
+                  Gallery
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addBlock("youtube")}>
+                  <Youtube className="mr-2 h-4 w-4" />
+                  YouTube
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addBlock("quote")}>
+                  <Quote className="mr-2 h-4 w-4" />
+                  Quote
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addBlock("divider")}>
+                  <Minus className="mr-2 h-4 w-4" />
+                  Divider
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -954,27 +1099,30 @@ export function ArticleEditorForm({
             const block = blocks.find((b) => b.id === galleryPickerBlockId);
             if (block && block.type === "gallery") {
               if (galleryReplaceIndex !== null) {
-                // Replace mode - replace the item at the specific index
                 const newMediaIds = [...(block.mediaIds || [])];
                 newMediaIds[galleryReplaceIndex] = items[0].id;
                 updateBlock(galleryPickerBlockId, { mediaIds: newMediaIds });
-                
-                // Update gallery media state
+
                 setGalleryMedia((prev) => {
-                  const existingMedia = [...(prev[galleryPickerBlockId] || [])];
+                  const existingMedia = [
+                    ...(prev[galleryPickerBlockId] || []),
+                  ];
                   existingMedia[galleryReplaceIndex] = items[0];
                   return { ...prev, [galleryPickerBlockId]: existingMedia };
                 });
               } else {
-                // Add mode - append new items
                 const existingIds = block.mediaIds || [];
                 const newIds = items.map((item) => item.id);
-                updateBlock(galleryPickerBlockId, { mediaIds: [...existingIds, ...newIds] });
-                
-                // Update gallery media state
+                updateBlock(galleryPickerBlockId, {
+                  mediaIds: [...existingIds, ...newIds],
+                });
+
                 setGalleryMedia((prev) => ({
                   ...prev,
-                  [galleryPickerBlockId]: [...(prev[galleryPickerBlockId] || []), ...items],
+                  [galleryPickerBlockId]: [
+                    ...(prev[galleryPickerBlockId] || []),
+                    ...items,
+                  ],
                 }));
               }
             }
@@ -1008,8 +1156,8 @@ export function ArticleEditorForm({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete article?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this article? This action cannot be
-              undone.
+              Are you sure you want to delete this article? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1050,8 +1198,8 @@ export function ArticleEditorForm({
           <AlertDialogHeader>
             <AlertDialogTitle>Unpublish article?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove your article from the public site. It will be saved
-              as a draft.
+              This will remove your article from the public site. It will be
+              saved as a draft.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1089,30 +1237,13 @@ export function ArticleEditorForm({
   );
 }
 
-function BlockTypeButton({
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-1 p-3 rounded-lg hover:bg-muted transition-colors"
-    >
-      <Icon className="w-5 h-5 text-muted-foreground" />
-      <span className="text-xs text-muted-foreground">{label}</span>
-    </button>
-  );
-}
 
 function BlockEditor({
   block,
   index,
   total,
+  selected,
+  onToggleSelect,
   onUpdate,
   onRemove,
   onMove,
@@ -1123,6 +1254,8 @@ function BlockEditor({
   block: Block;
   index: number;
   total: number;
+  selected: boolean;
+  onToggleSelect: (checked: boolean) => void;
   onUpdate: (updates: Partial<Block>) => void;
   onRemove: () => void;
   onMove: (direction: "up" | "down") => void;
@@ -1130,55 +1263,102 @@ function BlockEditor({
   onReplaceGalleryImage?: (imageIndex: number) => void;
   galleryMedia?: MediaItem[];
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  // Get icon for block type
+  const getBlockIcon = () => {
+    switch (block.type) {
+      case "text":
+        return <Type className="h-4 w-4 text-zinc-500" />;
+      case "gallery":
+        return <Image className="h-4 w-4 text-zinc-500" />;
+      case "youtube":
+        return <Youtube className="h-4 w-4 text-zinc-500" />;
+      case "quote":
+        return <Quote className="h-4 w-4 text-zinc-500" />;
+      case "divider":
+        return <Minus className="h-4 w-4 text-zinc-500" />;
+      default:
+        return null;
+    }
+  };
 
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  // Get display name for block type
+  const getBlockName = () => {
+    switch (block.type) {
+      case "text":
+        return "Text";
+      case "gallery":
+        return "Gallery";
+      case "youtube":
+        return "YouTube";
+      case "quote":
+        return "Quote";
+      case "divider":
+        return "Divider";
+      default:
+        return block.type;
+    }
   };
 
   return (
-    <div className="bg-background border border-border rounded-lg overflow-hidden group shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border">
-        <div className="flex items-center gap-2">
-          <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-          <span className="text-xs text-muted-foreground capitalize font-medium">
-            {block.type}
+    <div className="border-b border-zinc-200">
+      {/* Block Header */}
+      <div className="flex items-center gap-2 py-3">
+        {/* Checkbox */}
+        <div className="flex items-center justify-center w-8 h-8">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onToggleSelect(checked === true)}
+          />
+        </div>
+
+        {/* Block type icon and name */}
+        <div className="flex-1 flex items-center gap-2">
+          {getBlockIcon()}
+          <span className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+            {getBlockName()}
           </span>
         </div>
+
+        {/* Move and delete buttons */}
         <div className="flex items-center gap-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
             onClick={() => onMove("up")}
             disabled={index === 0}
-            className="p-1.5 hover:bg-muted rounded disabled:opacity-30 text-muted-foreground"
           >
-            ↑
-          </button>
-          <button
+            <ChevronUp className="h-4 w-4 text-zinc-400" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
             onClick={() => onMove("down")}
             disabled={index === total - 1}
-            className="p-1.5 hover:bg-muted rounded disabled:opacity-30 text-muted-foreground"
           >
-            ↓
-          </button>
-          <button
+            <ChevronDown className="h-4 w-4 text-zinc-400" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
             onClick={onRemove}
-            className="p-1.5 hover:bg-destructive/10 text-destructive rounded"
           >
-            <X className="w-4 h-4" />
-          </button>
+            <X className="h-4 w-4 text-zinc-400" />
+          </Button>
         </div>
       </div>
 
-      <div className="p-3">
+      {/* Block Content */}
+      <div className="pb-6">
         {block.type === "text" && (
-          <textarea
+          <Textarea
             value={block.html}
             onChange={(e) => onUpdate({ html: e.target.value })}
-            placeholder="Write your content here... (HTML supported)"
+            placeholder="Write your content here..."
             rows={4}
-            className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:bg-background resize-none"
+            className="resize-none text-[17px] font-[family-name:var(--font-syne)] leading-[1.5]"
           />
         )}
 
@@ -1188,35 +1368,38 @@ function BlockEditor({
               value={block.url}
               onChange={(e) => onUpdate({ url: e.target.value })}
               placeholder="YouTube URL (e.g., https://youtube.com/watch?v=...)"
+              className="h-9"
             />
             <Input
               value={block.caption || ""}
               onChange={(e) => onUpdate({ caption: e.target.value })}
               placeholder="Caption (optional)"
+              className="h-9"
             />
           </div>
         )}
 
         {block.type === "quote" && (
           <div className="space-y-3">
-            <textarea
+            <Textarea
               value={block.text}
               onChange={(e) => onUpdate({ text: e.target.value })}
               placeholder="Quote text..."
               rows={2}
-              className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:bg-background resize-none italic"
+              className="resize-none italic"
             />
             <Input
               value={block.attribution || ""}
               onChange={(e) => onUpdate({ attribution: e.target.value })}
               placeholder="Attribution (optional)"
+              className="h-9"
             />
           </div>
         )}
 
         {block.type === "divider" && (
           <div className="py-4">
-            <hr className="border-border" />
+            <hr className="border-zinc-200" />
           </div>
         )}
 
@@ -1229,20 +1412,7 @@ function BlockEditor({
             onReplaceImage={onReplaceGalleryImage}
           />
         )}
-
-        {block.type === "video" && (
-          <div
-            className="text-center py-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-muted-foreground text-sm">
-              Click or drag to upload video
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
 }
-

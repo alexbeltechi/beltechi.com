@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { getEntry, getPublishedEntries } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/cms/media";
 import { listCategories } from "@/lib/db/categories";
@@ -113,26 +113,13 @@ export default async function PostPage({ params }: PostPageProps) {
       <main className="min-h-screen bg-white dark:bg-zinc-950">
       {/* Back button - fixed 16px from top and left on all breakpoints */}
       <div className="fixed top-4 left-4 z-50">
-        {/* Mobile: Back chevron */}
         <Button
           asChild
           variant="secondary"
           size="icon-lg"
-          className="lg:hidden"
         >
           <Link href="/">
             <ChevronLeft />
-          </Link>
-        </Button>
-        {/* Desktop: Close X */}
-        <Button
-          asChild
-          variant="secondary"
-          size="icon-lg"
-          className="hidden lg:inline-flex"
-        >
-          <Link href="/">
-            <X />
           </Link>
         </Button>
       </div>

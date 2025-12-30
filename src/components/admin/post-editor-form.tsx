@@ -42,6 +42,19 @@ import { IndexPill } from "@/components/lib";
 import { cn } from "@/lib/utils";
 import type { Entry, MediaItem } from "@/lib/cms/types";
 
+/**
+ * Slugify text for URLs (matching server-side logic)
+ */
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\-\-+/g, "-");
+}
+
 interface MediaPreview {
   id: string;
   file?: File;
@@ -468,12 +481,25 @@ export function PostEditorForm({
         ? `/api/admin/collections/posts/entries/${effectiveSlug}`
         : "/api/admin/collections/posts/entries";
 
+      // Regenerate slug from title for drafts (not yet published)
+      // This allows fixing slugs created from "untitled" before publishing
+      // Once published, keep the slug stable to preserve links
+      let newSlug: string | undefined;
+      if (effectiveSlug && entry?.status !== "published" && title.trim()) {
+        const generatedSlug = slugify(title);
+        // Only update if slug would actually change
+        if (generatedSlug && generatedSlug !== effectiveSlug) {
+          newSlug = generatedSlug;
+        }
+      }
+
       const res = await fetch(endpoint, {
         method: effectiveSlug ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
           publish, // Tell API whether to push to live site
+          ...(newSlug && { slug: newSlug }), // Include new slug if regenerated
           data: {
             title: title || "",
             description: description || "",
@@ -482,7 +508,8 @@ export function PostEditorForm({
             categories,
             location: location || "",
             tags: tags || "",
-            date: publishDate || new Date().toISOString(),
+            // Preserve original date: use custom date if set, else keep initial date, else use now (only for new entries)
+            date: publishDate || initialPublishDate || new Date().toISOString(),
           },
         }),
       });

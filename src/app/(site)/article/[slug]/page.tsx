@@ -1,12 +1,13 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, X } from "lucide-react";
-import { getEntry } from "@/lib/db/entries";
+import { ChevronLeft } from "lucide-react";
+import { getEntry, getPublishedEntries } from "@/lib/db/entries";
 import { getMediaByIds } from "@/lib/db/media";
-import { listCategories, type Category } from "@/lib/db/categories";
+import { listCategories } from "@/lib/db/categories";
 import { Button } from "@/components/ui/button";
-import { Gallery } from "@/components/shared/gallery";
+import { ArticleContent } from "@/components/site/article-content";
+import { PostGrid } from "@/components/site/post-grid";
 import type { Entry, GalleryBlock, Block, MediaItem } from "@/lib/cms/types";
 
 // Use ISR - regenerate every 60 seconds for instant navigation
@@ -47,15 +48,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   // Get content blocks
   const blocks = (article.data.content as Block[]) || [];
 
-  // Collect all media IDs from gallery blocks
-  const galleryBlocks = blocks.filter((b) => b.type === "gallery") as GalleryBlock[];
-  const allMediaIds = galleryBlocks.flatMap((b) => b.mediaIds);
-  const mediaItems = allMediaIds.length > 0 ? await getMediaByIds(allMediaIds) : [];
-
-  // Create a map of mediaId -> MediaItem for quick lookup
-  const mediaMap = new Map<string, MediaItem>();
-  mediaItems.forEach((item) => mediaMap.set(item.id, item));
-
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950">
       {/* Spacer to position back button 16px below header */}
@@ -70,8 +62,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             size="icon-lg"
           >
             <Link href="/">
-              <ChevronLeft className="lg:hidden" />
-              <X className="hidden lg:block" />
+              <ChevronLeft />
             </Link>
           </Button>
         </div>
@@ -80,7 +71,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       {/* Main content */}
       <div className="flex flex-col items-center">
         {/* Article Header - centered with padding */}
-        <div className="w-full max-w-4xl px-8 pt-[80px] lg:pt-[120px] pb-[80px]">
+        <div className="w-full max-w-4xl px-8 pt-[80px] lg:pt-[120px] pb-[120px]">
           <div className="flex flex-col items-center text-center gap-4">
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-center">
               {String(article.data.title)}
@@ -107,108 +98,100 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </div>
         </div>
 
-        {/* Article Content Blocks */}
-        <div className="w-full max-w-[1024px] px-4 pb-16 space-y-6">
-          {blocks.map((block) => {
-            switch (block.type) {
-              case "text":
-                return (
-                  <div
-                    key={block.id}
-                    className="prose prose-lg dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: block.html }}
-                  />
-                );
-
-              case "gallery":
-                const galleryBlock = block as GalleryBlock;
-                const galleryMediaItems = galleryBlock.mediaIds
-                  .map((id) => mediaMap.get(id))
-                  .filter(Boolean) as MediaItem[];
-
-                return (
-                  <Gallery
-                    key={block.id}
-                    mediaItems={galleryMediaItems}
-                    layout={galleryBlock.layout || "classic"}
-                    columns={galleryBlock.columns}
-                    gap={galleryBlock.gap}
-                  />
-                );
-
-              case "youtube":
-                const videoId = extractYouTubeId(block.url);
-                return (
-                  <div key={block.id} className="space-y-2">
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden">
-                      {videoId ? (
-                        <iframe
-                          src={`https://www.youtube.com/embed/${videoId}`}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          className="absolute inset-0 w-full h-full"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-muted flex items-center justify-center text-muted-foreground">
-                          Invalid YouTube URL
-                        </div>
-                      )}
-                    </div>
-                    {block.caption && (
-                      <p className="text-sm text-muted-foreground text-center">
-                        {block.caption}
-                      </p>
-                    )}
-                  </div>
-                );
-
-              case "quote":
-                return (
-                  <blockquote
-                    key={block.id}
-                    className="border-l-4 border-primary pl-6 py-2 italic text-lg"
-                  >
-                    <p className="mb-2">{block.text}</p>
-                    {block.attribution && (
-                      <footer className="text-sm text-muted-foreground not-italic">
-                        — {block.attribution}
-                      </footer>
-                    )}
-                  </blockquote>
-                );
-
-              case "divider":
-                return (
-                  <hr
-                    key={block.id}
-                    className="border-border my-8"
-                  />
-                );
-
-              default:
-                return null;
-            }
-          })}
-        </div>
+        {/* Article Content Blocks - Suspended for streaming */}
+        <Suspense fallback={<div className="w-full max-w-[1024px] h-[400px]" />}>
+          <ArticleContentAsync blocks={blocks} />
+        </Suspense>
       </div>
+
+      {/* More to explore section - Suspended for streaming */}
+      <Suspense fallback={<div className="h-[400px]" />}>
+        <MoreToExploreAsync articleId={article.id} categoryIds={categoryIds} />
+      </Suspense>
     </main>
   );
 }
 
-/**
- * Extract YouTube video ID from various URL formats
- */
-function extractYouTubeId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-  ];
+// Async component for article content with media fetching
+async function ArticleContentAsync({ blocks }: { blocks: Block[] }) {
+  // Collect all media IDs from gallery blocks
+  const galleryBlocks = blocks.filter((b) => b.type === "gallery") as GalleryBlock[];
+  const allMediaIds = galleryBlocks.flatMap((b) => b.mediaIds);
+  const mediaItems = allMediaIds.length > 0 ? await getMediaByIds(allMediaIds) : [];
 
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
+  return <ArticleContent blocks={blocks} mediaItems={mediaItems} />;
+}
+
+// Async component for related posts
+async function MoreToExploreAsync({ 
+  articleId,
+  categoryIds 
+}: { 
+  articleId: string;
+  categoryIds: string[];
+}) {
+  const MAX_RELATED_POSTS = 12;
+  
+  // Get all published posts
+  const allPosts = await getPublishedEntries("posts");
+
+  // Separate posts into related (same category) and others
+  const relatedPosts = allPosts.filter((p) => {
+    const pCategories = (p.data.categories as string[]) || [];
+    return pCategories.some((catId) => categoryIds.includes(catId));
+  });
+
+  const unrelatedPosts = allPosts.filter((p) => {
+    const pCategories = (p.data.categories as string[]) || [];
+    return !pCategories.some((catId) => categoryIds.includes(catId));
+  });
+
+  // Shuffle unrelated posts for randomness
+  const shuffledUnrelated = unrelatedPosts.sort(() => Math.random() - 0.5);
+
+  // Combine: related first, then random others, up to MAX_RELATED_POSTS
+  const displayPosts = [...relatedPosts, ...shuffledUnrelated].slice(0, MAX_RELATED_POSTS);
+
+  if (displayPosts.length === 0) {
+    return null;
   }
 
-  return null;
+  // Get all media for related posts
+  const relatedMediaIds = new Set<string>();
+  displayPosts.forEach((p) => {
+    const pMediaIds = (p.data.media as string[]) || [];
+    pMediaIds.forEach((id) => relatedMediaIds.add(id));
+  });
+
+  const relatedMediaItems = await getMediaByIds(Array.from(relatedMediaIds));
+  const relatedMediaMap = new Map<string, MediaItem>(
+    relatedMediaItems.map((item) => [item.id, item])
+  );
+
+  // Get categories
+  const allCategories = await listCategories();
+  const relatedCategoryIds = new Set(
+    displayPosts.flatMap((p) => {
+      const cats = p.data.categories as string[] | undefined;
+      return cats || [];
+    })
+  );
+
+  const relatedCategories = allCategories
+    .filter((cat) => relatedCategoryIds.has(cat.id))
+    .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
+
+  return (
+    <div className="mt-16 lg:mt-24 pb-10">
+      <h2 className="text-[15px] font-normal font-[family-name:var(--font-syne)] text-zinc-500 px-4 mb-4 text-center">
+        More to explore
+      </h2>
+      <PostGrid 
+        posts={displayPosts} 
+        mediaMap={relatedMediaMap} 
+        categories={relatedCategories} 
+      />
+    </div>
+  );
 }
 

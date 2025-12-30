@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { MediaItem } from "@/lib/cms/types";
 import { cn } from "@/lib/utils";
 import { GalleryLightbox } from "../../gallery-lightbox";
+import { FadeInOnScroll } from "../../fade-in-on-scroll";
 
 interface ClassicLayoutProps {
   mediaItems: MediaItem[];
@@ -47,9 +48,9 @@ export function ClassicLayout({
   if (count === 1) {
     return (
       <>
-        <div className={cn("w-full", className)}>
-          <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} />
-        </div>
+        <FadeInOnScroll className={cn("w-full", className)}>
+          <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} isFullWidth />
+        </FadeInOnScroll>
         <GalleryLightbox
           mediaItems={mediaItems}
           initialIndex={lightboxIndex}
@@ -68,8 +69,12 @@ export function ClassicLayout({
           className={cn("flex flex-col", className)}
           style={{ gap: `${gap}px` }}
         >
-          <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} />
-          <GalleryImage item={mediaItems[1]} index={1} onClick={handleImageClick} />
+          <FadeInOnScroll>
+            <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} isFullWidth />
+          </FadeInOnScroll>
+          <FadeInOnScroll delay={100}>
+            <GalleryImage item={mediaItems[1]} index={1} onClick={handleImageClick} isFullWidth />
+          </FadeInOnScroll>
         </div>
         <GalleryLightbox
           mediaItems={mediaItems}
@@ -127,12 +132,14 @@ export function ClassicLayout({
             {row.map((item) => {
               const itemIndex = mediaItems.findIndex((m) => m.id === item.id);
               return (
-                <GalleryImage 
-                  key={item.id} 
-                  item={item} 
-                  index={itemIndex}
-                  onClick={handleImageClick}
-                />
+                <FadeInOnScroll key={item.id}>
+                  <GalleryImage 
+                    item={item} 
+                    index={itemIndex}
+                    onClick={handleImageClick}
+                    isFullWidth={row.length === 1}
+                  />
+                </FadeInOnScroll>
               );
             })}
           </div>
@@ -154,14 +161,23 @@ export function ClassicLayout({
 function GalleryImage({ 
   item, 
   index,
-  onClick 
+  onClick,
+  isFullWidth = false,
 }: { 
   item: MediaItem;
   index: number;
   onClick: (index: number) => void;
+  isFullWidth?: boolean;
 }) {
   // Use blur placeholder for instant loading
   const blurDataURL = item.blurDataURL;
+
+  // Dynamic sizes based on layout position
+  // Full-width images need higher resolution (~1024px container)
+  // Double-column images are fine at ~512px
+  const imageSizes = isFullWidth
+    ? "(max-width: 768px) 100vw, 1024px"
+    : "(max-width: 768px) 100vw, 512px";
 
   return (
     <div 
@@ -174,7 +190,7 @@ function GalleryImage({
         width={item.width || 1200}
         height={item.height || 800}
         className="w-full h-auto"
-        sizes="(max-width: 768px) 100vw, min(50vw, 512px)"
+        sizes={imageSizes}
         quality={70}
         placeholder={blurDataURL ? "blur" : "empty"}
         blurDataURL={blurDataURL}

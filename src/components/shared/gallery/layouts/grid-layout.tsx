@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { MediaItem } from "@/lib/cms/types";
 import { cn } from "@/lib/utils";
 import { GalleryLightbox } from "../../gallery-lightbox";
+import { FadeInOnScroll } from "../../fade-in-on-scroll";
 
 interface GridLayoutProps {
   mediaItems: MediaItem[];
@@ -54,23 +55,24 @@ export function GridLayout({
         {mediaItems.map((item, index) => {
           const blurDataURL = item.blurDataURL;
           return (
-          <div
-            key={item.id}
-            className="w-full overflow-hidden bg-muted cursor-pointer"
-            onClick={() => handleImageClick(index)}
-          >
-            <Image
-              src={item.url}
-              alt={item.alt || item.originalName}
-              width={item.width || 1200}
-              height={item.height || 800}
-              className="w-full h-auto"
-              sizes={`(max-width: 768px) ${100 / columns}vw, ${100 / columns}vw`}
+          <FadeInOnScroll key={item.id}>
+            <div
+              className="w-full overflow-hidden bg-muted cursor-pointer"
+              onClick={() => handleImageClick(index)}
+            >
+              <Image
+                src={item.url}
+                alt={item.alt || item.originalName}
+                width={item.width || 1200}
+                height={item.height || 800}
+                className="w-full h-auto"
+                sizes={`(max-width: 768px) ${100 / columns}vw, ${100 / columns}vw`}
                 quality={70}
                 placeholder={blurDataURL ? "blur" : "empty"}
                 blurDataURL={blurDataURL}
-            />
-          </div>
+              />
+            </div>
+          </FadeInOnScroll>
           );
         })}
       </div>
