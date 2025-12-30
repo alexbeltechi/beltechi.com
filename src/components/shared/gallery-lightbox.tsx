@@ -37,7 +37,8 @@ export function GalleryLightbox({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set([initialIndex]));
+  // Track which images have finished loading
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const dragStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,22 +47,15 @@ export function GalleryLightbox({
   // Sync initial index when it changes
   useEffect(() => {
     setCurrentIndex(initialIndex);
-    setLoadingImages((prev) => new Set(prev).add(initialIndex));
   }, [initialIndex]);
-
-  // Mark image as loading when index changes
-  useEffect(() => {
-    setLoadingImages((prev) => new Set(prev).add(currentIndex));
-  }, [currentIndex]);
 
   // Handle image load complete
   const handleImageLoad = (index: number) => {
-    setLoadingImages((prev) => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
-    });
+    setLoadedImages((prev) => new Set(prev).add(index));
   };
+  
+  // Check if image is loaded
+  const isImageLoaded = (index: number) => loadedImages.has(index);
 
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < mediaItems.length - 1;
@@ -206,8 +200,8 @@ export function GalleryLightbox({
               {/* Blur placeholder - fades out as image fades in */}
               {currentItem.blurDataURL && (
                 <div 
-                  className={`absolute inset-0 transition-opacity duration-500 ${
-                    loadingImages.has(currentIndex) ? 'opacity-100' : 'opacity-0'
+                  className={`absolute inset-0 transition-opacity duration-300 ${
+                    isImageLoaded(currentIndex) ? 'opacity-0' : 'opacity-100'
                   }`}
                   style={{
                     backgroundImage: `url(${currentItem.blurDataURL})`,
@@ -224,8 +218,8 @@ export function GalleryLightbox({
                 alt={currentItem.alt || currentItem.originalName}
                 width={currentItem.width || 2000}
                 height={currentItem.height || 1500}
-                className={`max-w-full max-h-full w-auto h-auto object-contain relative z-10 transition-opacity duration-500 ${
-                  loadingImages.has(currentIndex) ? 'opacity-0' : 'opacity-100'
+                className={`max-w-full max-h-full w-auto h-auto object-contain relative z-10 transition-opacity duration-300 ${
+                  isImageLoaded(currentIndex) ? 'opacity-100' : 'opacity-0'
                 }`}
                 style={{ maxHeight: "calc(100vh - 128px)" }}
                 sizes="100vw"
