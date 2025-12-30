@@ -54,27 +54,42 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
     <Link href={postUrl} className="block group">
       {/* Image */}
       <div
-        className="relative w-full overflow-hidden bg-zinc-50 dark:bg-zinc-900"
+        className="relative w-full overflow-hidden"
         style={{ aspectRatio }}
       >
         {imageUrl ? (
           <>
+            {/* Show blur background while loading */}
+            {blurDataURL && !isLoaded && (
+              <div 
+                className="absolute inset-0 bg-zinc-50 dark:bg-zinc-900"
+                style={{
+                  backgroundImage: `url(${blurDataURL})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  filter: 'blur(20px)',
+                  transform: 'scale(1.1)',
+                }}
+              />
+            )}
+            {/* Fallback grey for images without blur */}
+            {!blurDataURL && !isLoaded && (
+              <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-900" />
+            )}
             <Image
               src={imageUrl}
               alt={(post.data.title as string) || post.slug}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
               quality={60}
-              placeholder={blurDataURL ? "blur" : "empty"}
-              blurDataURL={blurDataURL}
-              className={`object-cover transition-opacity duration-500 ${
+              className={`object-cover transition-opacity duration-500 relative z-10 ${
                 isLoaded ? 'opacity-100' : 'opacity-0'
               }`}
               loading="lazy"
               onLoad={() => setIsLoaded(true)}
             />
             {/* Hover brighten overlay */}
-            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-[0.05] transition-opacity duration-200 pointer-events-none" />
+            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-[0.05] transition-opacity duration-200 pointer-events-none z-20" />
           </>
         ) : (
           /* Video without poster - show icon */
