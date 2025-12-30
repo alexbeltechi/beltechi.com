@@ -291,10 +291,12 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                 />
               ) : (
                 <>
-                  {/* Show blur background while loading */}
-                  {item.blurDataURL && loadingImages.has(index) && (
+                  {/* Blur placeholder - fades out as image fades in */}
+                  {item.blurDataURL && (
                     <div 
-                      className="absolute inset-0"
+                      className={`absolute inset-0 transition-opacity duration-500 ${
+                        loadingImages.has(index) ? 'opacity-100' : 'opacity-0'
+                      }`}
                       style={{
                         backgroundImage: `url(${item.blurDataURL})`,
                         backgroundSize: 'cover',
@@ -304,21 +306,21 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                       }}
                     />
                   )}
-                <Image
-                  src={item.url}
-                  alt={item.alt || item.originalName}
-                  width={item.width || 1200}
-                  height={item.height || 800}
-                  sizes="(max-width: 1024px) 100vw, 80vw"
+                  <Image
+                    src={item.url}
+                    alt={item.alt || item.originalName}
+                    width={item.width || 1200}
+                    height={item.height || 800}
+                    sizes="(max-width: 1024px) 100vw, 80vw"
                     quality={80}
-                    placeholder={item.blurDataURL ? "blur" : "empty"}
-                    blurDataURL={item.blurDataURL}
-                    className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none relative z-10"
+                    className={`w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none relative z-10 transition-opacity duration-500 ${
+                      loadingImages.has(index) ? 'opacity-0' : 'opacity-100'
+                    }`}
                     priority={index === initialIndex}
                     loading={index === initialIndex ? "eager" : "lazy"}
                     onLoad={() => handleImageLoad(index)}
-                  draggable={false}
-                />
+                    draggable={false}
+                  />
                 </>
               )}
             </div>
