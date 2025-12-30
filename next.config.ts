@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
         hostname: "*.public.blob.vercel-storage.com",
       },
     ],
+    // Cap generated sizes - prevents 3840px requests, saves bandwidth
+    deviceSizes: [640, 768, 1024, 1280, 1536, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Exclude ffmpeg packages from bundling - they use native binaries
   serverExternalPackages: [

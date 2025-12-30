@@ -47,6 +47,9 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
     ? (media.poster?.url || null)
     : (media.variants?.thumb?.url || media.url);
 
+  // Get blur placeholder for instant loading
+  const blurDataURL = media.blurDataURL;
+
   return (
     <Link href={postUrl} className="block group">
       {/* Image */}
@@ -61,6 +64,9 @@ function PostCard({ post, media, categoryMap }: PostCardProps) {
               alt={(post.data.title as string) || post.slug}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+              quality={60}
+              placeholder={blurDataURL ? "blur" : "empty"}
+              blurDataURL={blurDataURL}
               className={`object-cover transition-opacity duration-500 ${
                 isLoaded ? 'opacity-100' : 'opacity-0'
               }`}

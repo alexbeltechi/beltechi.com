@@ -335,6 +335,9 @@ export interface MediaItem {
 
   // Hash for deduplication/integrity
   hash?: string;
+
+  // Blur placeholder for instant loading (base64 data URL, ~20px wide)
+  blurDataURL?: string;
 }
 
 export interface MediaIndex {

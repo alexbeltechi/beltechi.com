@@ -160,6 +160,9 @@ function GalleryImage({
   index: number;
   onClick: (index: number) => void;
 }) {
+  // Use blur placeholder for instant loading
+  const blurDataURL = item.blurDataURL;
+
   return (
     <div 
       className="w-full overflow-hidden bg-muted cursor-pointer"
@@ -171,7 +174,10 @@ function GalleryImage({
         width={item.width || 1200}
         height={item.height || 800}
         className="w-full h-auto"
-        sizes="(max-width: 768px) 100vw, 50vw"
+        sizes="(max-width: 768px) 100vw, min(50vw, 512px)"
+        quality={70}
+        placeholder={blurDataURL ? "blur" : "empty"}
+        blurDataURL={blurDataURL}
       />
     </div>
   );

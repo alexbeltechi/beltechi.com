@@ -18,6 +18,7 @@ import {
   buildVariantFilename,
   isProcessableImage,
   getImageDimensions,
+  generateBlurPlaceholder,
   DEFAULT_SETTINGS,
 } from "./image-processing";
 import { extractVideoThumbnail, getVideoMetadata } from "./video-processing";
@@ -232,6 +233,9 @@ export async function uploadMedia(
         };
       }
 
+      // Generate blur placeholder (tiny base64 image for instant loading)
+      const blurDataURL = await generateBlurPlaceholder(file);
+
       const item: MediaItem = {
         id,
         filename: primaryFilename,
@@ -249,6 +253,7 @@ export async function uploadMedia(
         alt: "",
         createdAt: new Date().toISOString(),
         hash: processed.hash,
+        blurDataURL, // Tiny placeholder for instant loading
       };
 
       // Save to MongoDB (direct document insertion)

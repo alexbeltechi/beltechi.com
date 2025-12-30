@@ -4,11 +4,12 @@ import path from "path";
 import type { ImageVariant, ImageProcessingSettings } from "./types";
 
 // Default settings - optimize images on upload
-// Convert to WebP for 30% smaller files, generate 2 sizes
+// Convert to WebP for smaller files, store single optimized variant
+// Next.js handles responsive sizing via deviceSizes config
 export const DEFAULT_SETTINGS: ImageProcessingSettings = {
   variants: {
-    display: { maxEdge: 3500, quality: 85 },  // Primary optimized image (max 3500px)
-    thumb: { maxEdge: 768, quality: 85 },     // Thumbnail for grids/cards
+    display: { maxEdge: 2000, quality: 80 },  // Primary optimized image (max 2000px)
+    thumb: { maxEdge: 600, quality: 75 },     // Thumbnail for grids/cards
   },
   defaultActiveVariant: "display",
   generateWebP: true,  // Convert all uploads to WebP
@@ -238,6 +239,26 @@ export function buildVariantFilename(
     return `${baseName}-${shortId}-${variantName}${extension}`;
   }
   return `${baseName}-${shortId}${extension}`;
+}
+
+/**
+ * Generate a tiny blur placeholder (base64 data URL)
+ * 
+ * Creates a ~20px wide WebP image for instant loading.
+ * Stored as base64 in MongoDB (not Blob), typically 200-500 bytes.
+ */
+export async function generateBlurPlaceholder(buffer: Buffer): Promise<string> {
+  try {
+    const tiny = await sharp(buffer)
+      .resize(20, undefined, { fit: "inside" }) // 20px wide, maintain aspect
+      .webp({ quality: 20 })
+      .toBuffer();
+    
+    return `data:image/webp;base64,${tiny.toString("base64")}`;
+  } catch {
+    // Return a minimal transparent placeholder on error
+    return "data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAQCdASoUAA8APpE8mkelpSKhMAgAsBIJZQC7AEFgHc9fwA6s/tv8T/bvV9AA/uzP//5j/8n/R/vb6wD/tXbkAAAAAA==";
+  }
 }
 
 

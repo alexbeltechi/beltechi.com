@@ -51,22 +51,28 @@ export function GridLayout({
           gap: `${gap}px`,
         }}
       >
-        {mediaItems.map((item, index) => (
-          <div
-            key={item.id}
-            className="w-full overflow-hidden bg-muted cursor-pointer"
-            onClick={() => handleImageClick(index)}
-          >
-            <Image
-              src={item.url}
-              alt={item.alt || item.originalName}
-              width={item.width || 1200}
-              height={item.height || 800}
-              className="w-full h-auto"
-              sizes={`(max-width: 768px) ${100 / columns}vw, ${100 / columns}vw`}
-            />
-          </div>
-        ))}
+        {mediaItems.map((item, index) => {
+          const blurDataURL = item.blurDataURL;
+          return (
+            <div
+              key={item.id}
+              className="w-full overflow-hidden bg-muted cursor-pointer"
+              onClick={() => handleImageClick(index)}
+            >
+              <Image
+                src={item.url}
+                alt={item.alt || item.originalName}
+                width={item.width || 1200}
+                height={item.height || 800}
+                className="w-full h-auto"
+                sizes={`(max-width: 768px) ${100 / columns}vw, ${100 / columns}vw`}
+                quality={70}
+                placeholder={blurDataURL ? "blur" : "empty"}
+                blurDataURL={blurDataURL}
+              />
+            </div>
+          );
+        })}
       </div>
       <GalleryLightbox
         mediaItems={mediaItems}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MediaItem } from "@/lib/cms/types";
@@ -185,15 +186,21 @@ export function GalleryLightbox({
               style={{ maxHeight: "calc(100vh - 128px)" }}
             />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={currentItem.id}
-              src={currentItem.url}
-              alt={currentItem.alt || currentItem.originalName}
-              className="max-w-full max-h-full object-contain"
-              draggable={false}
-              style={{ maxHeight: "calc(100vh - 128px)" }}
-            />
+            <div className="relative w-full h-full flex items-center justify-center">
+              <Image
+                key={currentItem.id}
+                src={currentItem.url}
+                alt={currentItem.alt || currentItem.originalName}
+                width={currentItem.width || 2000}
+                height={currentItem.height || 1500}
+                className="max-w-full max-h-full w-auto h-auto object-contain"
+                style={{ maxHeight: "calc(100vh - 128px)" }}
+                sizes="100vw"
+                quality={85}
+                priority
+                draggable={false}
+              />
+            </div>
           )}
         </div>
       </div>
