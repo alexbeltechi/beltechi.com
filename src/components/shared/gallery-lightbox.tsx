@@ -203,10 +203,10 @@ export function GalleryLightbox({
             />
           ) : (
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* Show blur background while loading */}
+              {/* Show subtle blur background while loading */}
               {currentItem.blurDataURL && loadingImages.has(currentIndex) && (
                 <div 
-                  className="absolute inset-0"
+                  className="absolute inset-0 opacity-10"
                   style={{
                     backgroundImage: `url(${currentItem.blurDataURL})`,
                     backgroundSize: 'cover',

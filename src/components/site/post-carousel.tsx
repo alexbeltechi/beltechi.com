@@ -291,10 +291,10 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                 />
               ) : (
                 <>
-                  {/* Show blur background while loading */}
+                  {/* Show subtle blur background while loading */}
                   {item.blurDataURL && loadingImages.has(index) && (
                     <div 
-                      className="absolute inset-0"
+                      className="absolute inset-0 opacity-10"
                       style={{
                         backgroundImage: `url(${item.blurDataURL})`,
                         backgroundSize: 'cover',
