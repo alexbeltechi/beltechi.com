@@ -193,35 +193,30 @@ export function GalleryLightbox({
             />
           ) : (
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* Show blur background while loading (50% opacity, fades out) */}
-              {currentItem.blurDataURL && (
-                <div 
-                  className={`absolute inset-0 transition-opacity duration-300 ${
-                    loadedImages.has(currentIndex) ? 'opacity-0' : 'opacity-50'
-                  }`}
-                  style={{
-                    backgroundImage: `url(${currentItem.blurDataURL})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    filter: 'blur(20px)',
-                    transform: 'scale(1.1)',
-                  }}
+              {/* Show blurred image first, then replace with sharp */}
+              {currentItem.blurDataURL && !loadedImages.has(currentIndex) ? (
+                <img
+                  src={currentItem.blurDataURL}
+                  alt={currentItem.alt || currentItem.originalName}
+                  className="max-w-full max-h-full w-auto h-auto object-contain"
+                  style={{ maxHeight: "calc(100vh - 128px)", filter: 'blur(20px)' }}
+                />
+              ) : (
+                <Image
+                  key={currentItem.id}
+                  src={currentItem.url}
+                  alt={currentItem.alt || currentItem.originalName}
+                  width={currentItem.width || 2000}
+                  height={currentItem.height || 1500}
+                  className="max-w-full max-h-full w-auto h-auto object-contain"
+                  style={{ maxHeight: "calc(100vh - 128px)" }}
+                  sizes="100vw"
+                  quality={85}
+                  priority
+                  onLoad={() => handleImageLoad(currentIndex)}
+                  draggable={false}
                 />
               )}
-              <Image
-                key={currentItem.id}
-                src={currentItem.url}
-                alt={currentItem.alt || currentItem.originalName}
-                width={currentItem.width || 2000}
-                height={currentItem.height || 1500}
-                className="max-w-full max-h-full w-auto h-auto object-contain relative z-10"
-                style={{ maxHeight: "calc(100vh - 128px)" }}
-                sizes="100vw"
-                quality={85}
-                priority
-                onLoad={() => handleImageLoad(currentIndex)}
-                draggable={false}
-              />
             </div>
           )}
         </div>
