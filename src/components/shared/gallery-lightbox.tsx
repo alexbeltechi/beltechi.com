@@ -18,15 +18,9 @@ interface GalleryLightboxProps {
  * 
  * Full-screen image viewer with:
  * - 100vh x 100vw viewport coverage
- * - Original aspect ratio preservation
- * - Status indicator (current/total)
+ * - Carousel-style horizontal sliding animation
  * - Swipe/drag navigation
  * - Keyboard navigation (arrows, escape)
- * - Dot indicators
- * 
- * Used in:
- * - Article galleries
- * - Post carousels
  */
 export function GalleryLightbox({
   mediaItems,
@@ -37,7 +31,6 @@ export function GalleryLightbox({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  // Track which images have finished loading
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const dragStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,7 +47,6 @@ export function GalleryLightbox({
     setLoadedImages((prev) => new Set(prev).add(index));
   };
   
-  // Check if image is loaded
   const isImageLoaded = (index: number) => loadedImages.has(index);
 
   const canGoPrevious = currentIndex > 0;
@@ -110,11 +102,19 @@ export function GalleryLightbox({
       if (!isDragging || dragStartX.current === null) return;
 
       const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const diff = clientX - dragStartX.current;
+      let offset = clientX - dragStartX.current;
 
-      setDragOffset(diff);
+      // Add resistance at edges
+      if (
+        (currentIndex === 0 && offset > 0) ||
+        (currentIndex === mediaItems.length - 1 && offset < 0)
+      ) {
+        offset = offset * 0.3;
+      }
+
+      setDragOffset(offset);
     },
-    [isDragging]
+    [isDragging, currentIndex, mediaItems.length]
   );
 
   const onDragEnd = useCallback(() => {
@@ -136,15 +136,24 @@ export function GalleryLightbox({
   if (!isOpen) return null;
 
   const hasMultiple = mediaItems.length > 1;
-  const currentItem = mediaItems[currentIndex];
+
+  // Calculate transform for carousel-style sliding
+  const getSlideTransform = () => {
+    const imageWidthPercent = 100 / mediaItems.length;
+    const baseOffset = -currentIndex * imageWidthPercent;
+    const dragPercent = containerRef.current
+      ? (dragOffset / containerRef.current.offsetWidth) * imageWidthPercent
+      : 0;
+    return `translateX(${baseOffset + dragPercent}%)`;
+  };
 
   return (
     <div 
       className="fixed inset-0 z-[100] bg-white dark:bg-zinc-950"
       style={{ width: "100vw", height: "100vh" }}
     >
-      {/* Close button - top right */}
-      <div className="absolute top-4 right-4 z-[110]">
+      {/* Close button - top left */}
+      <div className="absolute top-4 left-4 z-[110]">
         <Button
           onClick={onClose}
           variant="secondary"
@@ -155,19 +164,19 @@ export function GalleryLightbox({
         </Button>
       </div>
 
-      {/* Status indicator - top left */}
+      {/* Status indicator - top right */}
       {hasMultiple && (
-        <div className="absolute top-4 left-4 z-[110]">
+        <div className="absolute top-4 right-4 z-[110]">
           <div className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-sm font-medium">
             {currentIndex + 1}/{mediaItems.length}
           </div>
         </div>
       )}
 
-      {/* Image container - full screen */}
+      {/* Image container - full screen, carousel-style */}
       <div
         ref={containerRef}
-        className="absolute inset-0 flex items-center justify-center select-none"
+        className="absolute inset-0 select-none overflow-hidden"
         style={{
           cursor: hasMultiple ? (isDragging ? "grabbing" : "grab") : "default",
         }}
@@ -179,40 +188,47 @@ export function GalleryLightbox({
         onTouchMove={onDragMove}
         onTouchEnd={onDragEnd}
       >
-        {/* Current image */}
-        <div 
-          className="w-full h-full flex items-center justify-center px-4 lg:px-20 py-16"
+        {/* Horizontal strip of all images */}
+        <div
+          className="flex h-full"
           style={{
-            transform: isDragging ? `translateX(${dragOffset}px)` : "translateX(0)",
-            transition: isDragging ? "none" : "transform 200ms ease-out",
+            transform: getSlideTransform(),
+            transition: isDragging ? "none" : "transform 300ms ease-out",
+            width: `${mediaItems.length * 100}%`,
           }}
         >
-          {currentItem.mime.startsWith("video/") ? (
-            <video
-              src={currentItem.url}
-              poster={currentItem.poster?.url}
-              controls
-              className="max-w-full max-h-full object-contain"
-              style={{ maxHeight: "calc(100vh - 128px)" }}
-            />
-          ) : (
-            <Image
-              key={currentItem.id}
-              src={currentItem.url}
-              alt={currentItem.alt || currentItem.originalName}
-              width={currentItem.width || 2000}
-              height={currentItem.height || 1500}
-              className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${
-                isImageLoaded(currentIndex) ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{ maxHeight: "calc(100vh - 128px)" }}
-              sizes="100vw"
-              quality={85}
-              priority
-              onLoad={() => handleImageLoad(currentIndex)}
-              draggable={false}
-            />
-          )}
+          {mediaItems.map((item, index) => (
+            <div
+              key={item.id}
+              className="relative h-full flex items-center justify-center"
+              style={{ width: `${100 / mediaItems.length}%` }}
+            >
+              {item.mime.startsWith("video/") ? (
+                <video
+                  src={item.url}
+                  poster={item.poster?.url}
+                  controls
+                  className="max-w-full max-h-full object-contain"
+                />
+              ) : (
+                <Image
+                  key={item.id}
+                  src={item.url}
+                  alt={item.alt || item.originalName}
+                  width={item.width || 2000}
+                  height={item.height || 1500}
+                  className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${
+                    isImageLoaded(index) ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  sizes="100vw"
+                  quality={85}
+                  priority={Math.abs(index - currentIndex) <= 1}
+                  onLoad={() => handleImageLoad(index)}
+                  draggable={false}
+                />
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -240,27 +256,6 @@ export function GalleryLightbox({
             <ChevronRight />
           </Button>
         </>
-      )}
-
-      {/* Dot indicators - bottom center */}
-      {hasMultiple && (
-        <div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center z-[110]"
-          style={{ gap: "6px" }}
-        >
-          {mediaItems.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              aria-label={`Go to image ${index + 1}`}
-              className={`rounded-full border-none p-0 cursor-pointer transition-all ${
-                index === currentIndex
-                  ? "w-2 h-2 bg-black dark:bg-white"
-                  : "w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600"
-              }`}
-            />
-          ))}
-        </div>
       )}
     </div>
   );
