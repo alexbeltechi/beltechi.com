@@ -281,6 +281,9 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                   width={item.width || 1200}
                   height={item.height || 800}
                   sizes="(max-width: 1024px) 100vw, 80vw"
+                  quality={80}
+                  placeholder={item.blurDataURL ? "blur" : "empty"}
+                  blurDataURL={item.blurDataURL}
                   className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none"
                   priority={index === currentIndex}
                   draggable={false}
