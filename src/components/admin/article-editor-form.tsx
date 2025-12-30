@@ -351,17 +351,17 @@ export function ArticleEditorForm({
         return;
     }
 
-    setBlocks([...blocks, newBlock]);
+    setBlocks((prevBlocks) => [...prevBlocks, newBlock]);
   };
 
   const updateBlock = (id: string, updates: Partial<Block>) => {
-    setBlocks(
-      blocks.map((b) => (b.id === id ? { ...b, ...updates } : b)) as Block[]
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((b) => (b.id === id ? { ...b, ...updates } : b)) as Block[]
     );
   };
 
   const removeBlock = (id: string) => {
-    setBlocks(blocks.filter((b) => b.id !== id));
+    setBlocks((prevBlocks) => prevBlocks.filter((b) => b.id !== id));
     setSelectedBlocks((prev) => {
       const next = new Set(prev);
       next.delete(id);
@@ -370,20 +370,24 @@ export function ArticleEditorForm({
   };
 
   const moveBlock = (index: number, direction: "up" | "down") => {
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= blocks.length) return;
+    setBlocks((prevBlocks) => {
+      const newIndex = direction === "up" ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= prevBlocks.length) return prevBlocks;
 
-    const newBlocks = [...blocks];
-    [newBlocks[index], newBlocks[newIndex]] = [
-      newBlocks[newIndex],
-      newBlocks[index],
-    ];
-    setBlocks(newBlocks);
+      const newBlocks = [...prevBlocks];
+      [newBlocks[index], newBlocks[newIndex]] = [
+        newBlocks[newIndex],
+        newBlocks[index],
+      ];
+      return newBlocks;
+    });
   };
 
   // Delete selected blocks
   const deleteSelectedBlocks = () => {
-    setBlocks(blocks.filter((b) => !selectedBlocks.has(b.id)));
+    setBlocks((prevBlocks) =>
+      prevBlocks.filter((b) => !selectedBlocks.has(b.id))
+    );
     setSelectedBlocks(new Set());
   };
 
