@@ -18,7 +18,7 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set([initialIndex]));
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const dragStartX = useRef<number | null>(null);
   const dragStartY = useRef<number | null>(null);
   const dragDistance = useRef<number>(0);
@@ -38,18 +38,9 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
-  // Mark image as loading when index changes
-  useEffect(() => {
-    setLoadingImages((prev) => new Set(prev).add(currentIndex));
-  }, [currentIndex]);
-
   // Handle image load complete
   const handleImageLoad = (index: number) => {
-    setLoadingImages((prev) => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
-    });
+    setLoadedImages((prev) => new Set(prev).add(index));
   };
 
   // Calculate optimal aspect ratio for mobile container
@@ -291,10 +282,10 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                 />
               ) : (
                 <>
-                  {/* Show subtle blur background while loading */}
-                  {item.blurDataURL && loadingImages.has(index) && (
+                  {/* Show blur background while loading (50% opacity) */}
+                  {item.blurDataURL && !loadedImages.has(index) && (
                     <div 
-                      className="absolute inset-0 opacity-10"
+                      className="absolute inset-0 opacity-50"
                       style={{
                         backgroundImage: `url(${item.blurDataURL})`,
                         backgroundSize: 'cover',

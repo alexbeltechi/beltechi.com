@@ -37,7 +37,7 @@ export function GalleryLightbox({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set([initialIndex]));
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const dragStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,21 +46,11 @@ export function GalleryLightbox({
   // Sync initial index when it changes
   useEffect(() => {
     setCurrentIndex(initialIndex);
-    setLoadingImages((prev) => new Set(prev).add(initialIndex));
   }, [initialIndex]);
-
-  // Mark image as loading when index changes
-  useEffect(() => {
-    setLoadingImages((prev) => new Set(prev).add(currentIndex));
-  }, [currentIndex]);
 
   // Handle image load complete
   const handleImageLoad = (index: number) => {
-    setLoadingImages((prev) => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
-    });
+    setLoadedImages((prev) => new Set(prev).add(index));
   };
 
   const canGoPrevious = currentIndex > 0;
@@ -203,10 +193,10 @@ export function GalleryLightbox({
             />
           ) : (
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* Show subtle blur background while loading */}
-              {currentItem.blurDataURL && loadingImages.has(currentIndex) && (
+              {/* Show blur background while loading (50% opacity) */}
+              {currentItem.blurDataURL && !loadedImages.has(currentIndex) && (
                 <div 
-                  className="absolute inset-0 opacity-10"
+                  className="absolute inset-0 opacity-50"
                   style={{
                     backgroundImage: `url(${currentItem.blurDataURL})`,
                     backgroundSize: 'cover',
