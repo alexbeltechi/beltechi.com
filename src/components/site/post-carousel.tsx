@@ -282,10 +282,12 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                 />
               ) : (
                 <>
-                  {/* Show blur background while loading (50% opacity) */}
-                  {item.blurDataURL && !loadedImages.has(index) && (
+                  {/* Show blur background while loading (50% opacity, fades out) */}
+                  {item.blurDataURL && (
                     <div 
-                      className="absolute inset-0 opacity-50"
+                      className={`absolute inset-0 transition-opacity duration-300 ${
+                        loadedImages.has(index) ? 'opacity-0' : 'opacity-50'
+                      }`}
                       style={{
                         backgroundImage: `url(${item.blurDataURL})`,
                         backgroundSize: 'cover',
@@ -302,8 +304,6 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                     height={item.height || 800}
                     sizes="(max-width: 1024px) 100vw, 80vw"
                     quality={80}
-                    placeholder={item.blurDataURL ? "blur" : "empty"}
-                    blurDataURL={item.blurDataURL}
                     className="w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none relative z-10"
                     priority={index === initialIndex}
                     loading={index === initialIndex ? "eager" : "lazy"}

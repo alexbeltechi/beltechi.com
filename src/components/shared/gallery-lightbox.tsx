@@ -193,10 +193,12 @@ export function GalleryLightbox({
             />
           ) : (
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* Show blur background while loading (50% opacity) */}
-              {currentItem.blurDataURL && !loadedImages.has(currentIndex) && (
+              {/* Show blur background while loading (50% opacity, fades out) */}
+              {currentItem.blurDataURL && (
                 <div 
-                  className="absolute inset-0 opacity-50"
+                  className={`absolute inset-0 transition-opacity duration-300 ${
+                    loadedImages.has(currentIndex) ? 'opacity-0' : 'opacity-50'
+                  }`}
                   style={{
                     backgroundImage: `url(${currentItem.blurDataURL})`,
                     backgroundSize: 'cover',
