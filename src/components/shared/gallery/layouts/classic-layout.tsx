@@ -11,6 +11,7 @@ interface ClassicLayoutProps {
   mediaItems: MediaItem[];
   gap?: number;
   className?: string;
+  width?: 'normal' | 'large' | 'full';
 }
 
 /**
@@ -24,7 +25,8 @@ interface ClassicLayoutProps {
 export function ClassicLayout({ 
   mediaItems, 
   gap = 16,
-  className 
+  className,
+  width = 'normal',
 }: ClassicLayoutProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -49,7 +51,7 @@ export function ClassicLayout({
     return (
       <>
         <FadeInOnScroll className={cn("w-full", className)}>
-          <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} isFullWidth />
+          <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} isFullWidth width={width} />
         </FadeInOnScroll>
         <GalleryLightbox
           mediaItems={mediaItems}
@@ -70,10 +72,10 @@ export function ClassicLayout({
           style={{ gap: `${gap}px` }}
         >
           <FadeInOnScroll>
-            <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} isFullWidth />
+            <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} isFullWidth width={width} />
           </FadeInOnScroll>
           <FadeInOnScroll delay={100}>
-            <GalleryImage item={mediaItems[1]} index={1} onClick={handleImageClick} isFullWidth />
+            <GalleryImage item={mediaItems[1]} index={1} onClick={handleImageClick} isFullWidth width={width} />
           </FadeInOnScroll>
         </div>
         <GalleryLightbox
@@ -138,6 +140,7 @@ export function ClassicLayout({
                     index={itemIndex}
                     onClick={handleImageClick}
                     isFullWidth={row.length === 1}
+                    width={width}
                   />
                 </FadeInOnScroll>
               );
@@ -156,6 +159,20 @@ export function ClassicLayout({
 }
 
 /**
+ * Get the best image URL based on gallery width setting
+ * - normal: default url (~1600px) is fine for contained layouts
+ * - large/full: use display variant (2400px) for sharp full-viewport images
+ */
+function getImageUrl(item: MediaItem, width: 'normal' | 'large' | 'full'): string {
+  if (width === 'large' || width === 'full') {
+    // Use display (2400px) for full-width layouts, fall back to large, then default url
+    return item.variants?.display?.url || item.variants?.large?.url || item.url;
+  }
+  // Normal width: default url is fine (already optimized ~1600px)
+  return item.url;
+}
+
+/**
  * Gallery image component with original aspect ratio preserved
  */
 function GalleryImage({ 
@@ -163,21 +180,28 @@ function GalleryImage({
   index,
   onClick,
   isFullWidth = false,
+  width = 'normal',
 }: { 
   item: MediaItem;
   index: number;
   onClick: (index: number) => void;
   isFullWidth?: boolean;
+  width?: 'normal' | 'large' | 'full';
 }) {
   // Use blur placeholder for instant loading
   const blurDataURL = item.blurDataURL;
 
-  // Dynamic sizes based on layout position
-  // Full-width images need higher resolution (~1024px container)
-  // Double-column images are fine at ~512px
-  const imageSizes = isFullWidth
-    ? "(max-width: 768px) 100vw, 1024px"
-    : "(max-width: 768px) 100vw, 512px";
+  // Get the appropriate image source based on width setting
+  const imageSrc = getImageUrl(item, width);
+
+  // Dynamic sizes based on layout position and width setting
+  // For large/full width: images span the full viewport
+  // For normal: contained within article (~1024px max)
+  const imageSizes = width === 'large' || width === 'full'
+    ? "100vw"  // Full viewport width for breakout layouts
+    : isFullWidth
+      ? "(max-width: 768px) 100vw, 1024px"
+      : "(max-width: 768px) 100vw, 512px";
 
   return (
     <div 
@@ -185,13 +209,13 @@ function GalleryImage({
       onClick={() => onClick(index)}
     >
       <Image
-        src={item.url}
+        src={imageSrc}
         alt={item.alt || item.originalName}
         width={item.width || 1200}
         height={item.height || 800}
         className="w-full h-auto"
         sizes={imageSizes}
-        quality={70}
+        quality={80}
         placeholder={blurDataURL ? "blur" : "empty"}
         blurDataURL={blurDataURL}
       />

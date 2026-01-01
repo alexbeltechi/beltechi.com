@@ -49,6 +49,7 @@ export function Gallery({
             mediaItems={mediaItems}
             gap={gap}
             className={className}
+            width={width}
           />
         );
 
@@ -60,6 +61,7 @@ export function Gallery({
             gap={gap}
             aspectRatio={aspectRatio}
             className={className}
+            width={width}
           />
         );
 
@@ -85,6 +87,7 @@ export function Gallery({
             mediaItems={mediaItems}
             gap={gap}
             className={className}
+            width={width}
           />
         );
     }
