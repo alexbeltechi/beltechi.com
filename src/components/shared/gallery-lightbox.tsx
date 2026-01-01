@@ -14,6 +14,14 @@ interface GalleryLightboxProps {
 }
 
 /**
+ * Get the largest available image URL
+ * Priority: large (3200px) → display (2400px) → original url
+ */
+function getLargestImageUrl(item: MediaItem): string {
+  return item.variants?.large?.url || item.variants?.display?.url || item.url;
+}
+
+/**
  * Universal Lightbox Component
  * 
  * Full-screen image viewer with:
@@ -224,15 +232,15 @@ export function GalleryLightbox({
               ) : (
                 <Image
                   key={item.id}
-                  src={item.url}
+                  src={getLargestImageUrl(item)}
                   alt={item.alt || item.originalName}
-                  width={item.width || 2000}
-                  height={item.height || 1500}
+                  width={item.variants?.large?.width || item.variants?.display?.width || item.width || 2000}
+                  height={item.variants?.large?.height || item.variants?.display?.height || item.height || 1500}
                   className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${
                     isImageLoaded(index) ? 'opacity-100' : 'opacity-0'
                   }`}
                   sizes="100vw"
-                  quality={85}
+                  quality={90}
                   priority={Math.abs(index - currentIndex) <= 1}
                   onLoad={() => handleImageLoad(index)}
                   draggable={false}

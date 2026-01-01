@@ -73,10 +73,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         {/* Article Header - centered with padding */}
         <div className="w-full max-w-4xl px-8 pt-[80px] lg:pt-[120px] pb-[120px]">
           <div className="flex flex-col items-center text-center gap-4">
-            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-center">
-              {String(article.data.title)}
-            </h1>
-
             <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground text-center">
               {articleCategories.map((category) => (
                 <Link
@@ -89,6 +85,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               ))}
               {formattedDate ? <span>{formattedDate}</span> : null}
             </div>
+
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-center">
+              {String(article.data.title)}
+            </h1>
 
             {article.data.excerpt ? (
               <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
