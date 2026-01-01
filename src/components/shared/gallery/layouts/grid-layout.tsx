@@ -80,7 +80,7 @@ export function GridLayout({
           // For normal: contained within article
           const imageSizes = width === 'large' || width === 'full'
             ? `${100 / columns}vw`  // Portion of full viewport
-            : `(max-width: 768px) ${100 / columns}vw, ${1024 / columns}px`;
+            : `(max-width: 768px) ${100 / columns}vw, ${1200 / columns}px`;
           
           return (
           <FadeInOnScroll key={item.id}>

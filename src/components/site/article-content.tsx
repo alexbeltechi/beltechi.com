@@ -20,7 +20,7 @@ export function ArticleContent({ blocks, mediaItems }: ArticleContentProps) {
   const mediaMap = new Map<string, MediaItem>();
   mediaItems.forEach((item) => mediaMap.set(item.id, item));
   return (
-    <div className="w-full max-w-[1024px] px-4 pb-16 space-y-6">
+    <div className="w-full max-w-[1200px] px-4 pb-16 space-y-6">
       {blocks.map((block) => {
         switch (block.type) {
           case "text":

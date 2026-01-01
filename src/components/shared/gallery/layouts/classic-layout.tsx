@@ -199,12 +199,12 @@ function GalleryImage({
 
   // Dynamic sizes based on layout position and width setting
   // For large/full width: images span the full viewport
-  // For normal: contained within article (~1024px max)
+  // For normal: contained within article (~1200px max)
   const imageSizes = width === 'large' || width === 'full'
     ? "100vw"  // Full viewport width for breakout layouts
     : isFullWidth
-      ? "(max-width: 768px) 100vw, 1024px"
-      : "(max-width: 768px) 100vw, 512px";
+      ? "(max-width: 768px) 100vw, 1200px"
+      : "(max-width: 768px) 100vw, 600px";
 
   return (
     <div 
