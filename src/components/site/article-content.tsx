@@ -47,6 +47,7 @@ export function ArticleContent({ blocks, mediaItems }: ArticleContentProps) {
                 layout={galleryBlock.layout || "classic"}
                 columns={galleryBlock.columns}
                 gap={galleryBlock.gap}
+                width={galleryBlock.width}
               />
             );
 

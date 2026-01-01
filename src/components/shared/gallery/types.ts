@@ -10,6 +10,11 @@ export type GalleryLayout =
   | 'carousel';    // Future: Slideshow
 
 /**
+ * Gallery width options for breakout layouts
+ */
+export type GalleryWidth = 'normal' | 'large' | 'full';
+
+/**
  * Unified gallery props used across the application
  */
 export interface GalleryProps {
@@ -33,6 +38,9 @@ export interface GalleryProps {
   
   /** Optional aspect ratio for images */
   aspectRatio?: string;
+  
+  /** Width option: normal (default), large (breakout with margins), full (edge to edge) */
+  width?: GalleryWidth;
 }
 
 /**
