@@ -554,7 +554,7 @@ function LayoutSettingsPopover({
       </div>
       <PopoverContent 
         className="w-80 p-0" 
-        align="start"
+        align="center"
         sideOffset={4}
       >
         {/* Header */}
@@ -588,7 +588,7 @@ function LayoutSettingsPopover({
         {/* Content */}
         <div className="p-4 space-y-4">
           {/* Layout */}
-          <div className="space-y-2">
+          <div>
             <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
               Layout
             </label>
@@ -596,7 +596,7 @@ function LayoutSettingsPopover({
               value={tempLayout}
               onValueChange={(value) => setTempLayout(value as "classic" | "grid")}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-full mt-2">
                 <div className="flex items-center gap-2">
                   {tempLayout === "grid" ? (
                     <LayoutGrid className="h-4 w-4 text-muted-foreground" />
@@ -615,7 +615,7 @@ function LayoutSettingsPopover({
 
           {/* Columns - only for grid */}
           {tempLayout === "grid" && (
-            <div className="space-y-2">
+            <div>
               <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
                 Columns
               </label>
@@ -623,7 +623,7 @@ function LayoutSettingsPopover({
                 value={String(tempColumns)}
                 onValueChange={(value) => setTempColumns(Number(value))}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-9 w-full mt-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -636,7 +636,7 @@ function LayoutSettingsPopover({
           )}
 
           {/* Width */}
-          <div className="space-y-2">
+          <div>
             <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
               Width
             </label>
@@ -644,7 +644,7 @@ function LayoutSettingsPopover({
               value={tempWidth}
               onValueChange={(value) => setTempWidth(value as "normal" | "large" | "full")}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-full mt-2">
                 <div className="flex items-center gap-2">
                   <MoveHorizontal className="h-4 w-4 text-muted-foreground" />
                   <SelectValue />
