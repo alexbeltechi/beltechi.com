@@ -130,6 +130,7 @@ export default function MediaLibraryPage() {
   // Replace functionality
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [isReplacing, setIsReplacing] = useState(false);
+  const [replaceFileName, setReplaceFileName] = useState<string | null>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   
   // Batch replace
@@ -657,6 +658,8 @@ export default function MediaLibraryPage() {
     }
 
     setIsReplacing(true);
+    setReplaceFileName(file.name);
+    
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -678,6 +681,7 @@ export default function MediaLibraryPage() {
     } finally {
       setIsReplacing(false);
       setReplaceTargetId(null);
+      setReplaceFileName(null);
       // Reset input
       if (replaceInputRef.current) {
         replaceInputRef.current.value = "";
@@ -1486,6 +1490,21 @@ export default function MediaLibraryPage() {
         onChange={handleReplaceFileChange}
         className="hidden"
       />
+
+      {/* Replace Progress Dialog */}
+      <Dialog open={isReplacing} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[320px] max-w-[calc(100%-32px)]" showCloseButton={false}>
+          <div className="flex flex-col items-center py-6">
+            <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+            <p className="text-sm font-medium">Replacing file...</p>
+            {replaceFileName && (
+              <p className="text-xs text-muted-foreground mt-1 truncate max-w-full">
+                {replaceFileName}
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Batch Replace Dialog */}
       <Dialog open={showBatchReplaceDialog} onOpenChange={(open) => !batchReplacing && setShowBatchReplaceDialog(open)}>
