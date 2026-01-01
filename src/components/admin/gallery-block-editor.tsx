@@ -15,6 +15,7 @@ import {
   X,
   Check,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -494,8 +495,12 @@ function ThumbnailItem({
                 Edit
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onSelect={onReplace}>Replace</DropdownMenuItem>
+            <DropdownMenuItem onSelect={onReplace}>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Replace
+            </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={onRemove}>
+              <Trash2 className="h-4 w-4 mr-2" />
               Remove
             </DropdownMenuItem>
           </DropdownMenuContent>
