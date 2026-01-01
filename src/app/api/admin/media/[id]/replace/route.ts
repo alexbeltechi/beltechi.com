@@ -42,8 +42,9 @@ export async function POST(
     });
   } catch (error) {
     console.error("Replace error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return NextResponse.json(
-      { error: "Failed to replace file" },
+      { error: `Failed to replace file: ${errorMessage}` },
       { status: 500 }
     );
   }

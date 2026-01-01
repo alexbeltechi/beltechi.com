@@ -673,11 +673,13 @@ export default function MediaLibraryPage() {
         toast.success("File replaced successfully");
         await fetchMedia();
       } else {
-        toast.error("Failed to replace file");
+        const errorData = await replaceRes.json().catch(() => ({}));
+        toast.error(errorData.error || "Failed to replace file");
       }
     } catch (error) {
       console.error("Replace failed:", error);
-      toast.error("Failed to replace file");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to replace file: ${errorMessage}`);
     } finally {
       setIsReplacing(false);
       setReplaceTargetId(null);
