@@ -321,7 +321,7 @@ export function GalleryBlockEditor({
 
           {/* Layout settings popover */}
           <LayoutSettingsPopover
-            layout={block.layout || "classic"}
+            layout={(block.layout === "classic" || block.layout === "grid") ? block.layout : "classic"}
             columns={block.columns || 1}
             width={block.width || "normal"}
             onApply={(settings) => {
