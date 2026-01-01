@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
@@ -129,7 +129,8 @@ export default function MediaLibraryPage() {
   
   // Replace functionality
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
-  const [showReplacePicker, setShowReplacePicker] = useState(false);
+  const [isReplacing, setIsReplacing] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   
   // Batch replace
   const [showBatchReplaceDialog, setShowBatchReplaceDialog] = useState(false);
@@ -636,24 +637,52 @@ export default function MediaLibraryPage() {
 
   const handleReplaceFromMenu = (id: string) => {
     setReplaceTargetId(id);
-    setShowReplacePicker(true);
+    replaceInputRef.current?.click();
   };
 
   const handleReplaceFromModal = (id: string) => {
     setSelectedMediaId(null); // Close the detail modal
     setReplaceTargetId(id);
-    setShowReplacePicker(true);
+    // Small delay to allow modal to close before opening file picker
+    setTimeout(() => {
+      replaceInputRef.current?.click();
+    }, 100);
   };
 
-  const handleReplaceSelect = (items: MediaItem[]) => {
-    if (items.length > 0 && replaceTargetId) {
-      // In media library context, "replace" means we're swapping the position
-      // of the old item with the new selected item in the UI view
-      // For now, we just select the new item to view it
-      setSelectedMediaId(items[0].id);
+  const handleReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !replaceTargetId) {
+      setReplaceTargetId(null);
+      return;
     }
-    setReplaceTargetId(null);
-    setShowReplacePicker(false);
+
+    setIsReplacing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const replaceRes = await fetch(`/api/admin/media/${replaceTargetId}/replace`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (replaceRes.ok) {
+        toast.success("File replaced successfully");
+        await fetchMedia();
+      } else {
+        toast.error("Failed to replace file");
+      }
+    } catch (error) {
+      console.error("Replace failed:", error);
+      toast.error("Failed to replace file");
+    } finally {
+      setIsReplacing(false);
+      setReplaceTargetId(null);
+      // Reset input
+      if (replaceInputRef.current) {
+        replaceInputRef.current.value = "";
+      }
+    }
   };
 
   // Extract base filename (without shortId suffix) for matching
@@ -1449,16 +1478,13 @@ export default function MediaLibraryPage() {
         />
       )}
 
-      {/* Replace Media Picker */}
-      <MediaPicker
-        isOpen={showReplacePicker}
-        onClose={() => {
-          setShowReplacePicker(false);
-          setReplaceTargetId(null);
-        }}
-        onSelect={handleReplaceSelect}
-        multiple={false}
-        accept={["image/*", "video/*"]}
+      {/* Hidden file input for single replace */}
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept="image/*,video/*"
+        onChange={handleReplaceFileChange}
+        className="hidden"
       />
 
       {/* Batch Replace Dialog */}

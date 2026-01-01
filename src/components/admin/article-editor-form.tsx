@@ -897,38 +897,9 @@ export function ArticleEditorForm({
                 onRemove={() => removeBlock(block.id)}
                 onMove={(dir) => moveBlock(index, dir)}
                 onOpenGalleryPicker={() => setGalleryPickerBlockId(block.id)}
-                onReplaceGalleryImage={async (imageIndex, file) => {
-                  // Upload the file
-                  try {
-                    const formData = new FormData();
-                    formData.append("file", file);
-
-                    const uploadRes = await fetch("/api/admin/media", {
-                      method: "POST",
-                      body: formData,
-                    });
-
-                    if (uploadRes.ok) {
-                      const uploadData = await uploadRes.json();
-                      const newMediaItem = uploadData.data as MediaItem;
-
-                      // Update block mediaIds - replace at index
-                      if (block.type === "gallery") {
-                        const newMediaIds = [...(block.mediaIds || [])];
-                        newMediaIds[imageIndex] = newMediaItem.id;
-                        updateBlock(block.id, { mediaIds: newMediaIds });
-
-                        // Update gallery media state
-                        setGalleryMedia((prev) => {
-                          const existingMedia = [...(prev[block.id] || [])];
-                          existingMedia[imageIndex] = newMediaItem;
-                          return { ...prev, [block.id]: existingMedia };
-                        });
-                      }
-                    }
-                  } catch (err) {
-                    console.error("Failed to upload replacement file:", err);
-                  }
+                onReplaceGalleryImage={(imageIndex) => {
+                  setGalleryPickerBlockId(block.id);
+                  setGalleryReplaceIndex(imageIndex);
                 }}
                 onUploadGalleryFiles={async (files) => {
                   // Upload files to media API
@@ -1214,7 +1185,7 @@ function BlockEditor({
   onRemove: () => void;
   onMove: (direction: "up" | "down") => void;
   onOpenGalleryPicker?: () => void;
-  onReplaceGalleryImage?: (imageIndex: number, file: File) => Promise<void>;
+  onReplaceGalleryImage?: (imageIndex: number) => void;
   onUploadGalleryFiles?: (files: File[]) => Promise<void>;
   galleryMedia?: MediaItem[];
   onEditMedia?: (mediaId: string) => void;
