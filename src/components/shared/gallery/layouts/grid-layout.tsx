@@ -23,16 +23,16 @@ interface GridLayoutProps {
  */
 /**
  * Get the best image URL based on gallery width setting
- * - normal: default url (~1600px) is fine for contained layouts
- * - large/full: use display variant (2400px) for sharp full-viewport images
+ * - normal: display variant (2400px) for contained layouts
+ * - large/full: large variant (3200px) for sharp full-viewport on 4K screens
  */
 function getImageUrl(item: MediaItem, width: 'normal' | 'large' | 'full'): string {
   if (width === 'large' || width === 'full') {
-    // Use display (2400px) for full-width layouts, fall back to large, then default url
-    return item.variants?.display?.url || item.variants?.large?.url || item.url;
+    // Use large (3200px) for full-width layouts, fall back to display, then default url
+    return item.variants?.large?.url || item.variants?.display?.url || item.url;
   }
-  // Normal width: default url is fine (already optimized ~1600px)
-  return item.url;
+  // Normal width: display variant is fine (2400px)
+  return item.variants?.display?.url || item.url;
 }
 
 export function GridLayout({ 

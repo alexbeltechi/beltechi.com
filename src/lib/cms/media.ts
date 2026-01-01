@@ -217,6 +217,22 @@ export async function uploadMedia(
         size: displayVariant.buffer.length,
       };
 
+      // Save large variant (for full-width on 4K screens)
+      const largeVariant = processed.variants.large;
+      if (largeVariant) {
+        const largeFilename = buildVariantFilename(baseFilename, shortId, "large", outputExt);
+        const largeResult = await saveFile(largeVariant.buffer, largeFilename, "variants", outputMime);
+
+        variants.large = {
+          filename: largeFilename,
+          path: largeResult.path,
+          url: largeResult.url,
+          width: largeVariant.width,
+          height: largeVariant.height,
+          size: largeVariant.buffer.length,
+        };
+      }
+
       // Save thumb variant
       const thumbVariant = processed.variants.thumb;
       if (thumbVariant) {

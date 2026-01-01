@@ -4,11 +4,12 @@ import path from "path";
 import type { ImageVariant, ImageProcessingSettings } from "./types";
 
 // Default settings - optimize images on upload
-// Convert to WebP for smaller files, store single optimized variant
+// Convert to WebP for smaller files, store multiple variants for different use cases
 // Next.js handles responsive sizing via deviceSizes config
 export const DEFAULT_SETTINGS: ImageProcessingSettings = {
   variants: {
-    display: { maxEdge: 2000, quality: 80 },  // Primary optimized image (max 2000px)
+    display: { maxEdge: 2400, quality: 82 },  // Primary optimized image (hero/article)
+    large: { maxEdge: 3200, quality: 80 },    // Full-width on 4K/large screens
     thumb: { maxEdge: 600, quality: 75 },     // Thumbnail for grids/cards
   },
   defaultActiveVariant: "display",
@@ -198,6 +199,17 @@ export async function processImage(
       buffer,
       displayConfig.maxEdge,
       displayConfig.quality,
+      format
+    );
+  }
+
+  // Generate large variant (for full-width on 4K screens)
+  const largeConfig = settings.variants.large;
+  if (largeConfig) {
+    variants.large = await generateVariant(
+      buffer,
+      largeConfig.maxEdge,
+      largeConfig.quality,
       format
     );
   }
