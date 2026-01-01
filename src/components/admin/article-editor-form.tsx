@@ -879,19 +879,29 @@ export function ArticleEditorForm({
                   updateBlock(block.id, updates);
 
                   // If this is a gallery block and mediaIds changed, sync galleryMedia state
+                  // Only sync if it's a reorder operation (same items, different order)
+                  // Skip if items are being added/removed - those handlers manage galleryMedia directly
                   if (
                     block.type === "gallery" &&
                     "mediaIds" in updates &&
                     updates.mediaIds
                   ) {
                     const newMediaIds = updates.mediaIds as string[];
-                    setGalleryMedia((prev) => {
-                      const currentMedia = prev[block.id] || [];
-                      const newMedia = newMediaIds
-                        .map((id) => currentMedia.find((m) => m.id === id))
-                        .filter((m): m is MediaItem => m !== undefined);
-                      return { ...prev, [block.id]: newMedia };
-                    });
+                    const currentMediaIds = (block as GalleryBlock).mediaIds || [];
+                    
+                    // Only sync for reorder (same length, same items)
+                    const isReorder = newMediaIds.length === currentMediaIds.length &&
+                      newMediaIds.every(id => currentMediaIds.includes(id));
+                    
+                    if (isReorder) {
+                      setGalleryMedia((prev) => {
+                        const currentMedia = prev[block.id] || [];
+                        const newMedia = newMediaIds
+                          .map((id) => currentMedia.find((m) => m.id === id))
+                          .filter((m): m is MediaItem => m !== undefined);
+                        return { ...prev, [block.id]: newMedia };
+                      });
+                    }
                   }
                 }}
                 onRemove={() => removeBlock(block.id)}

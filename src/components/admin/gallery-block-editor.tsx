@@ -118,11 +118,13 @@ export function GalleryBlockEditor({
       fileInputRef.current.value = "";
     }
   };
-  // Move image left (decrease index)
+  // Move image left (decrease index) - finds index by mediaId to ensure sync
   const moveImageLeft = useCallback(
-    (index: number) => {
+    (mediaId: string) => {
+      const mediaIds = block.mediaIds || [];
+      const index = mediaIds.indexOf(mediaId);
       if (index <= 0) return;
-      const newMediaIds = [...(block.mediaIds || [])];
+      const newMediaIds = [...mediaIds];
       [newMediaIds[index], newMediaIds[index - 1]] = [
         newMediaIds[index - 1],
         newMediaIds[index],
@@ -132,11 +134,12 @@ export function GalleryBlockEditor({
     [block.mediaIds, onUpdate]
   );
 
-  // Move image right (increase index)
+  // Move image right (increase index) - finds index by mediaId to ensure sync
   const moveImageRight = useCallback(
-    (index: number) => {
+    (mediaId: string) => {
       const mediaIds = block.mediaIds || [];
-      if (index >= mediaIds.length - 1) return;
+      const index = mediaIds.indexOf(mediaId);
+      if (index < 0 || index >= mediaIds.length - 1) return;
       const newMediaIds = [...mediaIds];
       [newMediaIds[index], newMediaIds[index + 1]] = [
         newMediaIds[index + 1],
@@ -182,8 +185,8 @@ export function GalleryBlockEditor({
               item={item}
               index={index}
               total={galleryMedia.length}
-              onMoveLeft={() => moveImageLeft(index)}
-              onMoveRight={() => moveImageRight(index)}
+              onMoveLeft={() => moveImageLeft(item.id)}
+              onMoveRight={() => moveImageRight(item.id)}
               onRemove={() => handleRemoveImage(index)}
               onReplace={() => handleReplaceImage(index)}
               onEdit={() => onEditMedia?.(item.id)}
@@ -245,8 +248,8 @@ export function GalleryBlockEditor({
                   item={item}
                   index={itemIndex}
                   total={galleryMedia.length}
-                  onMoveLeft={() => moveImageLeft(itemIndex)}
-                  onMoveRight={() => moveImageRight(itemIndex)}
+                  onMoveLeft={() => moveImageLeft(item.id)}
+                  onMoveRight={() => moveImageRight(item.id)}
                   onRemove={() => handleRemoveImage(itemIndex)}
                   onReplace={() => handleReplaceImage(itemIndex)}
                   onEdit={() => onEditMedia?.(item.id)}

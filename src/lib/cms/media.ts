@@ -575,12 +575,28 @@ export async function replaceMediaReferences(
   const { entries: articles } = await listEntries("articles");
   for (const article of articles) {
     let needsUpdate = false;
-    const articleData = article.data as { coverImage?: string };
+    const articleData = article.data as { 
+      coverImage?: string;
+      content?: Array<{ type: string; mediaIds?: string[] }>;
+    };
 
     // Check coverImage
     if (articleData.coverImage === oldMediaId) {
       articleData.coverImage = newMediaId;
       needsUpdate = true;
+    }
+
+    // Check gallery blocks in content
+    if (articleData.content && Array.isArray(articleData.content)) {
+      for (const block of articleData.content) {
+        if (block.type === "gallery" && block.mediaIds && Array.isArray(block.mediaIds)) {
+          const mediaIndex = block.mediaIds.indexOf(oldMediaId);
+          if (mediaIndex !== -1) {
+            block.mediaIds[mediaIndex] = newMediaId;
+            needsUpdate = true;
+          }
+        }
+      }
     }
 
     if (needsUpdate) {
@@ -635,7 +651,7 @@ export async function removeMediaReferences(
     let needsUpdate = false;
     const articleData = article.data as { 
       coverImage?: string;
-      blocks?: Array<{ type: string; id: string; mediaIds?: string[]; mediaId?: string }>;
+      content?: Array<{ type: string; id: string; mediaIds?: string[]; mediaId?: string }>;
     };
 
     // Check coverImage
@@ -644,9 +660,9 @@ export async function removeMediaReferences(
       needsUpdate = true;
     }
 
-    // Check blocks for gallery and image blocks
-    if (articleData.blocks && Array.isArray(articleData.blocks)) {
-      for (const block of articleData.blocks) {
+    // Check content blocks for gallery and image blocks
+    if (articleData.content && Array.isArray(articleData.content)) {
+      for (const block of articleData.content) {
         // Gallery blocks have mediaIds array
         if (block.type === "gallery" && block.mediaIds && Array.isArray(block.mediaIds)) {
           const originalLength = block.mediaIds.length;
