@@ -178,6 +178,7 @@ export interface GalleryBlock {
   layout?: "classic" | "grid" | "masonry" | "carousel";
   columns?: number;
   gap?: number;
+  width?: "normal" | "large" | "full";
 }
 
 export interface VideoBlock {

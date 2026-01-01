@@ -6,9 +6,14 @@ import {
   ChevronRight,
   MoreVertical,
   Image as ImageIcon,
-  Plus,
   Upload,
+  LayoutDashboard,
+  LayoutTemplate,
   LayoutGrid,
+  MoveHorizontal,
+  RotateCcw,
+  X,
+  Check,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +30,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { GalleryBlock, MediaItem } from "@/lib/cms/types";
 
@@ -309,51 +319,19 @@ export function GalleryBlockEditor({
             )}
           </div>
 
-          {/* Layout selector */}
-          <div>
-            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
-              Layout
-            </label>
-            <Select
-              value={block.layout || "classic"}
-              onValueChange={(value) =>
-                onUpdate({ layout: value as "classic" | "grid" })
-              }
-            >
-              <SelectTrigger className="h-9 mt-2">
-                <div className="flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                  <SelectValue />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="classic">Classic</SelectItem>
-                <SelectItem value="grid">Grid</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Show columns only for grid layout */}
-          {block.layout === "grid" && (
-            <div>
-              <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
-                Columns
-              </label>
-              <Select
-                value={String(block.columns || 3)}
-                onValueChange={(value) => onUpdate({ columns: Number(value) })}
-              >
-                <SelectTrigger className="h-9 mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2">2 Columns</SelectItem>
-                  <SelectItem value="3">3 Columns</SelectItem>
-                  <SelectItem value="4">4 Columns</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {/* Layout settings popover */}
+          <LayoutSettingsPopover
+            layout={block.layout || "classic"}
+            columns={block.columns || 1}
+            width={block.width || "normal"}
+            onApply={(settings) => {
+              onUpdate({
+                layout: settings.layout,
+                columns: settings.columns,
+                width: settings.width,
+              });
+            }}
+          />
         </div>
       ) : (
         <div
@@ -507,5 +485,212 @@ function ThumbnailItem({
         </DropdownMenu>
       </div>
     </div>
+  );
+}
+
+// Layout settings popover component
+function LayoutSettingsPopover({
+  layout,
+  columns,
+  width,
+  onApply,
+}: {
+  layout: "classic" | "grid";
+  columns: number;
+  width: "normal" | "large" | "full";
+  onApply: (settings: {
+    layout: "classic" | "grid";
+    columns: number;
+    width: "normal" | "large" | "full";
+  }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [tempLayout, setTempLayout] = useState(layout);
+  const [tempColumns, setTempColumns] = useState(columns);
+  const [tempWidth, setTempWidth] = useState(width);
+
+  // Reset temp values when popover opens
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      setTempLayout(layout);
+      setTempColumns(columns);
+      setTempWidth(width);
+    }
+    setOpen(isOpen);
+  };
+
+  const handleReset = () => {
+    setTempLayout("classic");
+    setTempColumns(1);
+    setTempWidth("normal");
+  };
+
+  const handleApply = () => {
+    onApply({
+      layout: tempLayout,
+      columns: tempColumns,
+      width: tempWidth,
+    });
+    setOpen(false);
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+  };
+
+  // Get display text for current settings
+  const getLayoutLabel = () => {
+    const layoutLabel = layout === "grid" ? "Grid" : "Classic";
+    const widthLabel = width === "large" ? "Large" : width === "full" ? "Full" : "";
+    const columnsLabel = layout === "grid" ? `${columns} col` : "";
+    
+    const parts = [layoutLabel];
+    if (columnsLabel) parts.push(columnsLabel);
+    if (widthLabel) parts.push(widthLabel);
+    
+    return parts.join(" · ");
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-9 px-3 text-muted-foreground hover:text-foreground"
+        >
+          <LayoutDashboard className="h-4 w-4 mr-2" />
+          {getLayoutLabel()}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-80 p-0" 
+        align="start"
+        sideOffset={4}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <span className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+            Choose layout
+          </span>
+          <div className="flex items-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 px-3 text-muted-foreground"
+              onClick={handleReset}
+            >
+              <RotateCcw className="h-3 w-3 mr-2" />
+              Reset
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground"
+              onClick={handleCancel}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-4">
+          {/* Layout */}
+          <div className="space-y-2">
+            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+              Layout
+            </label>
+            <Select
+              value={tempLayout}
+              onValueChange={(value) => setTempLayout(value as "classic" | "grid")}
+            >
+              <SelectTrigger className="h-9">
+                <div className="flex items-center gap-2">
+                  {tempLayout === "grid" ? (
+                    <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="classic">Classic</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Columns - only for grid */}
+          {tempLayout === "grid" && (
+            <div className="space-y-2">
+              <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+                Columns
+              </label>
+              <Select
+                value={String(tempColumns)}
+                onValueChange={(value) => setTempColumns(Number(value))}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Column</SelectItem>
+                  <SelectItem value="2">2 Columns</SelectItem>
+                  <SelectItem value="3">3 Columns</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Width */}
+          <div className="space-y-2">
+            <label className="text-[15px] font-medium font-[family-name:var(--font-syne)]">
+              Width
+            </label>
+            <Select
+              value={tempWidth}
+              onValueChange={(value) => setTempWidth(value as "normal" | "large" | "full")}
+            >
+              <SelectTrigger className="h-9">
+                <div className="flex items-center gap-2">
+                  <MoveHorizontal className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="large">Large</SelectItem>
+                <SelectItem value="full">Full width</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 pt-0 space-y-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full h-9"
+            onClick={handleApply}
+          >
+            <Check className="h-3 w-3 mr-2" />
+            Apply settings
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full h-9"
+            onClick={handleCancel}
+          >
+            Cancel
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
