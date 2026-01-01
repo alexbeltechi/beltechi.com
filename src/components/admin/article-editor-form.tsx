@@ -49,6 +49,7 @@ import { CategoryInput } from "@/components/admin/category-input";
 import { DatePicker } from "@/components/admin/date-picker";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
 import { MediaPicker } from "@/components/admin/media-picker";
+import { MediaDetailModal } from "@/components/admin/media-detail-modal";
 import { GalleryBlockEditor } from "@/components/admin/gallery-block-editor";
 import { cn } from "@/lib/utils";
 import type { Block, Entry, GalleryBlock, MediaItem } from "@/lib/cms/types";
@@ -113,6 +114,7 @@ export function ArticleEditorForm({
   const [galleryReplaceIndex, setGalleryReplaceIndex] = useState<number | null>(
     null
   );
+  const [mediaDetailId, setMediaDetailId] = useState<string | null>(null);
 
   // Block selection for multi-select delete
   const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
@@ -941,6 +943,7 @@ export function ArticleEditorForm({
                   }
                 }}
                 galleryMedia={galleryMedia[block.id] || []}
+                onEditMedia={(mediaId) => setMediaDetailId(mediaId)}
               />
             ))}
           </div>
@@ -1063,6 +1066,13 @@ export function ArticleEditorForm({
         accept={["image/*"]}
       />
 
+      {/* Media Detail Modal */}
+      <MediaDetailModal
+        mediaId={mediaDetailId}
+        onClose={() => setMediaDetailId(null)}
+        showDelete={false}
+      />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <AlertDialogContent>
@@ -1164,6 +1174,7 @@ function BlockEditor({
   onReplaceGalleryImage,
   onUploadGalleryFiles,
   galleryMedia,
+  onEditMedia,
 }: {
   block: Block;
   index: number;
@@ -1177,6 +1188,7 @@ function BlockEditor({
   onReplaceGalleryImage?: (imageIndex: number) => void;
   onUploadGalleryFiles?: (files: File[]) => Promise<void>;
   galleryMedia?: MediaItem[];
+  onEditMedia?: (mediaId: string) => void;
 }) {
   // Get icon for block type
   const getBlockIcon = () => {
@@ -1330,6 +1342,7 @@ function BlockEditor({
             onOpenGalleryPicker={onOpenGalleryPicker}
             onReplaceImage={onReplaceGalleryImage}
             onUploadFiles={onUploadGalleryFiles}
+            onEditMedia={onEditMedia}
           />
         )}
       </div>

@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { GalleryBlock, MediaItem } from "@/lib/cms/types";
+import { Pencil } from "lucide-react";
 
 interface GalleryBlockEditorProps {
   block: GalleryBlock;
@@ -45,6 +46,7 @@ interface GalleryBlockEditorProps {
   onOpenGalleryPicker?: () => void;
   onReplaceImage?: (index: number) => void;
   onUploadFiles?: (files: File[]) => Promise<void>;
+  onEditMedia?: (mediaId: string) => void;
 }
 
 export function GalleryBlockEditor({
@@ -54,6 +56,7 @@ export function GalleryBlockEditor({
   onOpenGalleryPicker,
   onReplaceImage,
   onUploadFiles,
+  onEditMedia,
 }: GalleryBlockEditorProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -182,6 +185,7 @@ export function GalleryBlockEditor({
               onMoveRight={() => moveImageRight(index)}
               onRemove={() => handleRemoveImage(index)}
               onReplace={() => handleReplaceImage(index)}
+              onEdit={() => onEditMedia?.(item.id)}
             />
           ))}
         </div>
@@ -244,6 +248,7 @@ export function GalleryBlockEditor({
                   onMoveRight={() => moveImageRight(itemIndex)}
                   onRemove={() => handleRemoveImage(itemIndex)}
                   onReplace={() => handleReplaceImage(itemIndex)}
+                  onEdit={() => onEditMedia?.(item.id)}
                 />
               );
             })}
@@ -405,6 +410,7 @@ function ThumbnailItem({
   onMoveRight,
   onRemove,
   onReplace,
+  onEdit,
 }: {
   item: MediaItem;
   index: number;
@@ -413,9 +419,11 @@ function ThumbnailItem({
   onMoveRight: () => void;
   onRemove: () => void;
   onReplace: () => void;
+  onEdit?: () => void;
 }) {
   const isFirst = index === 0;
   const isLast = index === total - 1;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
@@ -432,7 +440,10 @@ function ThumbnailItem({
       </div>
 
       {/* Controls - top right */}
-      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className={cn(
+        "absolute top-2 right-2 flex items-center gap-1 transition-opacity",
+        menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+      )}>
         {/* Move left button */}
         <Button
           type="button"
@@ -464,7 +475,7 @@ function ThumbnailItem({
         </Button>
 
         {/* More options menu */}
-        <DropdownMenu>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               type="button"
@@ -477,6 +488,12 @@ function ThumbnailItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" sideOffset={4}>
+            {onEdit && (
+              <DropdownMenuItem onSelect={onEdit}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={onReplace}>Replace</DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={onRemove}>
               Remove
