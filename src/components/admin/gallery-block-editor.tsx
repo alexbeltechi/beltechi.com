@@ -151,9 +151,9 @@ export function GalleryBlockEditor({
   );
 
   const handleRemoveImage = useCallback(
-    (index: number) => {
+    (mediaId: string) => {
       const currentMediaIds = block.mediaIds || [];
-      const newMediaIds = currentMediaIds.filter((_, i) => i !== index);
+      const newMediaIds = currentMediaIds.filter((id) => id !== mediaId);
       onUpdate({ mediaIds: newMediaIds });
     },
     [block.mediaIds, onUpdate]
@@ -187,7 +187,7 @@ export function GalleryBlockEditor({
               total={galleryMedia.length}
               onMoveLeft={() => moveImageLeft(item.id)}
               onMoveRight={() => moveImageRight(item.id)}
-              onRemove={() => handleRemoveImage(index)}
+              onRemove={() => handleRemoveImage(item.id)}
               onReplace={() => handleReplaceImage(index)}
               onEdit={() => onEditMedia?.(item.id)}
             />
@@ -250,7 +250,7 @@ export function GalleryBlockEditor({
                   total={galleryMedia.length}
                   onMoveLeft={() => moveImageLeft(item.id)}
                   onMoveRight={() => moveImageRight(item.id)}
-                  onRemove={() => handleRemoveImage(itemIndex)}
+                  onRemove={() => handleRemoveImage(item.id)}
                   onReplace={() => handleReplaceImage(itemIndex)}
                   onEdit={() => onEditMedia?.(item.id)}
                 />
