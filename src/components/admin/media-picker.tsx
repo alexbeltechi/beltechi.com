@@ -56,7 +56,8 @@ export function MediaPicker({
   const [usedMediaIds, setUsedMediaIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Use array to preserve selection order
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,7 +92,7 @@ export function MediaPicker({
   useEffect(() => {
     if (isOpen) {
       fetchMedia();
-      setSelectedIds(new Set());
+      setSelectedIds([]);
       setSearchQuery("");
       setUploadProgress(new Map());
       setUploadError(null);
@@ -232,16 +233,18 @@ export function MediaPicker({
       // Auto-select the newly uploaded files
       if (uploadedIds.length > 0) {
         if (multiple) {
-          const newSelected = new Set(selectedIds);
-          uploadedIds.forEach((id) => {
-            if (!maxSelect || newSelected.size < maxSelect) {
-              newSelected.add(id);
-            }
+          setSelectedIds((prev) => {
+            const newSelected = [...prev];
+            uploadedIds.forEach((id) => {
+              if (!newSelected.includes(id) && (!maxSelect || newSelected.length < maxSelect)) {
+                newSelected.push(id);
+              }
+            });
+            return newSelected;
           });
-          setSelectedIds(newSelected);
         } else {
           // Single select: select the first uploaded file
-          setSelectedIds(new Set([uploadedIds[0]]));
+          setSelectedIds([uploadedIds[0]]);
         }
       }
 
@@ -325,28 +328,33 @@ export function MediaPicker({
   const toggleSelect = (id: string) => {
     if (!multiple) {
       // Single select mode
-      if (selectedIds.has(id)) {
-        setSelectedIds(new Set());
+      if (selectedIds.includes(id)) {
+        setSelectedIds([]);
       } else {
-        setSelectedIds(new Set([id]));
+        setSelectedIds([id]);
       }
       return;
     }
 
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
+    const index = selectedIds.indexOf(id);
+    if (index !== -1) {
+      // Remove from selection
+      setSelectedIds((prev) => prev.filter((_, i) => i !== index));
     } else {
-      if (maxSelect && newSelected.size >= maxSelect) {
+      if (maxSelect && selectedIds.length >= maxSelect) {
         return; // Don't add if at max
       }
-      newSelected.add(id);
+      // Add to end of selection (preserves order)
+      setSelectedIds((prev) => [...prev, id]);
     }
-    setSelectedIds(newSelected);
   };
 
   const handleConfirm = () => {
-    const selectedItems = media.filter((m) => selectedIds.has(m.id));
+    // Return items in the order they were selected
+    const mediaMap = new Map(media.map((m) => [m.id, m]));
+    const selectedItems = selectedIds
+      .map((id) => mediaMap.get(id))
+      .filter((item): item is MediaItem => item !== undefined);
     onSelect(selectedItems);
     onClose();
   };
@@ -422,14 +430,13 @@ export function MediaPicker({
         if (data.data?.id) {
           if (multiple) {
             setSelectedIds((prev) => {
-              const newSet = new Set(prev);
-              if (!maxSelect || newSet.size < maxSelect) {
-                newSet.add(data.data.id);
+              if (!prev.includes(data.data.id) && (!maxSelect || prev.length < maxSelect)) {
+                return [...prev, data.data.id];
               }
-              return newSet;
+              return prev;
             });
           } else {
-            setSelectedIds(new Set([data.data.id]));
+            setSelectedIds([data.data.id]);
           }
         }
 
@@ -674,11 +681,11 @@ export function MediaPicker({
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
               {filteredMedia.map((item) => {
-                const isSelected = selectedIds.has(item.id);
+                const isSelected = selectedIds.includes(item.id);
                 const isDisabled =
                   multiple &&
                   maxSelect &&
-                  selectedIds.size >= maxSelect &&
+                  selectedIds.length >= maxSelect &&
                   !isSelected;
 
                 return (
@@ -785,7 +792,7 @@ export function MediaPicker({
               {isUploading ? "Processing..." : "Upload"}
             </Button>
             <span className="text-sm text-muted-foreground">
-              {selectedIds.size} selected
+              {selectedIds.length} selected
             </span>
           </div>
 
@@ -798,10 +805,10 @@ export function MediaPicker({
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={selectedIds.size === 0}
+              disabled={selectedIds.length === 0}
             >
               <Check className="w-4 h-4 mr-2" />
-              {multiple ? `Add ${selectedIds.size} file${selectedIds.size !== 1 ? "s" : ""}` : "Select"}
+              {multiple ? `Add ${selectedIds.length} file${selectedIds.length !== 1 ? "s" : ""}` : "Select"}
             </Button>
           </div>
         </div>
