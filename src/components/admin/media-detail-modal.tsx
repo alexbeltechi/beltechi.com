@@ -318,7 +318,7 @@ export function MediaDetailModal({
                         />
                       )}
                       <VariantButton
-                        name="Display"
+                        name="Display (Recommended)"
                         variant="display"
                         activeVariant={item.activeVariant || "large"}
                         width={item.variants.display?.width || item.width || 0}
@@ -336,6 +336,9 @@ export function MediaDetailModal({
                         onSelect={() => handleVariantChange("thumb")}
                       />
                     </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Choose which image size is used by default.
+                    </p>
                   </div>
                 )}
 
