@@ -538,31 +538,20 @@ function LayoutSettingsPopover({
     setOpen(false);
   };
 
-  // Get display text for current settings
-  const getLayoutLabel = () => {
-    const layoutLabel = layout === "grid" ? "Grid" : "Classic";
-    const widthLabel = width === "large" ? "Large" : width === "full" ? "Full" : "";
-    const columnsLabel = layout === "grid" ? `${columns} col` : "";
-    
-    const parts = [layoutLabel];
-    if (columnsLabel) parts.push(columnsLabel);
-    if (widthLabel) parts.push(widthLabel);
-    
-    return parts.join(" · ");
-  };
-
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-9 px-3 text-muted-foreground hover:text-foreground"
-        >
-          <LayoutDashboard className="h-4 w-4 mr-2" />
-          {getLayoutLabel()}
-        </Button>
-      </PopoverTrigger>
+      <div className="flex justify-center">
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-9 px-3 text-muted-foreground hover:text-foreground"
+          >
+            <LayoutDashboard className="h-4 w-4 mr-2" />
+            Choose layout
+          </Button>
+        </PopoverTrigger>
+      </div>
       <PopoverContent 
         className="w-80 p-0" 
         align="start"
