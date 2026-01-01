@@ -45,7 +45,7 @@ interface GalleryBlockEditorProps {
   galleryMedia: MediaItem[];
   onUpdate: (updates: Partial<GalleryBlock>) => void;
   onOpenGalleryPicker?: () => void;
-  onReplaceImage?: (index: number) => void;
+  onReplaceImage?: (index: number, file: File) => Promise<void>;
   onUploadFiles?: (files: File[]) => Promise<void>;
   onEditMedia?: (mediaId: string) => void;
 }
@@ -157,8 +157,8 @@ export function GalleryBlockEditor({
   );
 
   const handleReplaceImage = useCallback(
-    (index: number) => {
-      onReplaceImage?.(index);
+    async (index: number, file: File) => {
+      await onReplaceImage?.(index, file);
     },
     [onReplaceImage]
   );
@@ -185,7 +185,7 @@ export function GalleryBlockEditor({
               onMoveLeft={() => moveImageLeft(index)}
               onMoveRight={() => moveImageRight(index)}
               onRemove={() => handleRemoveImage(index)}
-              onReplace={() => handleReplaceImage(index)}
+              onReplace={(file) => handleReplaceImage(index, file)}
               onEdit={() => onEditMedia?.(item.id)}
             />
           ))}
@@ -248,7 +248,7 @@ export function GalleryBlockEditor({
                   onMoveLeft={() => moveImageLeft(itemIndex)}
                   onMoveRight={() => moveImageRight(itemIndex)}
                   onRemove={() => handleRemoveImage(itemIndex)}
-                  onReplace={() => handleReplaceImage(itemIndex)}
+                  onReplace={(file) => handleReplaceImage(itemIndex, file)}
                   onEdit={() => onEditMedia?.(item.id)}
                 />
               );
@@ -419,15 +419,40 @@ function ThumbnailItem({
   onMoveLeft: () => void;
   onMoveRight: () => void;
   onRemove: () => void;
-  onReplace: () => void;
+  onReplace: (file: File) => void;
   onEdit?: () => void;
 }) {
   const isFirst = index === 0;
   const isLast = index === total - 1;
   const [menuOpen, setMenuOpen] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReplaceClick = () => {
+    replaceInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onReplace(file);
+    }
+    // Reset input so same file can be selected again
+    if (replaceInputRef.current) {
+      replaceInputRef.current.value = "";
+    }
+  };
 
   return (
     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
+      {/* Hidden file input for replace */}
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept="image/*,video/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={item.variants?.thumb?.url || item.url}
@@ -495,8 +520,8 @@ function ThumbnailItem({
                 Edit
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onSelect={onReplace}>
-              <ImageIcon className="h-4 w-4 mr-2" />
+            <DropdownMenuItem onSelect={handleReplaceClick}>
+              <Upload className="h-4 w-4 mr-2" />
               Replace
             </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={onRemove}>
