@@ -93,26 +93,6 @@ export function MediaDetailModal({
       });
   }, [mediaId]);
 
-  const handleVariantChange = async (variant: string) => {
-    if (!item) return;
-
-    try {
-      const res = await fetch(`/api/admin/media/${item.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activeVariant: variant }),
-      });
-
-      if (!res.ok) throw new Error("Failed to update");
-
-      const updated = await res.json();
-      setItem(updated.data);
-    } catch (error) {
-      console.error("Failed to change variant:", error);
-      alert("Failed to change image size");
-    }
-  };
-
   const handleSave = async () => {
     if (!item) return;
     setSaving(true);
@@ -264,11 +244,17 @@ export function MediaDetailModal({
                   <p>
                     <span className="font-medium text-foreground">File type:</span> {item.mime}
                   </p>
-                  {(item.width && item.height) && (
-                    <p>
-                      <span className="font-medium text-foreground">File dimensions:</span>{" "}
-                      {item.width} × {item.height} px
-                    </p>
+                  {item.mime.startsWith("image/") && (
+                    <div>
+                      <span className="font-medium text-foreground">Available sizes:</span>{" "}
+                      <span className="text-muted-foreground">
+                        {[
+                          item.variants?.large && `${item.variants.large.width}×${item.variants.large.height}`,
+                          item.variants?.display && `${item.variants.display.width}×${item.variants.display.height}`,
+                          item.variants?.thumb && `${item.variants.thumb.width}×${item.variants.thumb.height}`,
+                        ].filter(Boolean).join(", ") || `${item.width}×${item.height}`} px
+                      </span>
+                    </div>
                   )}
                   <p>
                     <span className="font-medium text-foreground">File size:</span>{" "}
@@ -301,46 +287,6 @@ export function MediaDetailModal({
                   </div>
                 </div>
 
-                {/* Image Size Selector */}
-                {item.mime.startsWith("image/") && item.variants?.thumb && (
-                  <div className="pt-2 border-t border-border">
-                    <Label className="text-xs mb-2 block">Image Size</Label>
-                    <div className="space-y-1.5">
-                      {item.variants.large && (
-                        <VariantButton
-                          name="Large"
-                          variant="large"
-                          activeVariant={item.activeVariant || "large"}
-                          width={item.variants.large.width}
-                          height={item.variants.large.height}
-                          size={item.variants.large.size}
-                          onSelect={() => handleVariantChange("large")}
-                        />
-                      )}
-                      <VariantButton
-                        name="Display (Recommended)"
-                        variant="display"
-                        activeVariant={item.activeVariant || "large"}
-                        width={item.variants.display?.width || item.width || 0}
-                        height={item.variants.display?.height || item.height || 0}
-                        size={item.variants.display?.size || item.size}
-                        onSelect={() => handleVariantChange("display")}
-                      />
-                      <VariantButton
-                        name="Thumbnail"
-                        variant="thumb"
-                        activeVariant={item.activeVariant || "large"}
-                        width={item.variants.thumb.width}
-                        height={item.variants.thumb.height}
-                        size={item.variants.thumb.size}
-                        onSelect={() => handleVariantChange("thumb")}
-                      />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-2">
-                      Choose which image size is used by default.
-                    </p>
-                  </div>
-                )}
 
                 {/* Editable Fields */}
                 <div className="space-y-3 pt-2 border-t border-border">
@@ -489,40 +435,3 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-interface VariantButtonProps {
-  name: string;
-  variant: string;
-  activeVariant: string;
-  width: number;
-  height: number;
-  size: number;
-  onSelect: () => void;
-}
-
-function VariantButton({
-  name,
-  variant,
-  activeVariant,
-  width,
-  height,
-  size,
-  onSelect,
-}: VariantButtonProps) {
-  const isActive = activeVariant === variant;
-
-  return (
-    <button
-      onClick={onSelect}
-      className={`w-full flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
-        isActive 
-          ? "bg-primary text-primary-foreground" 
-          : "bg-muted text-muted-foreground hover:bg-accent"
-      }`}
-    >
-      <span className="font-medium">{name}</span>
-      <span className={isActive ? "opacity-70" : ""}>
-        {width}×{height} · {formatFileSize(size)}
-      </span>
-    </button>
-  );
-}
