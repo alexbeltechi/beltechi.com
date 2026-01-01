@@ -31,6 +31,9 @@ export function ClassicLayout({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // Full width mode has no gaps between images
+  const effectiveGap = width === 'full' ? 0 : gap;
+
   const handleImageClick = (index: number) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -69,7 +72,7 @@ export function ClassicLayout({
       <>
         <div 
           className={cn("flex flex-col", className)}
-          style={{ gap: `${gap}px` }}
+          style={{ gap: `${effectiveGap}px` }}
         >
           <FadeInOnScroll>
             <GalleryImage item={mediaItems[0]} index={0} onClick={handleImageClick} isFullWidth width={width} />
@@ -121,7 +124,7 @@ export function ClassicLayout({
 
   return (
     <>
-      <div className={cn("flex flex-col", className)} style={{ gap: `${gap}px` }}>
+      <div className={cn("flex flex-col", className)} style={{ gap: `${effectiveGap}px` }}>
         {rows.map((row, rowIndex) => (
           <div
             key={rowIndex}
@@ -129,7 +132,7 @@ export function ClassicLayout({
               "grid items-start",
               row.length === 1 ? "grid-cols-1" : "grid-cols-2"
             )}
-            style={{ gap: `${gap}px` }}
+            style={{ gap: `${effectiveGap}px` }}
           >
             {row.map((item) => {
               const itemIndex = mediaItems.findIndex((m) => m.id === item.id);

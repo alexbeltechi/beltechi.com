@@ -46,6 +46,9 @@ export function GridLayout({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // Full width mode has no gaps between images
+  const effectiveGap = width === 'full' ? 0 : gap;
+
   const handleImageClick = (index: number) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -65,7 +68,7 @@ export function GridLayout({
         className={cn("grid items-start", className)}
         style={{
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: `${gap}px`,
+          gap: `${effectiveGap}px`,
         }}
       >
         {mediaItems.map((item, index) => {
