@@ -306,10 +306,21 @@ export function MediaDetailModal({
                   <div className="pt-2 border-t border-border">
                     <Label className="text-xs mb-2 block">Image Size</Label>
                     <div className="space-y-1.5">
+                      {item.variants.large && (
+                        <VariantButton
+                          name="Large"
+                          variant="large"
+                          activeVariant={item.activeVariant || "large"}
+                          width={item.variants.large.width}
+                          height={item.variants.large.height}
+                          size={item.variants.large.size}
+                          onSelect={() => handleVariantChange("large")}
+                        />
+                      )}
                       <VariantButton
                         name="Display"
                         variant="display"
-                        activeVariant={item.activeVariant || "display"}
+                        activeVariant={item.activeVariant || "large"}
                         width={item.variants.display?.width || item.width || 0}
                         height={item.variants.display?.height || item.height || 0}
                         size={item.variants.display?.size || item.size}
@@ -318,7 +329,7 @@ export function MediaDetailModal({
                       <VariantButton
                         name="Thumbnail"
                         variant="thumb"
-                        activeVariant={item.activeVariant || "display"}
+                        activeVariant={item.activeVariant || "large"}
                         width={item.variants.thumb.width}
                         height={item.variants.thumb.height}
                         size={item.variants.thumb.size}

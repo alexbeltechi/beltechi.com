@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS: ImageProcessingSettings = {
     large: { maxEdge: 3200, quality: 80 },    // Full-width on 4K/large screens
     thumb: { maxEdge: 600, quality: 75 },     // Thumbnail for grids/cards
   },
-  defaultActiveVariant: "display",
+  defaultActiveVariant: "large",
   generateWebP: true,  // Convert all uploads to WebP
 };
 
