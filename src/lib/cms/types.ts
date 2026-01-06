@@ -294,10 +294,9 @@ export interface MediaItem {
 
   // Generated variants (for images only)
   variants?: {
-    display?: ImageVariant; // 2400px - hero/lightbox
-    large?: ImageVariant; // 1600px - default grid
-    medium?: ImageVariant; // 1200px - thumbnails
-    thumb?: ImageVariant; // 400px - admin/tiny
+    display?: ImageVariant; // 2400px - hero/carousel/lightbox
+    medium?: ImageVariant; // 1200px - article content
+    thumb?: ImageVariant; // 600px - grid cards/thumbnails
   };
 
   // Video poster/thumbnail (first frame extracted as JPG)
@@ -308,7 +307,7 @@ export interface MediaItem {
   };
 
   // Active variant being served as primary URL
-  activeVariant: "original" | "display" | "large" | "medium" | "thumb";
+  activeVariant: "original" | "display" | "medium" | "thumb";
 
   // WordPress-compatible metadata
   title: string; // Display title
@@ -349,11 +348,10 @@ export interface MediaIndex {
 export interface ImageProcessingSettings {
   variants: {
     display?: { maxEdge: number; quality: number };
-    large?: { maxEdge: number; quality: number };
     medium?: { maxEdge: number; quality: number };
     thumb?: { maxEdge: number; quality: number };
   };
-  defaultActiveVariant: "original" | "display" | "large" | "medium";
+  defaultActiveVariant: "original" | "display" | "medium";
   generateWebP: boolean;
 }
 

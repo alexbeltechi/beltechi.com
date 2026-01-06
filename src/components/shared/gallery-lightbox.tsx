@@ -15,10 +15,10 @@ interface GalleryLightboxProps {
 
 /**
  * Get the largest available image URL
- * Priority: large (3200px) → display (2400px) → original url
+ * Priority: display (2400px) → medium (1200px) → original url
  */
 function getLargestImageUrl(item: MediaItem): string {
-  return item.variants?.large?.url || item.variants?.display?.url || item.url;
+  return item.variants?.display?.url || item.variants?.medium?.url || item.url;
 }
 
 /**
@@ -234,8 +234,8 @@ export function GalleryLightbox({
                   key={item.id}
                   src={getLargestImageUrl(item)}
                   alt={item.alt || item.originalName}
-                  width={item.variants?.large?.width || item.variants?.display?.width || item.width || 2000}
-                  height={item.variants?.large?.height || item.variants?.display?.height || item.height || 1500}
+                  width={item.variants?.display?.width || item.variants?.medium?.width || item.width || 2000}
+                  height={item.variants?.display?.height || item.variants?.medium?.height || item.height || 1500}
                   className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${
                     isImageLoaded(index) ? 'opacity-100' : 'opacity-0'
                   }`}

@@ -8,11 +8,11 @@ import type { ImageVariant, ImageProcessingSettings } from "./types";
 // Next.js handles responsive sizing via deviceSizes config
 export const DEFAULT_SETTINGS: ImageProcessingSettings = {
   variants: {
-    display: { maxEdge: 2400, quality: 82 },  // Primary optimized image (hero/article)
-    large: { maxEdge: 3200, quality: 80 },    // Full-width on 4K/large screens
-    thumb: { maxEdge: 600, quality: 75 },     // Thumbnail for grids/cards
+    thumb: { maxEdge: 600, quality: 75 },     // Grid cards, thumbnails
+    medium: { maxEdge: 1200, quality: 82 },   // Article content, default
+    display: { maxEdge: 2400, quality: 88 },  // Hero, carousel, lightbox
   },
-  defaultActiveVariant: "large",
+  defaultActiveVariant: "medium",
   generateWebP: true,  // Convert all uploads to WebP
 };
 
@@ -162,7 +162,6 @@ export async function processImage(
   };
   variants: {
     display?: { buffer: Buffer; width: number; height: number };
-    large?: { buffer: Buffer; width: number; height: number };
     medium?: { buffer: Buffer; width: number; height: number };
     thumb?: { buffer: Buffer; width: number; height: number };
   };
@@ -187,7 +186,6 @@ export async function processImage(
   // Generate optimized variants
   const variants: {
     display?: { buffer: Buffer; width: number; height: number };
-    large?: { buffer: Buffer; width: number; height: number };
     medium?: { buffer: Buffer; width: number; height: number };
     thumb?: { buffer: Buffer; width: number; height: number };
   } = {};
@@ -203,13 +201,13 @@ export async function processImage(
     );
   }
 
-  // Generate large variant (for full-width on 4K screens)
-  const largeConfig = settings.variants.large;
-  if (largeConfig) {
-    variants.large = await generateVariant(
+  // Generate medium variant (for article content)
+  const mediumConfig = settings.variants.medium;
+  if (mediumConfig) {
+    variants.medium = await generateVariant(
       buffer,
-      largeConfig.maxEdge,
-      largeConfig.quality,
+      mediumConfig.maxEdge,
+      mediumConfig.quality,
       format
     );
   }

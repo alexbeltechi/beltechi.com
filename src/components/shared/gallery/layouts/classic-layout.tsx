@@ -163,16 +163,11 @@ export function ClassicLayout({
 
 /**
  * Get the best image URL based on gallery width setting
- * - normal: display variant (2400px) for contained layouts
- * - large/full: large variant (3200px) for sharp full-viewport on 4K screens
+ * Always prefer display variant (2400px @ 88% quality) for galleries to ensure sharpness
  */
 function getImageUrl(item: MediaItem, width: 'normal' | 'large' | 'full'): string {
-  if (width === 'large' || width === 'full') {
-    // Use large (3200px) for full-width layouts, fall back to display, then default url
-    return item.variants?.large?.url || item.variants?.display?.url || item.url;
-  }
-  // Normal width: display variant is fine (2400px)
-  return item.variants?.display?.url || item.url;
+  // Always use display variant (2400px) for gallery images, fall back to medium if not available
+  return item.variants?.display?.url || item.variants?.medium?.url || item.url;
 }
 
 /**

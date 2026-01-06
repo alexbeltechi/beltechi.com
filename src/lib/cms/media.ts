@@ -217,19 +217,19 @@ export async function uploadMedia(
         size: displayVariant.buffer.length,
       };
 
-      // Save large variant (for full-width on 4K screens)
-      const largeVariant = processed.variants.large;
-      if (largeVariant) {
-        const largeFilename = buildVariantFilename(baseFilename, shortId, "large", outputExt);
-        const largeResult = await saveFile(largeVariant.buffer, largeFilename, "variants", outputMime);
+      // Save medium variant (for article content)
+      const mediumVariant = processed.variants.medium;
+      if (mediumVariant) {
+        const mediumFilename = buildVariantFilename(baseFilename, shortId, "medium", outputExt);
+        const mediumResult = await saveFile(mediumVariant.buffer, mediumFilename, "variants", outputMime);
 
-        variants.large = {
-          filename: largeFilename,
-          path: largeResult.path,
-          url: largeResult.url,
-          width: largeVariant.width,
-          height: largeVariant.height,
-          size: largeVariant.buffer.length,
+        variants.medium = {
+          filename: mediumFilename,
+          path: mediumResult.path,
+          url: mediumResult.url,
+          width: mediumVariant.width,
+          height: mediumVariant.height,
+          size: mediumVariant.buffer.length,
         };
       }
 
@@ -264,7 +264,7 @@ export async function uploadMedia(
         width: displayVariant.width,
         height: displayVariant.height,
         variants: Object.keys(variants).length > 0 ? variants : undefined,
-        activeVariant: "display",
+        activeVariant: "medium",
         title: sanitizeFilename(originalName).replace(/-/g, " "),
         alt: "",
         createdAt: new Date().toISOString(),
@@ -415,7 +415,7 @@ export async function updateMedia(
       if (item.original.height !== undefined) mediaUpdates.height = item.original.height;
       if (item.original.size !== undefined) mediaUpdates.size = item.original.size;
     } else if (updates.activeVariant !== "original") {
-      const variantKey = updates.activeVariant as "display" | "large" | "medium" | "thumb";
+      const variantKey = updates.activeVariant as "display" | "medium" | "thumb";
       const variant = item.variants?.[variantKey];
       if (variant) {
         mediaUpdates.url = variant.url;
@@ -517,14 +517,14 @@ export async function restoreToOriginal(
  */
 export function getMediaUrl(
   item: MediaItem,
-  variant: "original" | "display" | "large" | "medium" | "thumb" = "large"
+  variant: "original" | "display" | "medium" | "thumb" = "medium"
 ): string {
   if (variant === "original" && item.original) {
     return item.original.url;
   }
 
   if (variant !== "original") {
-    const variantKey = variant as "display" | "large" | "medium" | "thumb";
+    const variantKey = variant as "display" | "medium" | "thumb";
     if (item.variants?.[variantKey]) {
       return item.variants[variantKey]!.url;
     }

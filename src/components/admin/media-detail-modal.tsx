@@ -249,8 +249,8 @@ export function MediaDetailModal({
                       <span className="font-medium text-foreground">Available sizes:</span>{" "}
                       <span className="text-muted-foreground">
                         {[
-                          item.variants?.large && `${item.variants.large.width}×${item.variants.large.height}`,
                           item.variants?.display && `${item.variants.display.width}×${item.variants.display.height}`,
+                          item.variants?.medium && `${item.variants.medium.width}×${item.variants.medium.height}`,
                           item.variants?.thumb && `${item.variants.thumb.width}×${item.variants.thumb.height}`,
                         ].filter(Boolean).join(", ") || `${item.width}×${item.height}`} px
                       </span>
