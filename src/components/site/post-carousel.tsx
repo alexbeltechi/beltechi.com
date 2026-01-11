@@ -285,21 +285,39 @@ export function PostCarousel({ media, initialIndex = 0 }: PostCarouselProps) {
                   onClick={(e) => e.stopPropagation()} // Don't open lightbox when clicking video controls
                 />
               ) : (
-                <Image
-                  src={item.url}
-                  alt={item.alt || item.originalName}
-                  width={item.width || 1200}
-                  height={item.height || 800}
-                  sizes="(max-width: 1024px) 100vw, 80vw"
-                  quality={80}
-                  className={`w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none transition-opacity duration-300 ${
-                    isImageLoaded(index) ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  priority={index === initialIndex}
-                  loading={index === initialIndex ? "eager" : "lazy"}
-                  onLoad={() => handleImageLoad(index)}
-                  draggable={false}
-                />
+                <>
+                  {/* Blur placeholder - shows while image loads */}
+                  {item.blurDataURL && (
+                    <div 
+                      className={`absolute inset-0 transition-opacity duration-500 ${
+                        isImageLoaded(index) ? 'opacity-0' : 'opacity-100'
+                      }`}
+                      style={{
+                        backgroundImage: `url(${item.blurDataURL})`,
+                        backgroundSize: 'contain',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        filter: 'blur(20px)',
+                        transform: 'scale(1.1)',
+                      }}
+                    />
+                  )}
+                  <Image
+                    src={item.url}
+                    alt={item.alt || item.originalName}
+                    width={item.width || 1200}
+                    height={item.height || 800}
+                    sizes="(max-width: 1024px) 100vw, 80vw"
+                    quality={80}
+                    className={`w-full h-auto lg:max-h-full lg:max-w-full lg:w-auto lg:object-contain pointer-events-none transition-opacity duration-500 ${
+                      isImageLoaded(index) ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    priority={index === initialIndex}
+                    loading={index === initialIndex ? "eager" : "lazy"}
+                    onLoad={() => handleImageLoad(index)}
+                    draggable={false}
+                  />
+                </>
               )}
             </div>
           ))}

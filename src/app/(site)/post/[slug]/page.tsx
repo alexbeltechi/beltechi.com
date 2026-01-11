@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
@@ -10,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { PostPageWrapper } from "@/components/site/post-page-wrapper";
 import type { PostEntry, MediaItem } from "@/lib/cms/types";
 
-// Force dynamic rendering to avoid MongoDB connection during build
-export const dynamic = 'force-dynamic';
+// Use ISR - regenerate every 60 seconds for instant navigation
+export const revalidate = 60;
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
@@ -20,7 +21,11 @@ interface PostPageProps {
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
 
-  const rawPost = await getEntry("posts", slug);
+  // Parallel fetch: post + categories (we need these immediately)
+  const [rawPost, allCategories] = await Promise.all([
+    getEntry("posts", slug),
+    listCategories(),
+  ]);
 
   if (!rawPost || rawPost.status !== "published") {
     notFound();
@@ -45,7 +50,6 @@ export default async function PostPage({ params }: PostPageProps) {
 
   // Get category labels
   const categoryIds = (post.data.categories as string[]) || [];
-  const allCategories = await listCategories();
   const postCategories = categoryIds
     .map((id) => allCategories.find((c) => c.id === id))
     .filter(Boolean);
@@ -59,54 +63,6 @@ export default async function PostPage({ params }: PostPageProps) {
         year: "numeric",
       })
     : null;
-
-  // --- Related Posts Logic ---
-  const MAX_RELATED_POSTS = 12;
-  
-  // Get all published posts except current one
-  const allPosts = await getPublishedEntries("posts");
-  const otherPosts = allPosts.filter((p) => p.id !== post.id);
-
-  // Separate posts into related (same category) and others
-  const relatedPosts = otherPosts.filter((p) => {
-    const pCategories = (p.data.categories as string[]) || [];
-    return pCategories.some((catId) => categoryIds.includes(catId));
-  });
-
-  const unrelatedPosts = otherPosts.filter((p) => {
-    const pCategories = (p.data.categories as string[]) || [];
-    return !pCategories.some((catId) => categoryIds.includes(catId));
-  });
-
-  // Shuffle unrelated posts for randomness
-  const shuffledUnrelated = unrelatedPosts.sort(() => Math.random() - 0.5);
-
-  // Combine: related first, then random others, up to MAX_RELATED_POSTS
-  const displayPosts = [...relatedPosts, ...shuffledUnrelated].slice(0, MAX_RELATED_POSTS);
-
-  // Get all media for related posts
-  const relatedMediaIds = new Set<string>();
-  displayPosts.forEach((p) => {
-    const pMediaIds = (p.data.media as string[]) || [];
-    pMediaIds.forEach((id) => relatedMediaIds.add(id));
-  });
-
-  const relatedMediaItems = await getMediaByIds(Array.from(relatedMediaIds));
-  const relatedMediaMap = new Map<string, MediaItem>(
-    relatedMediaItems.map((item) => [item.id, item])
-  );
-
-  // Get unique category IDs from all posts for category labels
-  const relatedCategoryIds = new Set(
-    displayPosts.flatMap((p) => {
-      const cats = p.data.categories as string[] | undefined;
-      return cats || [];
-    })
-  );
-
-  const relatedCategories = allCategories
-    .filter((cat) => relatedCategoryIds.has(cat.id))
-    .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
 
   return (
     <PostPageWrapper>
@@ -165,20 +121,91 @@ export default async function PostPage({ params }: PostPageProps) {
         </div>
       </div>
 
-      {/* More to explore section */}
-      {displayPosts.length > 0 && (
-        <div className="mt-4 lg:mt-16 pb-10">
-          <h2 className="text-[15px] font-normal font-[family-name:var(--font-syne)] text-zinc-500 px-4 mb-4 text-center">
-            More to explore
-          </h2>
-          <PostGrid 
-            posts={displayPosts} 
-            mediaMap={relatedMediaMap} 
-            categories={relatedCategories} 
-          />
-        </div>
-      )}
+      {/* More to explore section - Streamed in after main content */}
+      <Suspense fallback={null}>
+        <MoreToExploreAsync 
+          postId={post.id} 
+          categoryIds={categoryIds}
+          allCategories={allCategories}
+        />
+      </Suspense>
     </main>
     </PostPageWrapper>
   );
 }
+
+// Async component for related posts - streams in separately
+async function MoreToExploreAsync({ 
+  postId,
+  categoryIds,
+  allCategories,
+}: { 
+  postId: string;
+  categoryIds: string[];
+  allCategories: { id: string; slug: string; label: string }[];
+}) {
+  const MAX_RELATED_POSTS = 12;
+  
+  // Get all published posts except current one
+  const allPosts = await getPublishedEntries("posts");
+  const otherPosts = allPosts.filter((p) => p.id !== postId);
+
+  // Separate posts into related (same category) and others
+  const relatedPosts = otherPosts.filter((p) => {
+    const pCategories = (p.data.categories as string[]) || [];
+    return pCategories.some((catId) => categoryIds.includes(catId));
+  });
+
+  const unrelatedPosts = otherPosts.filter((p) => {
+    const pCategories = (p.data.categories as string[]) || [];
+    return !pCategories.some((catId) => categoryIds.includes(catId));
+  });
+
+  // Shuffle unrelated posts for randomness
+  const shuffledUnrelated = unrelatedPosts.sort(() => Math.random() - 0.5);
+
+  // Combine: related first, then random others, up to MAX_RELATED_POSTS
+  const displayPosts = [...relatedPosts, ...shuffledUnrelated].slice(0, MAX_RELATED_POSTS);
+
+  if (displayPosts.length === 0) {
+    return null;
+  }
+
+  // Get all media for related posts
+  const relatedMediaIds = new Set<string>();
+  displayPosts.forEach((p) => {
+    const pMediaIds = (p.data.media as string[]) || [];
+    pMediaIds.forEach((id) => relatedMediaIds.add(id));
+  });
+
+  const relatedMediaItems = await getMediaByIds(Array.from(relatedMediaIds));
+  const relatedMediaMap = new Map<string, MediaItem>(
+    relatedMediaItems.map((item) => [item.id, item])
+  );
+
+  // Get unique category IDs from all posts for category labels
+  const relatedCategoryIds = new Set(
+    displayPosts.flatMap((p) => {
+      const cats = p.data.categories as string[] | undefined;
+      return cats || [];
+    })
+  );
+
+  const relatedCategories = allCategories
+    .filter((cat) => relatedCategoryIds.has(cat.id))
+    .map((cat) => ({ id: cat.id, slug: cat.slug, label: cat.label }));
+
+  return (
+    <div className="mt-4 lg:mt-16 pb-10">
+      <h2 className="text-[15px] font-normal font-[family-name:var(--font-syne)] text-zinc-500 px-4 mb-4 text-center">
+        More to explore
+      </h2>
+      <PostGrid 
+        posts={displayPosts} 
+        mediaMap={relatedMediaMap} 
+        categories={relatedCategories} 
+      />
+    </div>
+  );
+}
+
